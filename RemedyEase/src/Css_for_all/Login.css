@@ -1,0 +1,139 @@
+/* 1. Import a modern and clean font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* 2. Style the main container with a subtle gradient background */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #e6ffe6, #dcf8ff); /* Softer gradient background */
+  font-family: 'Poppins', sans-serif; /* Apply the new font */
+}
+
+/* 3. Make the logo pop with a text shadow */
+.login-logo {
+  font-size: 50px;
+  color: #388e3c; /* A slightly deeper green */
+  font-weight: 800;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-title {
+  font-size: 36px;
+  font-weight: 700; /* Bolder */
+  margin-top: 15px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.login-header {
+  font-size: 18px;
+  font-weight: 400; /* Lighter weight for subtitle */
+  color: #555;
+  margin-bottom: 30px;
+}
+
+/* 4. Improve the form card with a softer shadow and rounded corners */
+.login-divider {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: white;
+  padding: 40px;
+  border-radius: 20px; /* More rounded corners */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Softer, more modern shadow */
+  min-width: 380px;
+  border: 1px solid #ffffff30;
+}
+
+.login-input-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.login-label {
+  font-size: 16px; /* Slightly smaller for a cleaner look */
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 5. Refine input fields for a modern feel */
+.login_input {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 16px;
+  background-color: #f9f9f9; /* Subtle background color */
+  border: 1px solid #ddd;
+  border-radius: 10px; /* Match the card's roundness */
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.login_input:focus {
+  border-color: #4CAF50; /* A vibrant green */
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+  background-color: #fff;
+  outline: none;
+}
+
+.login_input::placeholder {
+  color: #aaa;
+}
+
+/* 6. Redesign the button to be more appealing and interactive */
+.login-button {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: white;
+  background: linear-gradient(90deg, #4CAF50, #388e3c);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-button:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px); /* Add a 'lift' effect on hover */
+}
+
+/* 7. Style the sign-up link */
+.signin {
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.login-signup-link {
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-signup-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive styles */
+@media (max-width: 480px) {
+  .login-divider {
+    min-width: 90vw;
+    padding: 30px 25px;
+  }
+  .login-logo {
+    font-size: 40px;
+  }
+  .login-title {
+    font-size: 30px;
+  }
+}

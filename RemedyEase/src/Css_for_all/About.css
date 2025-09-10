@@ -1,0 +1,572 @@
+.about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 0px;
+  flex-wrap: wrap;
+}
+
+.about-title {
+  font-size: 36px;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px;
+  margin-top: 40px;
+}
+.para {
+  font-size: 20px;
+  text-align: center;
+  margin: 20px auto;
+  max-width: 700px;     
+  width: 90%;          
+  display: block;        
+}
+.three_cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-items: center;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border: 1px solid white;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 320px;
+  flex: 1;
+  min-width: 280px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.heading1 {
+  color: black;
+  font-weight: 700;
+  font-size: 22px;
+}
+.paragraph {
+  color: #555;
+}
+.user_feedback_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.feedback {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border: 1px solid white;
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 320px;
+  flex: 1;
+  min-width: 280px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.feedback:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.user_feedback {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+.user_head {
+  font-size: 30px;
+  font-weight: 500;
+  justify-content: center;
+  align-items: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+.users {
+  font-size: 20px;
+  font-weight: 400;
+}
+.team {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  width: 100%;
+  padding: 60px 20px;
+}
+.meet {
+  font-size: 30px;
+  font-weight: 500;
+  justify-content: center;
+  align-items: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+.team_cards {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 150px;
+  margin: 20px;
+  flex-wrap: wrap;
+  margin-top: 50px;
+}
+.team-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 360px;
+  flex-wrap: wrap;
+}
+.team_image {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.doctor_name {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.degree {
+  font-size: 18px;
+  color: green;
+  text-align: center;
+}
+.achieve {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.achieve_head {
+  font-size: 30px;
+  font-weight: 500;
+  justify-content: center;
+  align-items: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+.card_acheive {
+  display: flex;
+  display: flex;
+  flex-direction: row;
+  align-items: space-around;
+  gap: 150px;
+  margin: 20px;
+  flex-wrap: wrap;
+  margin-top: 50px;
+}
+.card_achievement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 360px;
+  flex-wrap: wrap;
+}
+.ach{
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.achieves{
+    font-weight: 700;
+    font-size: larger;
+    margin-top: 10px;
+    align-items: center;
+}
+.people{
+    font-size: 20px;
+    font-weight: 400;
+    margin-top: 10px;
+    align-items: center;
+}
+@media (max-width: 1100px) {
+  .three_cards,
+  .user_feedback_container,
+  .team_cards,
+  .card_acheive {
+    gap: 32px;
+  }
+}
+@media (max-width: 900px) {
+  .about-title {
+    font-size: 28px;
+  }
+  .user_head,
+  .meet,
+  .achieve_head {
+    font-size: 22px;
+    margin-top: 40px;
+    margin-bottom: 30px;
+  }
+  .para {
+    font-size: 17px;
+    max-width: 95vw;
+    margin: 16px auto;
+  }
+  .three_cards,
+  .user_feedback_container,
+  .team_cards,
+  .card_acheive {
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  .team_image {
+    width: 120px;
+    height: 120px;
+  }
+  .ach {
+    width: 60px;
+     height: 60px;
+  }
+}
+.about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 0px;
+  flex-wrap: wrap;
+}
+
+.about-title {
+  font-size: 36px;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px;
+  margin-top: 40px;
+}
+
+.para {
+  font-size: 20px;
+  text-align: center;
+  margin: 20px auto;
+  max-width: 700px;
+  width: 90%;
+  display: block;
+}
+
+.three_cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;
+  margin: 32px 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border: 1px solid white;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 320px;
+  min-width: 260px;
+  flex: 1 1 260px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin: 0 8px;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.heading1 {
+  color: black;
+  font-weight: 700;
+  font-size: 22px;
+}
+.paragraph {
+  color: #555;
+}
+
+.user_head {
+  font-size: 30px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+
+.user_feedback_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border: 1px solid white;
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 320px;
+  min-width: 260px;
+  flex: 1 1 260px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin: 0 8px;
+}
+.feedback:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.users {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  width: 100%;
+  padding: 60px 20px;
+}
+
+.meet {
+  font-size: 30px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+
+.team_cards {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 80px;
+  margin: 20px 0 0 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.team-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 320px;
+  min-width: 220px;
+  flex: 1 1 220px;
+  margin: 0 8px;
+}
+
+.team_image {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.doctor_name {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.degree {
+  font-size: 16px;
+  color: green;
+  text-align: center;
+}
+
+.achieve {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.achieve_head {
+  font-size: 30px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 60px;
+  margin-bottom: 50px;
+}
+
+.card_acheive {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 80px;
+  margin: 20px 0 0 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.card_acheivement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 320px;
+  min-width: 220px;
+  flex: 1 1 220px;
+  margin: 0 8px;
+}
+
+.ach {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.achieves {
+  font-weight: 700;
+  font-size: 20px;
+  margin-top: 10px;
+  text-align: center;
+}
+.people {
+  font-size: 18px;
+  font-weight: 400;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Responsive styles */
+@media (max-width: 1100px) {
+  .three_cards,
+  .user_feedback_container,
+  .team_cards,
+  .card_acheive {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .about-title {
+    font-size: 28px;
+  }
+  .user_head,
+  .meet,
+  .achieve_head {
+    font-size: 22px;
+    margin-top: 40px;
+    margin-bottom: 30px;
+  }
+  .para {
+    font-size: 17px;
+    max-width: 95vw;
+    margin: 16px auto;
+  }
+  .three_cards,
+  .user_feedback_container,
+  .team_cards,
+  .card_acheive {
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  .team_image {
+    width: 120px;
+    height: 120px;
+  }
+  .ach {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 600px) {
+  .about {
+    margin-top: 8px;
+  }
+  .about-title {
+    font-size: 20px;
+    margin: 10px;
+    margin-top: 20px;
+  }
+  .para {
+    font-size: 15px;
+    max-width: 99vw;
+    margin: 8px auto;
+    padding: 0 8px;
+  }
+  .heading1 {
+    font-size: 16px;
+  }
+  .user_head,
+  .meet,
+  .achieve_head {
+    font-size: 16px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+  }
+  .team_image {
+    width: 80px;
+    height: 80px;
+  }
+  .ach {
+    width: 40px;
+    height: 40px;
+  }
+  .card,
+  .feedback,
+  .team-member,
+  .card_acheivement {
+    max-width: 98vw;
+    min-width: 0;
+    padding: 1rem;
+  }
+}

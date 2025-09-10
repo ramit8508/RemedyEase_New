@@ -1,0 +1,54 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  background-color: #e6ffe6;
+  margin-top: 250px;
+}
+.heading {
+  font-size: 50px;
+  font-weight: bolder;
+  margin-top: 50px;
+}
+.para {
+  color: #48a860;
+  font-size: 25px;
+}
+.three_cards {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0px;
+  margin: 20px;
+  flex-wrap: wrap;
+  margin-top: 50px;
+}
+.cards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(72, 168, 96, 0.12);
+  padding: 32px 24px;
+  margin: 32px auto;
+  max-width: 400px;
+  width: 90%;
+  transition: box-shadow 0.2s;
+}
+.image_online_consult {
+  width: 60%;
+  height: 60%;
+  border-radius: 20px;
+}
+.card-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+.text_online_consult {
+  color: #48a860;
+}
