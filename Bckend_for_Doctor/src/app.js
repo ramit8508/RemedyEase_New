@@ -21,5 +21,4 @@ app.use("/api/v1/doctors", DoctorRouter);
 
 
 
-
 export { app };
