@@ -1,6 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
-
+import React, { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const SignupStyles = () => (
   <style>
@@ -164,13 +163,79 @@ const SignupStyles = () => (
           font-size: 30px;
         }
       }
-    `}
+    `}
   </style>
 );
 
-
-// Component name capitalized to follow React conventions
 export default function Signup() {
+  const avatarRef = useRef();
+  const [form, setForm] = useState({
+    fullname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    agree: false,
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    if (!form.agree) {
+      setMessage("You must agree to the terms.");
+      return;
+    }
+    if (!avatarRef.current.files[0]) {
+      setMessage("Please upload your avatar.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("fullname", form.fullname);
+      formData.append("email", form.email);
+      formData.append("password", form.password);
+      formData.append("confirmPassword", form.confirmPassword);
+      formData.append("avatar", avatarRef.current.files[0]);
+
+      const res = await fetch("/api/v1/users/register", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage("Registration successful! Redirecting...");
+        setTimeout(() => {
+          navigate("/UserLandingPageToMeetDoctor");
+        }, 1500);
+        setForm({
+          fullname: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          agree: false,
+        });
+        avatarRef.current.value = "";
+      } else {
+        setMessage(data.message || "Registration failed.");
+      }
+    } catch (err) {
+      setMessage("Something went wrong. Please try again.");
+    }
+    setLoading(false);
+  };
+
   return (
     <>
       <SignupStyles />
@@ -181,15 +246,17 @@ export default function Signup() {
           Join RemedyEase and start your wellness journey today!
         </h3>
         <div className="signup-divider">
-          <form>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <div className="signup-input-group">
               <label className="signup-label">Full Name</label>
               <input
                 type="text"
-                name="fullName"
+                name="fullname"
                 placeholder="John Doe"
                 required
                 className="signup_input"
+                value={form.fullname}
+                onChange={handleChange}
               />
             </div>
             <div className="signup-input-group">
@@ -200,6 +267,8 @@ export default function Signup() {
                 placeholder="john@example.com"
                 required
                 className="signup_input"
+                value={form.email}
+                onChange={handleChange}
               />
             </div>
             <div className="signup-input-group">
@@ -210,6 +279,8 @@ export default function Signup() {
                 placeholder="At least 6 characters"
                 required
                 className="signup_input"
+                value={form.password}
+                onChange={handleChange}
               />
             </div>
             <div className="signup-input-group">
@@ -220,29 +291,41 @@ export default function Signup() {
                 placeholder="Re-enter your password"
                 required
                 className="signup_input"
+                value={form.confirmPassword}
+                onChange={handleChange}
               />
             </div>
-
+            <div className="signup-input-group">
+              <label className="signup-label">Avatar (Profile Photo)</label>
+              <input
+                type="file"
+                name="avatar"
+                accept="image/*"
+                required
+                className="signup_input"
+                ref={avatarRef}
+              />
+            </div>
             <div className="agree-row">
-              <input type="checkbox" id="agree" name="agree" required />
+              <input
+                type="checkbox"
+                id="agree"
+                name="agree"
+                checked={form.agree}
+                onChange={handleChange}
+                required
+              />
               <label htmlFor="agree" className="agree-label">
                 I agree to the terms and conditions
               </label>
             </div>
-
-            <button type="submit" className="signup-button">
-              Create Account
+            <button type="submit" className="signup-button" disabled={loading}>
+              {loading ? "Creating..." : "Create Account"}
             </button>
+            {message && <p className="signup-message">{message}</p>}
           </form>
-          <p className="signin-prompt">
-            Already have an account?{" "}
-            <Link to="/login" className="signin-link">
-              Log in here
-            </Link>
-          </p>
         </div>
       </div>
     </>
   );
 }
-
