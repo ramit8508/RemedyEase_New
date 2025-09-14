@@ -1,0 +1,49 @@
+/* General Navbar Container */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: 'Poppins', sans-serif;
+}
+.nav-logo {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #388e3c;
+  margin: 0; 
+}
+
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px; 
+}
+
+/* Individual Link Styling */
+.nav-link {
+  color:#444444 ; /* A teal green similar to your design */
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 5px 0;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #388e3c; /* Darker green on hover */
+}
+
+/* Avatar Styling */
+.nav-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid #008080; /* Adds a nice border */
+  object-fit: cover; /* Ensures the image covers the area without distortion */
+  cursor: pointer;
+  border : 2px solid #388e3c;
+}

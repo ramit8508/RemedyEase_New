@@ -215,21 +215,24 @@ export default function Signup() {
 
       const data = await res.json();
       if (res.ok) {
-        setMessage("Registration successful! Redirecting...");
+        // Save user info to localStorage
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+        setMessage("Signup successful! Redirecting...");
         setTimeout(() => {
-          navigate("/UserLandingPageToMeetDoctor");
-        }, 1500);
-        setForm({
-          fullname: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-          agree: false,
-        });
-        avatarRef.current.value = "";
+          navigate("/user/meet-doctor");
+        }, 1200);
       } else {
         setMessage(data.message || "Registration failed.");
       }
+      // Reset form fields after response
+      setForm({
+        fullname: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        agree: false,
+      });
+      avatarRef.current.value = "";
     } catch (err) {
       setMessage("Something went wrong. Please try again.");
     }

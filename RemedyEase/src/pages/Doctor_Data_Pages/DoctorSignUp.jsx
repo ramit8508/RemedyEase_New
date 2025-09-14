@@ -87,7 +87,7 @@ export default function DoctorSignUp() {
       if (res.ok) {
         setMessage("Registration successful! Redirecting...");
         setTimeout(() => {
-          navigate("/DoctorLandingToMeetUser"); 
+          navigate("/doctor/meet-user"); 
         }, 2000);
         setForm({
           fullname: "",

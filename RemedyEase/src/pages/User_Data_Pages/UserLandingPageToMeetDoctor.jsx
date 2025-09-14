@@ -1,8 +1,11 @@
 import React from 'react'
+import UserDashBoardNav from '../../components/UserDashBoardNav'
 
 function UserLandingPageToMeetDoctor() {
   return (
-    <div>UserLandingPageToMeetDoctor</div>
+    <>
+      <UserDashBoardNav />
+    </>
   )
 }
 

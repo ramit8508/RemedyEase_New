@@ -21,9 +21,11 @@ export default function Login() {
       });
       const data = await res.json();
       if (res.ok) {
+        // Save user info to localStorage
+        localStorage.setItem("user", JSON.stringify(data.data.user));
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
-          navigate("/UserLandingPageToMeetDoctor");
+          navigate("/user/dashboard/Home");
         }, 1200);
       } else {
         setMessage(data.message || "Login failed.");
@@ -70,7 +72,12 @@ export default function Login() {
               {loading ? "Logging in..." : "Login"}
             </button>
             {message && (
-              <div style={{ color: message.includes("success") ? "green" : "red", marginTop: 10 }}>
+              <div
+                style={{
+                  color: message.includes("success") ? "green" : "red",
+                  marginTop: 10,
+                }}
+              >
                 {message}
               </div>
             )}

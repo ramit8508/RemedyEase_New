@@ -13,4 +13,5 @@ router.route("/register").post(
     registerDoctor
 )
 router.route("/login").post(loginDoctor);
+
 export default router;
