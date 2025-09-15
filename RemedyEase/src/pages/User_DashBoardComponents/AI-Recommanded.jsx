@@ -1,12 +1,33 @@
-import React from "react";
+import React, { useState } from "react";
 import "../../Css_for_all/AIRecommanded.css";
 import box1image from "../../images/box1image.jpg";
 import box2image from "../../images/sample2.jpg";
 import box3image from "../../images/sample3.jpg";
 import box4image from "../../images/sample4.jpg";
 
-
 export default function AIRecommanded() {
+  const [symptoms, setSymptoms] = useState("");
+  const [remedy, setRemedy] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleGetRecommendation = async () => {
+    if (!symptoms.trim()) return;
+    setLoading(true);
+    setRemedy("");
+    try {
+      const res = await fetch("/api/v1/ai/recommendation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms }),
+      });
+      const data = await res.json();
+      setRemedy(data.recommendation || "No remedy found.");
+    } catch (err) {
+      setRemedy("Something went wrong. Please try again.");
+    }
+    setLoading(false);
+  };
+
   return (
     <>
       <div className="container">
@@ -20,16 +41,57 @@ export default function AIRecommanded() {
           <input
             type="text"
             className="input_box"
-            placeholder="eg., I have  a sore throat and a mild fever"
+            placeholder="eg., I have a sore throat and a mild fever"
+            value={symptoms}
+            onChange={(e) => setSymptoms(e.target.value)}
+            disabled={loading}
           />
-          <button className="submit_button">✨Get Recommendations</button>
+          <button
+            className="submit_button"
+            onClick={handleGetRecommendation}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "✨Get Recommendations"}
+          </button>
         </div>
         <div className="output_container">
           <h3 className="output_heading">
             Your AI Recommendations Remedies are:
           </h3>
-          <div className="output_box">
-            {/* AI-generated recommendations will be displayed here */}
+          <div
+            className="output_box"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "16px",
+              justifyContent: "center",
+            }}
+          >
+            {remedy &&
+              remedy.split(/\n|•|- /).map((item, idx) =>
+                item.trim() ? (
+                  <div
+                    key={idx}
+                    style={{
+                      background: "#f6fff6",
+                      border: "1px solid #b2dfdb",
+                      borderRadius: "18px",
+                      padding: "18px 22px",
+                      boxShadow: "0 4px 18px rgba(76,175,80,0.08)",
+                      color: "#222",
+                      fontSize: "18px",
+                      fontWeight: 500,
+                      minWidth: "220px",
+                      margin: "8px 0",
+                      textAlign: "left",
+                      flex: "1 1 220px",
+                      maxWidth: "320px",
+                    }}
+                  >
+                    {item.trim()}
+                  </div>
+                ) : null
+              )}
           </div>
         </div>
         <div className="sample_container">

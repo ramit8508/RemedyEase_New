@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/api/v1/doctors': 'http://localhost:5000',
       '/api/v1/users': 'http://localhost:8000',
+      '/api/v1/ai': 'http://localhost:8000',
     },
   },
 })
