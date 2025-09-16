@@ -219,7 +219,7 @@ export default function Signup() {
         localStorage.setItem("user", JSON.stringify(data.data.user));
         setMessage("Signup successful! Redirecting...");
         setTimeout(() => {
-          navigate("/user/meet-doctor");
+          navigate("/user/login");
         }, 1200);
       } else {
         setMessage(data.message || "Registration failed.");

@@ -22,7 +22,7 @@ function UserHome() {
           health insights. Your well-being is our top priority
         </p>
         <div className="buttons">
-          <Link to="/signup">
+          <Link to="/user/signup">
             <button className="btn1">Get Started</button>
           </Link>
           <Link to="/learn">

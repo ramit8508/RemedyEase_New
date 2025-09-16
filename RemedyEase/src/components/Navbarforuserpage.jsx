@@ -75,10 +75,10 @@ function Navbarforuserpage() {
         <Link to="/user/contact" className="user-link" style={style0}>
           Contact Us
         </Link>
-        <Link to="/login" className="user-link" style={login}>
+        <Link to="/user/login" className="user-link" style={login}>
           Login
         </Link>
-        <Link to="/signup" className="user-link" style={signup}>
+        <Link to="/user/signup" className="user-link" style={signup}>
           Sign Up
         </Link>
       </div>
