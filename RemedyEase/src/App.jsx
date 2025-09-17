@@ -7,9 +7,8 @@ import DoctorLandingPage from "./pages/DoctorLandingPage";
 // import Login from "./pages/User_Data_Pages/Login";
 // import Signup from "./pages/User_Data_Pages/Signup";
 import Learn from "./pages/User_Data_Pages/Learn";
-import UserLandingToMeetDoctor from "./pages/User_Data_Pages/UserLandingPageToMeetDoctor";
-import DoctorLandingToMeetUser from "./pages/Doctor_Data_Pages/DoctorLandingToMeetUser";
 import UserDashboard from "./pages/UserDashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
 
 function App() {
   return (
@@ -22,15 +21,8 @@ function App() {
           {/* <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} /> */}
           <Route path="/learn" element={<Learn />} />
-          <Route
-            path="/user/meet-doctor"
-            element={<UserLandingToMeetDoctor />}
-          />
-          <Route
-            path="/doctor/meet-user"
-            element={<DoctorLandingToMeetUser />}
-          />
           <Route path="/user/dashboard/*" element={<UserDashboard />} />
+          <Route path="/doctor/dashboard/*" element={<DoctorDashboard />} />
         </Routes>
       </Router>
     </>

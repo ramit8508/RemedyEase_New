@@ -43,8 +43,7 @@ export default function DoctorSignUp() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-    const navigate = useNavigate(); 
-
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -53,6 +52,8 @@ export default function DoctorSignUp() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+  // ...existing code...
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +78,6 @@ export default function DoctorSignUp() {
       formData.append("confirmPassword", form.confirmPassword);
       formData.append("avatar", avatarRef.current.files[0]);
 
-      // Use proxy: only path, not full URL
       const res = await fetch("/api/v1/doctors/register", {
         method: "POST",
         body: formData,
@@ -87,7 +87,7 @@ export default function DoctorSignUp() {
       if (res.ok) {
         setMessage("Registration successful! Redirecting...");
         setTimeout(() => {
-          navigate("/doctor/meet-user"); 
+          navigate("/doctor/login");
         }, 2000);
         setForm({
           fullname: "",
@@ -101,13 +101,25 @@ export default function DoctorSignUp() {
         });
         avatarRef.current.value = "";
       } else {
-        setMessage(data.message || "Registration failed.");
+        if (
+          data.error &&
+          (data.error.toLowerCase().includes("duplicate") ||
+            data.error.toLowerCase().includes("already exists"))
+        ) {
+          setMessage(
+            "User already signed up with this registration number or email."
+          );
+        } else {
+          setMessage(data.message || data.error || "Registration failed.");
+        }
       }
     } catch (err) {
       setMessage("Something went wrong. Please try again.");
     }
     setLoading(false);
   };
+
+
 
   return (
     <>
@@ -232,7 +244,12 @@ export default function DoctorSignUp() {
               {loading ? "Creating..." : "Create Account"}
             </button>
             {message && (
-              <div style={{ color: message.includes("success") ? "green" : "red", marginTop: 10 }}>
+              <div
+                style={{
+                  color: message.includes("success") ? "green" : "red",
+                  marginTop: 10,
+                }}
+              >
                 {message}
               </div>
             )}

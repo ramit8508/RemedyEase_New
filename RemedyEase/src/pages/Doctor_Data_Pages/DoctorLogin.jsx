@@ -23,7 +23,7 @@ export default function DoctorLogin() {
       if (res.ok) {
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
-          navigate("/doctor/meet-user");
+          navigate("/doctor/dashboard/home");
         }, 1200);
       } else {
         setMessage(data.message || "Login failed.");
