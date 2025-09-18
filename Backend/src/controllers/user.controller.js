@@ -61,7 +61,6 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createduser, "User registered successfully"));
 });
 
-
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -84,6 +83,35 @@ const loginUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, { user, accessToken }, "Login successful"));
+});
+// ...existing registerUser and loginUser...
+
+export const getUserProfile = asyncHandler(async (req, res) => {
+  const email = req.user?.email || req.query.email;
+  if (!email) throw new ApiError(400, "User email is required");
+
+  const user = await User.findOne({ email }).select(
+    "-password -confirmPassword -refreshToken -createdAt -updatedAt"
+  );
+  if (!user) throw new ApiError(404, "User not found");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User profile fetched successfully"));
+});
+
+export const updateUserProfile = asyncHandler(async (req, res) => {
+  const email = req.user?.email || req.body.email;
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const updateFields = { ...req.body };
+  delete updateFields.email;
+
+  const user = await User.findOneAndUpdate({ email }, updateFields, {
+    new: true,
+  }).select("-password -confirmPassword -refreshToken -createdAt -updatedAt");
+  if (!user) throw new ApiError(404, "User not found");
+  return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });
 
 export { registerUser, loginUser };

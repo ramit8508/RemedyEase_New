@@ -21,8 +21,9 @@ export default function Login() {
       });
       const data = await res.json();
       if (res.ok) {
-        // Save user info to localStorage
+        // Save full user object to localStorage for profile and navbar
         localStorage.setItem("user", JSON.stringify(data.data.user));
+        localStorage.setItem("userEmail", email); // for profile fetch
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/user/dashboard/Home");
