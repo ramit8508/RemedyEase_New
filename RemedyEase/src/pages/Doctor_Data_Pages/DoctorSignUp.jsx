@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 const SignupStyles = () => (
   <style>
     {`
-      /* ...your existing styles... */
       @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
       .signup-form { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #e6ffe6, #dcf8ff); font-family: 'Poppins', sans-serif; }
       .signup-logo { font-size: 50px; color: #388e3c; font-weight: 800; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); }
@@ -39,6 +38,8 @@ export default function DoctorSignUp() {
     email: "",
     password: "",
     confirmPassword: "",
+    bio: "",
+    experience: "",
     agree: false,
   });
   const [loading, setLoading] = useState(false);
@@ -52,8 +53,6 @@ export default function DoctorSignUp() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
-  // ...existing code...
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,6 +76,8 @@ export default function DoctorSignUp() {
       formData.append("password", form.password);
       formData.append("confirmPassword", form.confirmPassword);
       formData.append("avatar", avatarRef.current.files[0]);
+      formData.append("bio", form.bio);
+      formData.append("experience", form.experience);
 
       const res = await fetch("/api/v1/doctors/register", {
         method: "POST",
@@ -97,6 +98,8 @@ export default function DoctorSignUp() {
           email: "",
           password: "",
           confirmPassword: "",
+          bio: "",
+          experience: "",
           agree: false,
         });
         avatarRef.current.value = "";
@@ -118,8 +121,6 @@ export default function DoctorSignUp() {
     }
     setLoading(false);
   };
-
-
 
   return (
     <>
@@ -213,6 +214,31 @@ export default function DoctorSignUp() {
                 required
                 className="signup_input"
                 value={form.confirmPassword}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="signup-input-group">
+              <label className="signup-label">About You (Bio)</label>
+              <textarea
+                name="bio"
+                placeholder="Tell us about yourself, your expertise, and your approach to patient care."
+                required
+                className="signup_input"
+                value={form.bio}
+                onChange={handleChange}
+                rows={3}
+                style={{ resize: "vertical" }}
+              />
+            </div>
+            <div className="signup-input-group">
+              <label className="signup-label">Experience</label>
+              <input
+                type="text"
+                name="experience"
+                placeholder="e.g. 5 years in cardiology"
+                required
+                className="signup_input"
+                value={form.experience}
                 onChange={handleChange}
               />
             </div>

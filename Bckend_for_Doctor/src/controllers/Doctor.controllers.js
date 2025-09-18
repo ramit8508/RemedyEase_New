@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const registerDoctor = asyncHandler(async (req, res) => {
-  // Get fields from form-data
+
   const fullname = req.body.fullname?.trim();
   const email = req.body.email?.trim();
   const registrationNumber = req.body.registrationNumber?.trim();
@@ -13,6 +13,8 @@ const registerDoctor = asyncHandler(async (req, res) => {
   const confirmPassword = req.body.confirmPassword;
   const degree = req.body.degree?.trim();
   const specialization = req.body.specialization?.trim();
+  const bio = req.body.bio?.trim() || "";
+  const experience = req.body.experience?.trim() || "";
 
   // Validation
   if (
@@ -25,18 +27,6 @@ const registerDoctor = asyncHandler(async (req, res) => {
     !specialization
   ) {
     throw new ApiError(400, "All fields are required");
-  }
-  if (!email.includes("@")) {
-    throw new ApiError(400, "Invalid email address");
-  }
-  if (!registrationNumber.length) {
-    throw new ApiError(400, "Provide valid registration number");
-  }
-  if (password.length < 6) {
-    throw new ApiError(400, "Password must be at least 6 characters long");
-  }
-  if (password !== confirmPassword) {
-    throw new ApiError(400, "Password and Confirm Password do not match");
   }
 
   // Already registered or not
@@ -67,6 +57,8 @@ const registerDoctor = asyncHandler(async (req, res) => {
     specialization,
     registrationNumber,
     avatar: uploadResponse.url,
+    bio,
+    experience
   });
 
   const createddoctor = await Doctor.findById(doctor._id).select(
@@ -79,7 +71,7 @@ const registerDoctor = asyncHandler(async (req, res) => {
     );
   }
 
-  // Return response
+
   return res
     .status(201)
     .json(
@@ -110,5 +102,39 @@ const loginDoctor = asyncHandler(async (req, res) => {
       )
     );
 });
+ const getDoctorProfile = asyncHandler(async (req, res) => {
+  const email = req.user?.email || req.query.email;
+  if (!email) {
+    throw new ApiError(400, "Doctor email is required");
+  }
 
-export { registerDoctor, loginDoctor };
+  const doctor = await Doctor.findOne({ email }).select(
+    "-password -confirmPassword -createdAt -updatedAt"
+  );
+  if (!doctor) {
+    throw new ApiError(404, "Doctor not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, doctor, "Doctor profile fetched successfully"));
+});
+const updateDoctorProfile = asyncHandler(async (req, res) => {
+  const email = req.user?.email || req.body.email;
+  if (!email) throw new ApiError(400, "Email is required");
+
+  // Only update provided fields
+  const updateFields = { ...req.body };
+  delete updateFields.email; // Don't allow email change
+
+  const doctor = await Doctor.findOneAndUpdate(
+    { email },
+    updateFields,
+    { new: true }
+  ).select("-password -confirmPassword -createdAt -updatedAt");
+  if (!doctor) throw new ApiError(404, "Doctor not found");
+
+  return res.status(200).json(new ApiResponse(200, doctor, "Profile updated"));
+});
+
+export { registerDoctor, loginDoctor, getDoctorProfile, updateDoctorProfile };

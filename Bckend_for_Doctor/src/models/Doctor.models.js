@@ -60,6 +60,22 @@ const DoctorSchema = new mongoose.Schema(
         message: "Password and Confirm Password do not match",
       },
     },
+    bio: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    experience: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    phone: { type: String, default: "" },
+    clinic: { type: String, default: "" },
+    address: { type: String, default: "" },
+    timings: { type: String, default: "" },
+    fee: { type: String, default: "" },
+    languages: { type: String, default: "" },
   },
   { timestamps: true }
 );

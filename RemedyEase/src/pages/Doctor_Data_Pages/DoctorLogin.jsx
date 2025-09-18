@@ -21,6 +21,9 @@ export default function DoctorLogin() {
       });
       const data = await res.json();
       if (res.ok) {
+        localStorage.setItem("doctorEmail", email);
+        //saves email of doctor for profile fetch
+        localStorage.setItem("user", JSON.stringify(data.data.doctor));
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/doctor/dashboard/home");
