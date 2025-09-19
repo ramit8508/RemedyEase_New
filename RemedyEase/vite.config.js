@@ -19,7 +19,12 @@ export default defineConfig({
       '/api/v1/doctors': {
         target: 'http://localhost:5001',
         changeOrigin: true,
+      },
+      '/api/v1/appointments' : {
+        target : 'http://localhost:5001',
+        changeOrigin : true,
       }
     },
+
   },
 })

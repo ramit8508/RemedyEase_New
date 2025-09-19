@@ -30,4 +30,7 @@ app.use("/api/v1/doctors", DoctorRouter);
 import AiRouter from "./routes/Ai.routes.js";
 app.use("/api/v1/ais", AiRouter);
 
+import appointmentRoutes from "./routes/Appointment.routes.js";
+app.use("/api/v1/appointments", appointmentRoutes);
+
 export { app };
