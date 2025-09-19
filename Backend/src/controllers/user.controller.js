@@ -113,5 +113,15 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(404, "User not found");
   return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });
+const getUserAppointments = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const appointments = await Appointment.find({ userId }).sort({
+    date: -1,
+    time: -1,
+  });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, appointments, "User appointments fetched"));
+});
 
-export { registerUser, loginUser };
+export { registerUser, loginUser, getUserAppointments };

@@ -25,6 +25,10 @@ export default defineConfig({
         changeOrigin : true,
       }
     },
+    'api/v1/:userId/appointments': {
+      target: 'http://localhost:8000',
+      changeOrigin: true,
+    },
 
   },
 })
