@@ -15,8 +15,8 @@ export default function Appointments() {
 
   useEffect(() => {
     // Fetch appointment history for the user
-    if (user?._id) {
-      fetch(`/api/v1/users/${user._id}/appointments`)
+    if (user?.email) {
+      fetch(`/api/v1/users/${user.email}/appointments`)
         .then(res => res.json())
         .then(data => {
           setHistory(data.data || []);
@@ -24,7 +24,7 @@ export default function Appointments() {
         })
         .catch(() => setLoadingHistory(false));
     }
-  }, [user?._id, message]); // refetch history after booking
+  }, [user?.email, message]); // refetch history after booking
 
   if (!doctor) {
     return <div>No doctor selected. <button onClick={() => navigate(-1)}>Go Back</button></div>;
@@ -37,10 +37,10 @@ export default function Appointments() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          doctorId: doctor._id,
+          doctorEmail: doctor.email,
           doctorName: doctor.fullname,
-          userId: user?._id,
-          userName: user?.fullname,
+          userEmail: user.email,
+          userName: user.fullname,
           date,
           time
         }),

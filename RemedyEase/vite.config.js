@@ -20,15 +20,10 @@ export default defineConfig({
         target: 'http://localhost:5001',
         changeOrigin: true,
       },
-      '/api/v1/appointments' : {
-        target : 'http://localhost:5001',
-        changeOrigin : true,
+      '/api/v1/appointments': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
       }
-    },
-    'api/v1/:userId/appointments': {
-      target: 'http://localhost:8000',
-      changeOrigin: true,
-    },
-
+    }
   },
 })

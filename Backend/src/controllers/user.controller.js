@@ -3,6 +3,7 @@ import { ApiError } from "../utils/Apierror.js";
 import { User } from "../models/User.models.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Appointment } from "../models/Appointment.models.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   // Get fields from form-data
@@ -114,14 +115,14 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });
 const getUserAppointments = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-  const appointments = await Appointment.find({ userId }).sort({
+  const { userEmail } = req.params;
+  const appointments = await Appointment.find({ userEmail }).sort({
     date: -1,
     time: -1,
   });
+  console.log("Appointments found:", appointments);
   return res
     .status(200)
     .json(new ApiResponse(200, appointments, "User appointments fetched"));
 });
-
 export { registerUser, loginUser, getUserAppointments };
