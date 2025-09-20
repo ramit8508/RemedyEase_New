@@ -25,8 +25,8 @@ export const bookAppointment = asyncHandler(async (req, res) => {
 export const getDoctorAppointments = asyncHandler(async (req, res) => {
   const { doctorEmail } = req.params;
   const appointments = await Appointment.find({ doctorEmail }).sort({ date: -1, time: -1 });
-  console.log("Doctor email:", doctorEmail); // <-- Add here
-  console.log("Appointments found:", appointments); // <-- Add here
+  console.log("Doctor email:", doctorEmail); 
+  console.log("Appointments found:", appointments); 
   return res.status(200).json(new ApiResponse(200, appointments, "Doctor appointments fetched"));
 });
 

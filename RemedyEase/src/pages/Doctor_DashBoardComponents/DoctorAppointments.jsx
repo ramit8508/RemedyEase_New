@@ -2,36 +2,43 @@ import React, { useEffect, useState } from "react";
 import "../../Css_for_all/Appointments.css";
 
 export default function DoctorAppointments() {
-  const doctor = JSON.parse(localStorage.getItem("doctor")); // Adjust if you store doctor info differently
+  const doctor = JSON.parse(localStorage.getItem("doctor")); // doctor.email must exist
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (doctor?._id) {
-      fetch(`/api/v1/appointments/doctor/${doctor._id}`)
+    if (doctor?.email) {
+      fetch(`/api/v1/appointments/doctor/${doctor.email}`)
         .then(res => res.json())
         .then(data => {
           setAppointments(data.data || []);
           setLoading(false);
         })
         .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-  }, [doctor?._id]);
+  }, [doctor?.email]);
 
   const handleConfirm = async (appointmentId) => {
     await fetch(`/api/v1/appointments/confirm/${appointmentId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorEmail: doctor.email })
     });
     // Refresh appointments after confirming
     setLoading(true);
-    fetch(`/api/v1/appointments/doctor/${doctor._id}`)
+    fetch(`/api/v1/appointments/doctor/${doctor.email}`)
       .then(res => res.json())
       .then(data => {
         setAppointments(data.data || []);
         setLoading(false);
       });
   };
+
+  if (!doctor || !doctor.email) {
+    return <div>No doctor info found. Please log in as a doctor.</div>;
+  }
 
   return (
     <div className="doctor-appointments-page">

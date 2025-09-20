@@ -23,7 +23,8 @@ export default function DoctorLogin() {
       if (res.ok) {
         localStorage.setItem("doctorEmail", email);
         //saves email of doctor for profile fetch
-        localStorage.setItem("user", JSON.stringify(data.data.doctor));
+       localStorage.setItem("doctor", JSON.stringify(data.data.doctor));
+        // used to display avatar in nav bar after login
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/doctor/dashboard/home");
