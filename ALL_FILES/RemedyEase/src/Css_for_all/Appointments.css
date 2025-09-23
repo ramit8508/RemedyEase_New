@@ -1,0 +1,120 @@
+.appointment-page {
+  max-width: 420px;
+  margin: 40px auto;
+  background: #f8fff8;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(56, 142, 60, 0.12);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.appointment-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #388e3c;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+}
+
+.appointment-page h2 {
+  font-size: 1.2rem;
+  color: #222;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+.appointment-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.appointment-content label {
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.appointment-content input[type="date"],
+.appointment-content input[type="time"] {
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid #b2dfdb;
+  font-size: 1rem;
+  background: #fff;
+  margin-top: 6px;
+  transition: border-color 0.2s;
+}
+
+.appointment-content input:focus {
+  border-color: #388e3c;
+  outline: none;
+  box-shadow: 0 0 4px rgba(56, 142, 60, 0.15);
+}
+
+.book-btn {
+  background-color: #388e3c;
+  color: #fff;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(56, 142, 60, 0.08);
+}
+
+.book-btn:hover {
+  background-color: #2e7031;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.appointment-page div[style] {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 12px;
+  color: #388e3c !important;
+}
+
+@media (max-width: 600px) {
+  .appointment-page {
+    max-width: 98vw;
+    padding: 18px 6vw;
+  }
+}
+.history {
+  margin: 32px auto;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(56, 142, 60, 0.08);
+  padding: 24px 18px;
+}
+
+.history-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #388e3c;
+  margin-bottom: 18px;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-item {
+  background: #f8fff8;
+  border: 1px solid #b2dfdb;
+  border-radius: 8px;
+  padding: 14px 12px;
+  margin-bottom: 14px;
+  font-size: 1rem;
+  color: #222;
+}

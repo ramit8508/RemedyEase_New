@@ -1,0 +1,43 @@
+import React, { useEffect } from "react";
+import "./App.css";
+import UserLandingPage from "./pages/UserLandingPage";
+import LandingPage from "./pages/LandingPage";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import DoctorLandingPage from "./pages/DoctorLandingPage";
+// import Login from "./pages/User_Data_Pages/Login";
+// import Signup from "./pages/User_Data_Pages/Signup";
+import Learn from "./pages/User_Data_Pages/Learn";
+import UserDashboard from "./pages/UserDashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import { startHealthMonitoring } from './utils/backendUtils.js';
+import BackendStatus from './components/BackendStatus';
+
+function App() {
+  useEffect(() => {
+    // Start health monitoring for local backends
+    console.log('� Starting RemedyEase app with local backends');
+    const cleanup = startHealthMonitoring();
+    
+    // Cleanup when component unmounts
+    return cleanup;
+  }, []);
+
+  return (
+    <div className="App">
+      <BackendStatus />
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/user/*" element={<UserLandingPage />} />
+          <Route path="/doctor/*" element={<DoctorLandingPage />} />
+          <Route path="/learn" element={<Learn />} />
+          <Route path="/user/dashboard/*" element={<UserDashboard />} />
+          <Route path="/doctor/dashboard/*" element={<DoctorDashboard />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
+
+export default App;
+

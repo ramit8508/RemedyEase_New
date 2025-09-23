@@ -1,0 +1,434 @@
+/* Doctor Home Component Styles */
+/* Professional calendar-based appointment management interface */
+
+.doctor-home-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #2d5016 0%, #3e6b1f 100%);
+  min-height: 100vh;
+}
+
+.doctor-home-header {
+  text-align: center;
+  margin-bottom: 30px;
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-home-header h1 {
+  color: #2c3e50;
+  margin: 0 0 15px 0;
+  font-size: 2.5em;
+  font-weight: 700;
+}
+
+.doctor-home-header p {
+  color: #7f8c8d;
+  margin: 0;
+  font-size: 1.2em;
+  line-height: 1.6;
+}
+
+.calendar-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.calendar-header h2 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.8em;
+  font-weight: 600;
+}
+
+.nav-btn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.nav-btn:hover {
+  background: linear-gradient(135deg, #229954, #58d68d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+}
+
+.calendar-grid {
+  width: 100%;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 10px;
+}
+
+.weekday {
+  text-align: center;
+  padding: 15px 5px;
+  font-weight: 600;
+  color: #7f8c8d;
+  background: #ecf0f1;
+  border-radius: 8px;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-day {
+  min-height: 80px;
+  border: 2px solid #ecf0f1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  background: white;
+}
+
+.calendar-day:not(.empty):hover {
+  border-color: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(39, 174, 96, 0.2);
+}
+
+.calendar-day.today {
+  border-color: #e74c3c;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+}
+
+.calendar-day.has-appointments {
+  border-color: #27ae60;
+  background: linear-gradient(135deg, #58d68d, #2ecc71);
+  color: white;
+}
+
+.calendar-day.selected {
+  border-color: #16a085;
+  background: linear-gradient(135deg, #48c9b0, #16a085);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(22, 160, 133, 0.3);
+}
+
+.calendar-day.empty {
+  cursor: default;
+  border: none;
+  background: transparent;
+}
+
+.day-number {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.appointment-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.date-details {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.date-details h3 {
+  color: #2c3e50;
+  margin: 0 0 25px 0;
+  font-size: 1.6em;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.chat-history-section, .appointments-section {
+  margin-top: 20px;
+}
+
+.chat-history-section h4, .appointments-section h4 {
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.chat-history-list, .appointments-list {
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+.chat-history-card, .appointment-card {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px solid #dee2e6;
+  border-radius: 15px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-history-card::before, .appointment-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.chat-history-card:hover, .appointment-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #27ae60;
+}
+
+.patient-info {
+  margin-bottom: 15px;
+}
+
+.patient-info h5 {
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.patient-info p {
+  color: #7f8c8d;
+  margin: 0 0 5px 0;
+  font-size: 0.95em;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-top: 8px;
+}
+
+.status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status.confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status.completed {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status.cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.chat-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.chat-summary p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.view-chat-btn, .start-chat-btn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-chat-btn:hover, .start-chat-btn:hover {
+  background: linear-gradient(135deg, #229954, #58d68d);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 1.1em;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 1.1em;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .doctor-home-container {
+    padding: 15px;
+  }
+  
+  .chat-history-list, .appointments-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .doctor-home-header h1 {
+    font-size: 2em;
+  }
+  
+  .doctor-home-header p {
+    font-size: 1em;
+  }
+  
+  .calendar-section, .date-details {
+    padding: 20px;
+  }
+  
+  .calendar-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .calendar-day {
+    min-height: 60px;
+  }
+  
+  .day-number {
+    font-size: 1em;
+  }
+  
+  .appointment-indicator {
+    width: 16px;
+    height: 16px;
+    font-size: 0.7em;
+  }
+}
+
+@media (max-width: 480px) {
+  .doctor-home-container {
+    padding: 10px;
+  }
+  
+  .weekdays {
+    gap: 2px;
+  }
+  
+  .weekday {
+    padding: 8px 2px;
+    font-size: 0.8em;
+  }
+  
+  .days-grid {
+    gap: 4px;
+  }
+  
+  .calendar-day {
+    min-height: 50px;
+  }
+  
+  .chat-history-card, .appointment-card {
+    padding: 15px;
+  }
+  
+  .chat-summary {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .view-chat-btn, .start-chat-btn {
+    width: 100%;
+  }
+}
+
+/* Custom scrollbar for better UX */
+.chat-history-list::-webkit-scrollbar,
+.appointments-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-history-list::-webkit-scrollbar-track,
+.appointments-list::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 10px;
+}
+
+.chat-history-list::-webkit-scrollbar-thumb,
+.appointments-list::-webkit-scrollbar-thumb {
+  background: #c1c8cd;
+  border-radius: 10px;
+}
+
+.chat-history-list::-webkit-scrollbar-thumb:hover,
+.appointments-list::-webkit-scrollbar-thumb:hover {
+  background: #a8b2b9;
+}
