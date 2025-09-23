@@ -5,6 +5,8 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const registerDoctor = asyncHandler(async (req, res) => {
+  console.log("Doctor registration request received:", req.body);
+  console.log("Files received:", req.files);
 
   const fullname = req.body.fullname?.trim();
   const email = req.body.email?.trim();
@@ -26,26 +28,40 @@ const registerDoctor = asyncHandler(async (req, res) => {
     !degree ||
     !specialization
   ) {
+    console.log("Validation failed - missing fields");
     throw new ApiError(400, "All fields are required");
+  }
+
+  // Password match validation
+  if (password !== confirmPassword) {
+    console.log("Password validation failed");
+    throw new ApiError(400, "Password and Confirm Password do not match");
   }
 
   // Already registered or not
   const AlreadyDoctor = await Doctor.findOne({ email });
   if (AlreadyDoctor) {
+    console.log("Doctor already exists with email:", email);
     throw new ApiError(409, "Doctor already registered with this email");
   }
 
   // Check avatar file
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   if (!avatarLocalPath) {
+    console.log("Avatar file missing");
     throw new ApiError(400, "Avatar file is required");
   }
+
+  console.log("Avatar path:", avatarLocalPath);
 
   // Upload to cloudinary
   const uploadResponse = await uploadOnCloudinary(avatarLocalPath);
   if (!uploadResponse) {
+    console.log("Cloudinary upload failed");
     throw new ApiError(500, "File upload failed, please try again later");
   }
+
+  console.log("Cloudinary upload successful:", uploadResponse.url);
 
   // Store in DB
   const doctor = await Doctor.create({
@@ -71,6 +87,7 @@ const registerDoctor = asyncHandler(async (req, res) => {
     );
   }
 
+  console.log("Doctor created successfully:", createddoctor.email);
 
   return res
     .status(201)

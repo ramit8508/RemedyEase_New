@@ -1,17 +1,17 @@
-// API Configuration for Development
+// API Configuration for Production (Using Proxy)
 
 export const API_CONFIG = {
-  // Base URLs for development
-  USER_BACKEND_URL: 'http://localhost:8000',
-  DOCTOR_BACKEND_URL: 'http://localhost:5001',
+  // Base URLs - Empty strings will use relative paths through proxy
+  USER_BACKEND_URL: '',
+  DOCTOR_BACKEND_URL: '',
   
-  // Socket URLs for development
+  // Socket URLs - Will use current origin
   SOCKET_URLS: {
-    USER: 'http://localhost:8000',
-    DOCTOR: 'http://localhost:5001'
+    USER: '',
+    DOCTOR: ''
   },
   
-  // API Endpoints for development
+  // API Endpoints 
   ENDPOINTS: {
     // User APIs
     USERS: '/api/v1/users',
@@ -27,13 +27,20 @@ export const API_CONFIG = {
   }
 };
 
-// Helper function to get full API URL
+// Helper function to get full API URL (now uses proxy paths)
 export const getApiUrl = (endpoint, backend = 'USER') => {
-  const baseUrl = backend === 'DOCTOR' ? API_CONFIG.DOCTOR_BACKEND_URL : API_CONFIG.USER_BACKEND_URL;
-  return `${baseUrl}${endpoint}`;
+  // For proxy setup, we use relative paths with different prefixes
+  if (backend === 'DOCTOR') {
+    return `/doctor-api${endpoint}`;
+  }
+  return `/user-api${endpoint}`;
 };
 
-// Socket URL helper
+// Socket URL helper (now uses relative paths)
 export const getSocketUrl = (type = 'DOCTOR') => {
-  return API_CONFIG.SOCKET_URLS[type];
+  // Return current origin for socket connections
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
 };

@@ -127,8 +127,9 @@ const getUserAppointments = asyncHandler(async (req, res) => {
   // Import the Appointment model from the doctor database
   // We need to connect to the doctor database to get appointments
   try {
-    // Make API call to doctor backend to get appointments
-    const response = await fetch(`http://localhost:5001/api/v1/appointments/user/${userEmail}`);
+    // Use environment variable for doctor backend URL with fallback
+    const doctorBackendUrl = process.env.DOCTOR_BACKEND_URL || 'http://localhost:5001';
+    const response = await fetch(`${doctorBackendUrl}/api/v1/appointments/user/${userEmail}`);
     const appointmentsData = await response.json();
     
     console.log("Appointments from doctor backend:", appointmentsData);

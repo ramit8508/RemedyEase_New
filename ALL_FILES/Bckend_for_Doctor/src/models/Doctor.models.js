@@ -83,11 +83,8 @@ const DoctorSchema = new mongoose.Schema(
 DoctorSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-DoctorSchema.pre("save", async function (next) {
-  if (!this.isModified("confirmPassword")) return next();
-  this.confirmPassword = await bcrypt.hash(this.confirmPassword, 10);
+  // Remove confirmPassword before saving to prevent double hashing
+  this.confirmPassword = undefined;
   next();
 });
 DoctorSchema.methods.isPasswordCorrect = async function (password) {
@@ -102,9 +99,9 @@ DoctorSchema.methods.generateAccessToken = function () {
       degree: this.degree,
       specialization: this.specialization,
     },
-    process.env.ACESS_TOKEN_SECRET,
+    process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
   );
 };

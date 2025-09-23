@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        // User Backend APIs - only used in development
+        // User Backend APIs
         '/api/v1/users': {
           target: env.VITE_USER_BACKEND_URL || 'http://localhost:8000',
           changeOrigin: true,
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
 
-        // Doctor Backend APIs - only used in development
+        // Doctor Backend APIs
         '/api/v1/doctors': {
           target: env.VITE_DOCTOR_BACKEND_URL || 'http://localhost:5001',
           changeOrigin: true,

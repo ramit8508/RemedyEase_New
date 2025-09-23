@@ -1,25 +1,25 @@
-// Backend health check utilities for development
+// Backend health check utilities for production (using proxy)
 
-// Local development URLs
+// Check backends through proxy paths
 export const wakeUpBackends = async () => {
-  // Local development servers
+  // Use proxy paths instead of direct URLs
   const backends = [
-    'http://localhost:8000',
-    'http://localhost:5001'
+    '/user-api',   // Will proxy to user backend
+    '/doctor-api'  // Will proxy to doctor backend
   ];
   
-  console.log('� Checking local backends...');
+  console.log('🔍 Checking backends through proxy...');
   
-  const healthPromises = backends.map(async (url) => {
+  const healthPromises = backends.map(async (path) => {
     try {
-      const response = await fetch(url, { 
+      const response = await fetch(path, { 
         method: 'GET',
         mode: 'cors'
       });
-      console.log(`✅ ${url} is ready (${response.status})`);
+      console.log(`✅ ${path} is ready (${response.status})`);
       return response;
     } catch (error) {
-      console.error(`❌ ${url} check failed:`, error);
+      console.error(`❌ ${path} check failed:`, error);
       throw error;
     }
   });
@@ -51,24 +51,24 @@ export const fetchWithRetry = async (url, options = {}, maxRetries = 2) => {
   }
 };
 
-// Optional: Light health monitoring for local development
+// Optional: Light health monitoring for production
 export const startHealthMonitoring = () => {
   const monitorInterval = 5 * 60 * 1000; // 5 minutes
   
   const checkHealth = async () => {
     const backends = [
-      'http://localhost:8000',
-      'http://localhost:5001'
+      '/user-api',   // Proxy to user backend
+      '/doctor-api'  // Proxy to doctor backend
     ];
     
     console.log('🏥 Backend health check...');
     
-    backends.forEach(async (url) => {
+    backends.forEach(async (path) => {
       try {
-        const response = await fetch(url, { method: 'GET' });
-        console.log(`💚 ${url} - Status: ${response.status}`);
+        const response = await fetch(path, { method: 'GET' });
+        console.log(`💚 ${path} - Status: ${response.status}`);
       } catch (error) {
-        console.warn(`💔 ${url} health check failed:`, error.message);
+        console.warn(`💔 ${path} health check failed:`, error.message);
       }
     });
   };
