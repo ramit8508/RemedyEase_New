@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { ApiError } from "./utils/Apierror.js"; // Import ApiError for error handling
+import { ApiError } from "./utils/apierror.js"; // Import ApiError for error handling
 
 const app = express();
 
