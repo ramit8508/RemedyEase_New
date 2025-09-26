@@ -6,7 +6,7 @@ import {
     updateDoctorProfile,
     getAllDoctors // 1. Import the new function
 } from "../controllers/Doctor.controllers.js";
-import { upload } from "../middleware/multer.middleware.js";
+import { upload } from "../middleware/multer.middlewares.js";
 
 const router = new Router(); 
 
