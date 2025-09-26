@@ -1,6 +1,6 @@
 // Custom error class for API responses
 // Extends the native Error class to include HTTP status codes and additional metadata
-class ApiError extends Error {
+class Apierror extends Error {
     constructor(
         statusCode,
         message = "Something went wrong",
@@ -23,13 +23,13 @@ class ApiError extends Error {
     }
 }
 
-export { ApiError }
+export { Apierror }
 
 /*
 Usage examples:
 
-throw new ApiError(400, "Invalid email format")
-throw new ApiError(401, "Authentication required")
-throw new ApiError(404, "User not found")
-throw new ApiError(500, "Database connection failed", [], error.stack)
+throw new Apierror(400, "Invalid email format")
+throw new Apierror(401, "Authentication required")
+throw new Apierror(404, "User not found")
+throw new Apierror(500, "Database connection failed", [], error.stack)
 */
