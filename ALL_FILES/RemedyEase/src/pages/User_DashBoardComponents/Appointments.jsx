@@ -1,189 +1,332 @@
-import React, { useState, useEffect } from 'react';
-import LiveChat from '../../components/LiveChat';
-import '../../Css_for_all/Chat.css';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import "../../Css_for_all/Appointments.css";
+import LiveChat from "../../components/LiveChat";
+import VideoCall from "../../components/VideoCall";
 
-export default function Chat() {
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showLiveChat, setShowLiveChat] = useState(false);
-  const [error, setError] = useState('');
-
+export default function Appointments() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const doctorFromState = location.state?.doctor;
   const user = JSON.parse(localStorage.getItem("user"));
-  const userEmail = user?.email;
 
-  const fetchChatConversations = async () => {
-    if (!userEmail) {
-        setLoading(false);
-        setError('User not logged in.');
-        return;
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [symptoms, setSymptoms] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [availableDoctors, setAvailableDoctors] = useState([]);
+  const [selectedDoctor, setSelectedDoctor] = useState(doctorFromState || null);
+  const [loadingDoctors, setLoadingDoctors] = useState(!doctorFromState);
+  const [pendingConfirmations, setPendingConfirmations] = useState([]);
+  const [lastBookedAppointment, setLastBookedAppointment] = useState(null);
+
+  const [showLiveChat, setShowLiveChat] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
+    useState(null);
+
+  const isAppointmentLive = (appt) => {
+    if (
+      !["confirmed", "approved", "accepted"].includes(
+        appt.status?.toLowerCase()
+      )
+    ) {
+      return false;
     }
+    const now = new Date();
+    const appointmentDateTime = new Date(`${appt.date}T${appt.time}`);
+    const startTime = new Date(appointmentDateTime.getTime() - 15 * 60 * 1000);
+    const endTime = new Date(appointmentDateTime.getTime() + 60 * 60 * 1000);
+    return now >= startTime && now <= endTime;
+  };
+
+  const getTimeUntilLive = (appt) => {
+    if (
+      !["confirmed", "approved", "accepted"].includes(
+        appt.status?.toLowerCase()
+      )
+    ) {
+      return "Waiting for confirmation";
+    }
+    const now = new Date();
+    const appointmentDateTime = new Date(`${appt.date}T${appt.time}`);
+    const startTime = new Date(appointmentDateTime.getTime() - 15 * 60 * 1000);
+    if (now < startTime) {
+      const diff = startTime - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      if (hours > 0) return `Available in ${hours}h ${minutes}m`;
+      return `Available in ${minutes}m`;
+    }
+    return "Available Now";
+  };
+
+  const startLiveChat = (appt) => {
+    setSelectedAppointmentForLive(appt);
+    setShowLiveChat(true);
+  };
+
+  const startVideoCall = async (appt) => {
     try {
-      setLoading(true);
-      const response = await fetch(`/api/v1/live/chat/conversations/${userEmail}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setConversations(data.data);
-      } else {
-        setError('Failed to load chat conversations');
-      }
+      await fetch(`/api/v1/live/status/${appt._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.email,
+          userType: "patient",
+          onlineStatus: true,
+        }),
+      });
+      setSelectedAppointmentForLive(appt);
+      setShowVideoCall(true);
     } catch (error) {
-      console.error('Error fetching conversations:', error);
-      setError('Error loading conversations');
-    } finally {
-      setLoading(false);
+      console.error("Error starting video call:", error);
+      setMessage("Failed to start video call.");
+      setMessageType("error");
+    }
+  };
+
+  const closeLiveFeatures = () => {
+    setShowLiveChat(false);
+    setShowVideoCall(false);
+    setSelectedAppointmentForLive(null);
+  };
+
+  const fetchHistoryAndDoctors = () => {
+    if (user?.email) {
+      fetch(`/api/v1/users/${user.email}/appointments`)
+        .then((res) => res.json())
+        .then((data) => {
+          setHistory(data.data || []);
+          setLoadingHistory(false);
+        })
+        .catch(() => setLoadingHistory(false));
+    }
+    if (!doctorFromState) {
+      fetch("/api/v1/doctors/all")
+        .then((res) => res.json())
+        .then((data) => {
+          setAvailableDoctors(data.data || []);
+          setLoadingDoctors(false);
+        })
+        .catch(() => setLoadingDoctors(false));
     }
   };
 
   useEffect(() => {
-    fetchChatConversations();
-  }, [userEmail]);
+    fetchHistoryAndDoctors();
+  }, [user?.email, doctorFromState]);
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.doctorName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedDoctor) {
+      setMessage("Please select a doctor.");
+      setMessageType("error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/v1/appointments/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorEmail: selectedDoctor.email,
+          doctorName: selectedDoctor.fullname,
+          userEmail: user.email,
+          userName: user.fullname,
+          date,
+          time,
+          symptoms,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(
+          `Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
+        );
+        setMessageType("pending");
+        setDate("");
+        setTime("");
+        setSymptoms("");
+        fetchHistoryAndDoctors(); // Refresh history
+      } else {
+        setMessage(data.message || "Booking failed.");
+        setMessageType("error");
+      }
+    } catch {
+      setMessage("Something went wrong.");
+      setMessageType("error");
+    }
   };
 
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
-  const openChatWithDoctor = (conversation) => {
-    setSelectedConversation(conversation);
-    setShowLiveChat(true);
-  };
-
-  const closeLiveChat = () => {
-    setShowLiveChat(false);
-    setSelectedConversation(null);
-    fetchChatConversations(); // Refresh conversations
-  };
-
-  if (loading) {
-    return (
-      <div className="chat-container">
-        <div className="chat-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading your conversations...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="chat-container">
-        <div className="chat-error">
-          <h3>❌ Error</h3>
-          <p>{error}</p>
-          <button onClick={fetchChatConversations} className="retry-btn">
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+  if (!doctorFromState && loadingDoctors) {
+    return <div>Loading doctors...</div>;
   }
 
   return (
-    <div className="chat-container">
-      {showLiveChat && selectedConversation ? (
-        <LiveChat
-          appointmentId={selectedConversation.appointmentId}
-          currentUser={user}
-          userType="user"
-          onClose={closeLiveChat}
-        />
-      ) : (
-        <>
-          <div className="chat-header">
-            <h2>💬 Your Chat History</h2>
-            <p>All your conversations with doctors</p>
-          </div>
+    <>
+      <div className="appointment-page">
+        <h1 className="appointment-title">Book a New Appointment</h1>
 
-          <div className="chat-search">
-            <input
-              type="text"
-              placeholder="🔍 Search by doctor name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
+        {!doctorFromState && (
+          <div style={{ marginBottom: "20px" }}>
+            <h3>Select a Doctor</h3>
+            <select
+              value={selectedDoctor?.email || ""}
+              onChange={(e) => {
+                const doc = availableDoctors.find(
+                  (d) => d.email === e.target.value
+                );
+                setSelectedDoctor(doc);
+              }}
+            >
+              <option value="">Choose a doctor...</option>
+              {availableDoctors.map((doc) => (
+                <option key={doc.email} value={doc.email}>
+                  Dr. {doc.fullname} - {doc.specialization}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {selectedDoctor ? (
+          <>
+            <h2>Book Appointment with Dr. {selectedDoctor.fullname}</h2>
+            <form onSubmit={handleSubmit} className="appointment-content">
+              <label>
+                Date:{" "}
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Time:{" "}
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Symptoms/Reason for visit:{" "}
+                <textarea
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" className="book-btn">
+                Book Appointment
+              </button>
+            </form>
+          </>
+        ) : (
+          <p>Please select a doctor to book an appointment.</p>
+        )}
+        {message && <div className={`message ${messageType}`}>{message}</div>}
+      </div>
+
+      <div className="history">
+        <h2 className="history-title">Your Appointments History</h2>
+        {loadingHistory ? (
+          <div>Loading history...</div>
+        ) : history.length === 0 ? (
+          <div>No appointments found.</div>
+        ) : (
+          <ul className="history-list">
+            {history.map((appt) => (
+              <li key={appt._id} className="history-item">
+                <p>
+                  <strong>Dr. {appt.doctorName}</strong>
+                </p>
+                <p>
+                  Date: {appt.date} at {appt.time}
+                </p>
+                <p>Status: {appt.status}</p>
+
+                {["confirmed", "approved", "accepted"].includes(
+                  appt.status?.toLowerCase()
+                ) && (
+                  <div style={{ marginTop: "15px" }}>
+                    <h4>Live Features</h4>
+                    {isAppointmentLive(appt) ? (
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <button onClick={() => startLiveChat(appt)}>
+                          💬 Live Chat
+                        </button>
+                        <button onClick={() => startVideoCall(appt)}>
+                          📹 Video Call
+                        </button>
+                      </div>
+                    ) : (
+                      <div>🕒 {getTimeUntilLive(appt)}</div>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {showLiveChat && selectedAppointmentForLive && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <LiveChat
+              appointmentId={selectedAppointmentForLive._id}
+              currentUser={{ id: user.email, name: user.fullname }}
+              userType="patient"
+              onClose={closeLiveFeatures}
             />
           </div>
-
-          {filteredConversations.length === 0 ? (
-            <div className="no-conversations">
-              <div className="no-conversations-icon">💬</div>
-              <h3>No Chat History Found</h3>
-              <p>
-                {searchTerm 
-                  ? `No conversations found matching "${searchTerm}"`
-                  : "You haven't started any chats with doctors yet."
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="conversations-list">
-              {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.appointmentId}
-                  className="conversation-card"
-                  onClick={() => openChatWithDoctor(conversation)}
-                >
-                  <div className="conversation-header">
-                    <div className="doctor-info">
-                      <h4>Dr. {conversation.doctorName}</h4>
-                      <span className="appointment-date">
-                        📅 {formatDate(conversation.appointmentDate)} at {conversation.appointmentTime}
-                      </span>
-                    </div>
-                    <div className="conversation-meta">
-                      <span className={`status ${conversation.status}`}>{conversation.status}</span>
-                      <span className="message-count">{conversation.messageCount} messages</span>
-                    </div>
-                  </div>
-                  
-                  {conversation.lastMessage && (
-                    <div className="last-message">
-                        <div className="message-preview">
-                        <span className="sender">
-                            {conversation.lastMessage.senderType === 'user' ? 'You' : `Dr. ${conversation.doctorName}`}:
-                        </span>
-                        <span className="message-text">
-                            {conversation.lastMessage.messageType === 'text' 
-                            ? conversation.lastMessage.message
-                            : `📎 ${conversation.lastMessage.fileName || 'File'}`
-                            }
-                        </span>
-                        </div>
-                        <div className="message-time">
-                        {formatTime(conversation.lastMessage.timestamp)}
-                        </div>
-                    </div>
-                  )}
-                  
-                  <div className="conversation-actions">
-                    <button className="view-chat-btn">💬 View Chat</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+        </div>
       )}
-    </div>
+
+      {showVideoCall && selectedAppointmentForLive && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <VideoCall
+              appointmentId={selectedAppointmentForLive._id}
+              currentUser={{ id: user.email, name: user.fullname }}
+              userType="patient"
+              onClose={closeLiveFeatures}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
