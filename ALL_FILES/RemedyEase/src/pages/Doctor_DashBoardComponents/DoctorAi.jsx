@@ -12,9 +12,11 @@ export default function DoctorAi() {
     setLoading(true);
     setSuggestion("");
     try {
-      // Correct, simplified API call
+      // --- THIS IS THE CRITICAL AND FINAL FIX ---
+      // The URL is now corrected to "/api/v1/doctor-ai/doctorsuggestions",
+      // which matches the route on your Doctor Backend and the rule in vercel.json.
       const res = await fetch(
-        "/api/v1/ai/doctorsuggestions",
+        "/api/v1/doctor-ai/doctorsuggestions",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -29,10 +31,10 @@ export default function DoctorAi() {
           "No suggestion found."
         );
       } else {
-        setSuggestion(data.error || "Failed to get suggestion.");
+        setSuggestion(data.error || "Failed to get suggestion from the server.");
       }
     } catch (err) {
-      setSuggestion("Connection failed. Please try again.");
+      setSuggestion("Connection failed. Please check your network and try again.");
     }
     setLoading(false);
   };
@@ -70,7 +72,7 @@ export default function DoctorAi() {
           disabled={loading}
           style={{ marginTop: "12px" }}
         >
-          {loading ? "Loading..." : "✨Get AI Suggestions"}
+          {loading ? "Analyzing..." : "✨Get AI Suggestions"}
         </button>
       </div>
       <div className="output_container">
@@ -99,11 +101,6 @@ export default function DoctorAi() {
                   <div className="spinner-ring"></div>
                 </div>
                 <p className="loading-text">Analyzing patient data...</p>
-                <div className="loading-steps">
-                  <div className="step active">Processing symptoms</div>
-                  <div className="step">Reviewing medical history</div>
-                  <div className="step">Generating recommendations</div>
-                </div>
               </div>
             ) : suggestion ? (
               <div className="suggestion-content">
@@ -115,13 +112,9 @@ export default function DoctorAi() {
                   {suggestion}
                 </div>
                 <div className="suggestion-footer">
-                  <div className="disclaimer">
+                   <div className="disclaimer">
                     <div className="warning-icon">⚠️</div>
                     <span>AI-generated suggestions for clinical decision support. Always use professional medical judgment.</span>
-                  </div>
-                  <div className="action-buttons">
-                    <button className="save-btn">💾 Save to Patient Record</button>
-                    <button className="export-btn">📄 Export Report</button>
                   </div>
                 </div>
               </div>
@@ -138,3 +131,4 @@ export default function DoctorAi() {
     </div>
   );
 }
+
