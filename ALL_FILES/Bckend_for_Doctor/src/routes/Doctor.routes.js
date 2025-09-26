@@ -6,10 +6,8 @@ import {
     updateDoctorProfile 
 } from "../controllers/Doctor.controllers.js";
 
-// --- CRITICAL FIX ---
-// This import path is now corrected to match your project's folder structure.
-// It correctly points to the `middleware` (singular) folder.
-import { upload } from "../middleware/multer.middleware.js";
+
+import { upload } from "../utils/multer.middlewares.js";
 
 const router = new Router(); 
 
