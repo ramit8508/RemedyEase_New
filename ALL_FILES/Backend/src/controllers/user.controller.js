@@ -1,105 +1,106 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/Apierror.js";
+import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/User.models.js";
-import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Appointment } from "../models/Appointment.models.js";
-import fetch from 'node-fetch';
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+import fetch from "node-fetch";
+
+// Helper function to upload a buffer to Cloudinary
+const uploadBufferToCloudinary = (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "remedyease_avatars" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+  });
+};
 
 const registerUser = asyncHandler(async (req, res) => {
-  console.log("🚀 Registration endpoint hit!");
-  console.log("Request body:", req.body);
-  console.log("Request files:", req.files);
-  
-  // Get fields from form-data
-  const fullname = req.body.fullname?.trim();
-  const email = req.body.email?.trim();
-  const password = req.body.password;
-  const confirmPassword = req.body.confirmPassword;
-  const avatarFile = req.files?.avatar?.[0];
+  const { fullname, email, password, confirmPassword } = req.body;
 
-  console.log("Parsed fields:", { fullname, email, password: password ? "***" : undefined, confirmPassword: confirmPassword ? "***" : undefined, avatarFile: avatarFile ? "present" : "missing" });
-
-  // Validation
-  if (!fullname || !email || !password || !confirmPassword || !avatarFile) {
+  if (
+    [fullname, email, password, confirmPassword].some(
+      (field) => !field || field.trim() === ""
+    )
+  ) {
     throw new ApiError(400, "All fields are required");
   }
-  if (!email.includes("@")) {
-    throw new ApiError(400, "Invalid email address");
-  }
-  if (password.length < 6) {
-    throw new ApiError(400, "Password must be at least 6 characters long");
-  }
   if (password !== confirmPassword) {
-    throw new ApiError(400, "Password and Confirm Password do not match");
+    throw new ApiError(400, "Passwords do not match");
+  }
+  if (!req.file) {
+    throw new ApiError(400, "Avatar image is required");
   }
 
-  // Already registered or not
-  const AlreadyUser = await User.findOne({ email });
-  if (AlreadyUser) {
-    throw new ApiError(409, "User already registered with this email");
+  const existedUser = await User.findOne({ email });
+  if (existedUser) {
+    throw new ApiError(409, "User with this email already exists");
   }
 
-  // Upload avatar to cloudinary
-  const avatarLocalPath = avatarFile.path;
-  const uploadResponse = await uploadOnCloudinary(avatarLocalPath);
-  if (!uploadResponse) {
-    throw new ApiError(500, "File upload failed, please try again later");
+  const cloudinaryResponse = await uploadBufferToCloudinary(req.file.buffer);
+  if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+    throw new ApiError(500, "File upload to Cloudinary failed");
   }
 
-  // Store in DB
   const user = await User.create({
     fullname,
     email,
-    password,
-    confirmPassword,
-    avatar: uploadResponse.url,
+    password, // The model's pre-save hook will handle hashing
+    avatar: cloudinaryResponse.secure_url,
   });
 
-  const createduser = await User.findById(user._id).select(
-    "-password -confirmPassword -refreshToken -createdAt -updatedAt"
+  const createdUser = await User.findById(user._id).select(
+    "-password -confirmPassword -refreshToken"
   );
-  if (!createduser) {
-    throw new ApiError(500, "User registration failed, please try again later");
+  if (!createdUser) {
+    throw new ApiError(500, "Something went wrong while registering the user");
   }
 
-  // Return response
   return res
     .status(201)
-    .json(new ApiResponse(200, createduser, "User registered successfully"));
+    .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Find user by email
   const user = await User.findOne({ email });
   if (!user) {
     throw new ApiError(404, "User not registered");
   }
 
-  // Compare password using the schema method
   const isMatch = await user.isPasswordCorrect(password);
   if (!isMatch) {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  // Generate token if needed
   const accessToken = user.generateAccessToken();
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -confirmPassword -refreshToken"
+  );
 
-  // Respond
   return res
     .status(200)
-    .json(new ApiResponse(200, { user, accessToken }, "Login successful"));
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken },
+        "Login successful"
+      )
+    );
 });
-// ...existing registerUser and loginUser...
 
 const getUserProfile = asyncHandler(async (req, res) => {
   const email = req.user?.email || req.query.email;
   if (!email) throw new ApiError(400, "User email is required");
 
   const user = await User.findOne({ email }).select(
-    "-password -confirmPassword -refreshToken -createdAt -updatedAt"
+    "-password -confirmPassword -refreshToken"
   );
   if (!user) throw new ApiError(404, "User not found");
 
@@ -117,31 +118,55 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   const user = await User.findOneAndUpdate({ email }, updateFields, {
     new: true,
-  }).select("-password -confirmPassword -refreshToken -createdAt -updatedAt");
+  }).select("-password -confirmPassword -refreshToken");
   if (!user) throw new ApiError(404, "User not found");
   return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });
+
 const getUserAppointments = asyncHandler(async (req, res) => {
   const { userEmail } = req.params;
-  
-  // Import the Appointment model from the doctor database
-  // We need to connect to the doctor database to get appointments
+  const doctorBackendUrl = process.env.DOCTOR_BACKEND_URL;
+  if (!doctorBackendUrl) {
+    throw new ApiError(500, "Doctor service URL is not configured");
+  }
+
   try {
-    // Use environment variable for doctor backend URL with fallback
-    const doctorBackendUrl = process.env.DOCTOR_BACKEND_URL || 'http://localhost:5001';
-    const response = await fetch(`${doctorBackendUrl}/api/v1/appointments/user/${userEmail}`);
+    const response = await fetch(
+      `${doctorBackendUrl}/api/v1/appointments/user/${userEmail}`
+    );
     const appointmentsData = await response.json();
-    
-    console.log("Appointments from doctor backend:", appointmentsData);
-    
+
     if (response.ok) {
-      return res.status(200).json(new ApiResponse(200, appointmentsData.data, "User appointments fetched"));
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            appointmentsData.data,
+            "User appointments fetched"
+          )
+        );
     } else {
-      return res.status(200).json(new ApiResponse(200, [], "No appointments found"));
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            [],
+            "No appointments found or error fetching them"
+          )
+        );
     }
   } catch (error) {
-    console.error("Error fetching appointments:", error);
-    return res.status(200).json(new ApiResponse(200, [], "User appointments fetched"));
+    console.error("Error fetching appointments from doctor backend:", error);
+    throw new ApiError(503, "Could not connect to the appointments service.");
   }
 });
-export { registerUser, loginUser, getUserAppointments, getUserProfile, updateUserProfile };
+
+export {
+  registerUser,
+  loginUser,
+  getUserAppointments,
+  getUserProfile,
+  updateUserProfile,
+};
