@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 // This path is now corrected to be all lowercase to avoid case-sensitivity issues.
-import { ApiError } from "../utils/Apierror.js";
+import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/User.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { v2 as cloudinary } from "cloudinary";
