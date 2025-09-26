@@ -14,17 +14,16 @@ export default function Appointments() {
   const [time, setTime] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
+  const [messageType, setMessageType] = useState(""); 
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(doctorFromState || null);
   const [loadingDoctors, setLoadingDoctors] = useState(!doctorFromState);
-
+  
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
-    useState(null);
+  const [selectedAppointmentForLive, setSelectedAppointmentForLive] = useState(null);
 
   const startLiveChat = (appt) => {
     setSelectedAppointmentForLive(appt);
@@ -34,20 +33,16 @@ export default function Appointments() {
   const startVideoCall = async (appt) => {
     try {
       await fetch(`/api/v1/live/status/${appt._id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.email,
-          userType: "patient",
-          onlineStatus: true,
-        }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.email, userType: 'patient', onlineStatus: true })
       });
       setSelectedAppointmentForLive(appt);
       setShowVideoCall(true);
     } catch (error) {
-      console.error("Error starting video call:", error);
-      setMessage("Failed to start video call.");
-      setMessageType("error");
+      console.error('Error starting video call:', error);
+      setMessage('Failed to start video call.');
+      setMessageType('error');
     }
   };
 
@@ -61,25 +56,25 @@ export default function Appointments() {
     if (user?.email) {
       setLoadingHistory(true);
       fetch(`/api/v1/users/${user.email}/appointments`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
             setHistory(data.data || []);
           }
         })
-        .catch((err) => console.error("Failed to fetch history:", err))
+        .catch(err => console.error("Failed to fetch history:", err))
         .finally(() => setLoadingHistory(false));
     }
     if (!doctorFromState) {
       setLoadingDoctors(true);
       fetch("/api/v1/doctors/all")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
             setAvailableDoctors(data.data || []);
           }
         })
-        .catch((err) => console.error("Failed to fetch doctors:", err))
+        .catch(err => console.error("Failed to fetch doctors:", err))
         .finally(() => setLoadingDoctors(false));
     }
   };
@@ -91,9 +86,9 @@ export default function Appointments() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedDoctor) {
-      setMessage("Please select a doctor.");
-      setMessageType("error");
-      return;
+        setMessage("Please select a doctor.");
+        setMessageType("error");
+        return;
     }
     try {
       const res = await fetch("/api/v1/appointments/book", {
@@ -106,14 +101,12 @@ export default function Appointments() {
           userName: user.fullname,
           date,
           time,
-          symptoms,
+          symptoms
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage(
-          `Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
-        );
+        setMessage(`Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`);
         setMessageType("pending");
         setDate("");
         setTime("");
@@ -137,29 +130,20 @@ export default function Appointments() {
     <>
       <div className="appointment-page">
         <h1 className="appointment-title">Book a New Appointment</h1>
-
+        
         {!doctorFromState && (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "15px",
-              backgroundColor: "#f9f9f9",
-              borderRadius: "8px",
-            }}
-          >
+          <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
             <h3>Select a Doctor</h3>
-            <select
-              value={selectedDoctor?.email || ""}
+            <select 
+              value={selectedDoctor?.email || ''} 
               onChange={(e) => {
-                const doc = availableDoctors.find(
-                  (d) => d.email === e.target.value
-                );
+                const doc = availableDoctors.find(d => d.email === e.target.value);
                 setSelectedDoctor(doc);
               }}
-              style={{ width: "100%", padding: "10px", borderRadius: "5px" }}
+              style={{ width: '100%', padding: '10px', borderRadius: '5px' }}
             >
               <option value="">Choose a doctor...</option>
-              {availableDoctors.map((doc) => (
+              {availableDoctors.map(doc => (
                 <option key={doc._id} value={doc.email}>
                   Dr. {doc.fullname} - {doc.specialization}
                 </option>
@@ -172,46 +156,18 @@ export default function Appointments() {
           <>
             <h2>Book Appointment with Dr. {selectedDoctor.fullname}</h2>
             <form onSubmit={handleSubmit} className="appointment-content">
-              <label>
-                Date:{" "}
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Time:{" "}
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Symptoms/Reason for visit:{" "}
-                <textarea
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-                  placeholder="Describe your symptoms..."
-                  required
-                />
-              </label>
-              <button type="submit" className="book-btn">
-                Book Appointment
-              </button>
+              <label>Date: <input type="date" value={date} onChange={e => setDate(e.target.value)} required /></label>
+              <label>Time: <input type="time" value={time} onChange={e => setTime(e.target.value)} required /></label>
+              <label>Symptoms/Reason for visit: <textarea value={symptoms} onChange={e => setSymptoms(e.target.value)} placeholder="Describe your symptoms..." required /></label>
+              <button type="submit" className="book-btn">Book Appointment</button>
             </form>
           </>
         ) : (
-          <p style={{ textAlign: "center", padding: "20px" }}>
-            Please select a doctor to book an appointment.
-          </p>
+          <p style={{ textAlign: 'center', padding: '20px' }}>Please select a doctor to book an appointment.</p>
         )}
         {message && <div className={`message ${messageType}`}>{message}</div>}
       </div>
-
+      
       <div className="history">
         <h2 className="history-title">Your Appointments History</h2>
         {loadingHistory ? (
@@ -222,39 +178,37 @@ export default function Appointments() {
           <ul className="history-list">
             {history.map((appt) => (
               <li key={appt._id} className="history-item">
-                <div style={{ marginBottom: "8px" }}>
+                <div style={{ marginBottom: '8px' }}>
                   <strong>Dr. {appt.doctorName}</strong>
                 </div>
-                <div>
-                  <strong>Date:</strong>{" "}
-                  {new Date(appt.date).toLocaleDateString()} at {appt.time}
-                </div>
-                <div>
-                  <strong>Status:</strong> {appt.status}
-                </div>
-
+                <div><strong>Date:</strong> {new Date(appt.date).toLocaleDateString()} at {appt.time}</div>
+                
                 {/* --- THIS IS THE UPDATED SECTION --- */}
-                {/* It now directly shows the buttons for any confirmed appointment */}
-                {["confirmed", "approved", "accepted"].includes(
-                  appt.status?.toLowerCase()
-                ) && (
-                  <div className="live-features-section">
-                    <h4>Live Features</h4>
-                    <div className="live-buttons-container">
-                      <button
-                        className="live-feature-btn chat-btn"
-                        onClick={() => startLiveChat(appt)}
-                      >
-                        💬 Live Chat
-                      </button>
-                      <button
-                        className="live-feature-btn video-btn"
-                        onClick={() => startVideoCall(appt)}
-                      >
-                        📹 Video Call
-                      </button>
+                {appt.status?.toLowerCase() === 'pending' ? (
+                  <div className="pending-confirmation-card">
+                    <div className="pending-icon">⏳</div>
+                    <div className="pending-text">
+                      <strong>Waiting for Confirmation</strong>
+                      <span>The doctor will review your request shortly.</span>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div><strong>Status:</strong> <span className="status-confirmed">{appt.status}</span></div>
+                    {['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) && (
+                      <div className="live-features-section">
+                        <h4>Live Features</h4>
+                        <div className="live-buttons-container">
+                          <button className="live-feature-btn chat-btn" onClick={() => startLiveChat(appt)}>
+                            💬 Live Chat
+                          </button>
+                          <button className="live-feature-btn video-btn" onClick={() => startVideoCall(appt)}>
+                            📹 Video Call
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 {/* --- END OF UPDATED SECTION --- */}
               </li>
@@ -263,7 +217,7 @@ export default function Appointments() {
         )}
       </div>
 
-      {showLiveChat && selectedAppointmentForLive && (
+       {showLiveChat && selectedAppointmentForLive && (
         <div className="modal-overlay">
           <div className="modal-content">
             <LiveChat

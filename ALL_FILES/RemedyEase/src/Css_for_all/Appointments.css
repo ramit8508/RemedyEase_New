@@ -168,3 +168,92 @@
   font-size: 14px;
   font-style: italic;
 }
+.status-confirmed {
+  color: #2e7d32;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.pending-confirmation-card {
+  margin-top: 15px;
+  background-color: #fff3e0;
+  border: 1px solid #ffe0b2;
+  border-left: 5px solid #ff9800;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pending-icon {
+  font-size: 24px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pending-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.pending-text strong {
+  font-size: 16px;
+  color: #e65100;
+}
+
+.pending-text span {
+  font-size: 14px;
+  color: #785a28;
+}
+
+/* Existing styles for live features */
+.live-features-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.live-features-section h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.live-buttons-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.live-feature-btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.live-feature-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.chat-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-btn {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
