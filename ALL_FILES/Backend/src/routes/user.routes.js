@@ -1,17 +1,16 @@
 import { Router } from "express";
-import { registerUser, loginUser, getUserProfile, updateUserProfile } from "../controllers/user.controller.js";
-import { upload } from "../middleware/multer.middleware.js";
-import { getUserAppointments } from "../controllers/user.controller.js";
+import { registerUser, loginUser, getUserProfile, updateUserProfile, getUserAppointments } from "../controllers/user.controller.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = new Router(); 
 
+// The route now uses upload.single("avatar") which is simpler and
+// works perfectly with our memory storage setup.
 router.route("/register").post(
-    upload.fields([{
-        name : "avatar",
-        maxCount:1
-    }]),
+    upload.single("avatar"),
     registerUser
 );
+
 router.route("/login").post(loginUser);
 
 router.route("/profile").get(getUserProfile);

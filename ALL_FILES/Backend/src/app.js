@@ -11,51 +11,26 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "16mb" }));
+app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(express.static("public"));
-
 app.use(cookieParser());
 
-app.use((req, res, next) => {
-  console.log("➡️ Incoming request:", req.method, req.url, "body:", req.body);
-  console.log(
-    "DEBUG:",
-    req.method,
-    req.url,
-    req.headers["content-type"],
-    req.body
-  );
-  next();
-});
-// import  routes
+// --- ROUTES ---
 import userRouter from "./routes/user.routes.js";
-
-// routes declaration
-app.use("/api/v1/users", userRouter);
-
-//imprt ai routes
 import aiRouter from "./routes/Ai.routes.js";
 
-//router declaration
+// Routes Declaration
+app.use("/api/v1/users", userRouter);
 app.use("/api/v1/ai", aiRouter);
 
-// import live features routes
-import LiveFeaturesRouter from "./routes/LiveFeatures.routes.js";
-app.use("/api/v1/live", LiveFeaturesRouter);
+// NOTE: The "/api/v1/live" route has been removed. 
+// Live features are handled by the Doctor Backend, and the frontend
+// communicates with it directly via the proxy/rewrite rules.
 
-// Add welcome route for root path
+// Health check route
 app.get("/", (req, res) => {
-  res.json({
-    message: "🏥 RemedyEase Backend API is running!",
-    version: "1.0.0",
-    endpoints: {
-      users: "/api/v1/users",
-      ai: "/api/v1/ai", 
-      live: "/api/v1/live"
-    },
-    status: "✅ Server is healthy"
-  });
+  res.status(200).json({ message: "RemedyEase User Backend is running!" });
 });
 
 export { app };
