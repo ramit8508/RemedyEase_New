@@ -24,13 +24,32 @@ import aiRouter from "./routes/Ai.routes.js";
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/ai", aiRouter);
 
-// NOTE: The "/api/v1/live" route has been removed. 
-// Live features are handled by the Doctor Backend, and the frontend
-// communicates with it directly via the proxy/rewrite rules.
-
 // Health check route
 app.get("/", (req, res) => {
-  res.status(200).json({ message: "RemedyEase User Backend is running!" });
+  res.status(200).json({ message: "RemedyEase User Backend is responsive!" });
+});
+
+// --- FINAL ERROR HANDLING MIDDLEWARE ---
+// This is the crucial new addition. It will catch all errors
+// thrown by your controllers and format them into a clean JSON response.
+// It MUST be the last middleware added to the app.
+app.use((err, req, res, next) => {
+    // Check if the error is an instance of our custom ApiError
+    if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({
+            success: false,
+            message: err.message,
+            errors: err.errors
+        });
+    }
+
+    // For any other unexpected errors, send a generic 500 response
+    console.error("An unexpected error occurred:", err);
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
 });
 
 export { app };
+
