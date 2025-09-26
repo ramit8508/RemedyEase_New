@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { ApiError } from "./utils/Apierror.js"; // Import ApiError for error handling
 
 const app = express();
 
@@ -30,11 +31,8 @@ app.get("/", (req, res) => {
 });
 
 // --- FINAL ERROR HANDLING MIDDLEWARE ---
-// This is the crucial new addition. It will catch all errors
-// thrown by your controllers and format them into a clean JSON response.
-// It MUST be the last middleware added to the app.
+// This middleware will now work correctly because ApiError is imported.
 app.use((err, req, res, next) => {
-    // Check if the error is an instance of our custom ApiError
     if (err instanceof ApiError) {
         return res.status(err.statusCode).json({
             success: false,
@@ -43,7 +41,6 @@ app.use((err, req, res, next) => {
         });
     }
 
-    // For any other unexpected errors, send a generic 500 response
     console.error("An unexpected error occurred:", err);
     return res.status(500).json({
         success: false,
