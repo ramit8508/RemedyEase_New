@@ -1,54 +1,58 @@
-console.log("[SERVER LOG] 1. app.js is running.");
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+// This import is crucial for the error handler to work correctly.
+import { ApiError } from "./utils/ApiError.js";
 
 const app = express();
+
+// --- Standard Middleware ---
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
   })
 );
-import dotenv from "dotenv";
-dotenv.config();
-
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "16mb" }));
+app.use(express.urlencoded({ extended: true, limit: "16mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-app.use((req, res, next) => {
-  console.log("DEBUG:", req.method, req.url, req.headers["content-type"], req.body);
-  next();
+// --- Route Imports ---
+import doctorRouter from "./routes/Doctor.routes.js";
+import aiRouter from "./routes/Ai.routes.js";
+import appointmentRouter from "./routes/Appointment.routes.js";
+import liveFeaturesRouter from "./routes/LiveFeatures.routes.js";
+
+// --- Route Declarations ---
+app.use("/api/v1/doctors", doctorRouter);
+app.use("/api/v1/doctor-ai", aiRouter);
+app.use("/api/v1/appointments", appointmentRouter);
+app.use("/api/v1/live", liveFeaturesRouter);
+
+// Health check route for the root URL
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "RemedyEase Doctor Backend is responsive!" });
 });
 
-// import routes
-import DoctorRouter from "./routes/Doctor.routes.js";
-app.use("/api/v1/doctors", DoctorRouter);
+// --- FINAL ERROR HANDLING MIDDLEWARE ---
+// This is the essential part that was missing. It catches all errors from your
+// controllers and ensures a clean JSON response is sent to the frontend.
+// It MUST be the last `app.use()` in the file.
+app.use((err, req, res, next) => {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors || [],
+    });
+  }
 
-import AiRouter from "./routes/Ai.routes.js";
-app.use("/api/v1/doctor-ai", AiRouter);
-
-import appointmentRoutes from "./routes/Appointment.routes.js";
-app.use("/api/v1/appointments", appointmentRoutes);
-
-import liveFeaturesRoutes from "./routes/LiveFeatures.routes.js";
-app.use("/api/v1/live", liveFeaturesRoutes);
-
-// Add welcome route for root path
-app.get("/", (req, res) => {
-  res.json({
-    message: "🩺 RemedyEase Doctor Backend API is running!",
-    version: "1.0.0",
-    endpoints: {
-      doctors: "/api/v1/doctors",
-      ai: "/api/v1/doctor-ai",
-      appointments: "/api/v1/appointments",
-      live: "/api/v1/live"
-    },
-    features: ["Real-time Chat", "Video Calls", "Appointment Management", "AI Assistance"],
-    status: "✅ Doctor Server is healthy"
+  // For any unexpected server crashes, log it and send a generic error message.
+  console.error("UNEXPECTED DOCTOR BACKEND ERROR:", err);
+  return res.status(500).json({
+    success: false,
+    message: "An internal server error occurred on the doctor service.",
   });
 });
 
