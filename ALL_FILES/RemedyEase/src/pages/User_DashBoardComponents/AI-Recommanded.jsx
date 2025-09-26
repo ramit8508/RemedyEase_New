@@ -24,7 +24,6 @@ export default function AIRecommanded() {
     setRemedy("");
     setLoadingStep(0);
 
-    // Simulate progressive loading steps
     const stepInterval = setInterval(() => {
       setLoadingStep(prev => {
         if (prev < loadingSteps.length - 1) {
@@ -43,17 +42,19 @@ export default function AIRecommanded() {
       });
       const data = await res.json();
       
-      // Clear loading steps
       clearInterval(stepInterval);
       
-      // Wait for the last step to complete
       setTimeout(() => {
-        setRemedy(data.recommendation || "No remedy found.");
+        if(res.ok) {
+            setRemedy(data.recommendation || "No remedy found.");
+        } else {
+            setRemedy(data.message || "Failed to get recommendation.");
+        }
         setLoading(false);
       }, 500);
     } catch (err) {
       clearInterval(stepInterval);
-      setRemedy("Something went wrong. Please try again.");
+      setRemedy("Cannot connect to server. Please try again.");
       setLoading(false);
     }
   };
@@ -132,7 +133,6 @@ Disclaimer: These are AI-generated suggestions for home remedies only. Please co
             <span className="user-badge">For You</span>
           </div>
           
-          {/* Enhanced AI Output Wrapper */}
           <div className={`ai-output-wrapper ${remedy ? 'has-content' : ''}`}>
             <div className="ai-output-header">
               <div className="analysis-indicator">
@@ -170,19 +170,16 @@ Disclaimer: These are AI-generated suggestions for home remedies only. Please co
                     <div className="medical-cross">🌿</div>
                     <h4>Recommended Home Remedies</h4>
                   </div>
-                  
                   <div className="suggestion-text">
                     {remedy}
                   </div>
-                  
                   <div className="suggestion-footer">
                     <div className="disclaimer">
                       <span className="warning-icon">⚠️</span>
                       <span>
-                        These are AI-generated home remedy suggestions. For serious symptoms or if your condition worsens, please consult a healthcare professional immediately.
+                        These are AI-generated suggestions. For serious symptoms, consult a healthcare professional.
                       </span>
                     </div>
-                    
                     <div className="action-buttons">
                       <button className="save-btn" onClick={saveRecommendation}>
                         💾 Save Remedies
@@ -197,7 +194,7 @@ Disclaimer: These are AI-generated suggestions for home remedies only. Please co
                 <div className="empty-state">
                   <div className="empty-icon">🌱</div>
                   <h4>Ready to Help You Feel Better</h4>
-                  <p>Describe your symptoms above and get personalized home remedy recommendations powered by AI.</p>
+                  <p>Describe your symptoms above to get recommendations.</p>
                 </div>
               )}
             </div>
@@ -207,60 +204,40 @@ Disclaimer: These are AI-generated suggestions for home remedies only. Please co
           <h3 className="sample_heading">Common Remedy by Ai are:</h3>
           <div className="samplebox1_2">
             <div className="sample_box1 sample_box">
-              <img
-                src={box1image}
-                alt="Sample Remedy"
-                className="sample_image"
-              />
+              <img src={box1image} alt="Ginger Tea" className="sample_image" />
               <div className="title">
                 <h1 className="head_sample">Ginger Tea for Nausea</h1>
                 <p className="para_sample">
-                  Ginger Tea can help alleviate nausea and soothe the stomach.
-                  Drink a cup of warm ginger tea slowly
+                  Soothes the stomach. Drink a cup of warm ginger tea slowly.
                 </p>
               </div>
             </div>
             <div className="sample_box2 sample_box">
-              <img
-                src={box2image}
-                alt="Sample Remedy"
-                className="sample_image"
-              />
+              <img src={box2image} alt="Honey and Lemon" className="sample_image" />
               <div className="title">
                 <h1 className="head_sample">Honey and Lemon for Sore Throat</h1>
                 <p className="para_sample">
-                  A mixture of honey and lemon in warm water can soothe a sore
-                  throat.Take spoonful as needed.
+                  Soothes a sore throat. Take a spoonful as needed.
                 </p>
               </div>
             </div>
           </div>
           <div className="samplebox3_4">
             <div className="sample_box3 sample_box">
-              <img
-                src={box3image}
-                alt="Sample Remedy"
-                className="sample_image"
-              />
+              <img src={box3image} alt="Salt Water" className="sample_image" />
               <div className="title">
                 <h1 className="head_sample">Salt Water Gargle</h1>
                 <p className="para_sample">
-                  Gargling with warm salt water can help reduce
-                  inflammation.Gargle for 30 seconds for several times a day
+                  Reduces inflammation. Gargle for 30 seconds multiple times a day.
                 </p>
               </div>
             </div>
             <div className="sample_box4 sample_box">
-              <img
-                src={box4image}
-                alt="Sample Remedy"
-                className="sample_image"
-              />
+              <img src={box4image} alt="Rest" className="sample_image" />
               <div className="title">
                 <h1 className="head_sample">Rest and Hydration</h1>
                 <p className="para_sample">
-                  Ensure you get plenty of rest and stay hydrated by drinking
-                  plenty of fluids.This helps your body recover faster.
+                  Helps your body recover faster. Get plenty of rest and drink fluids.
                 </p>
               </div>
             </div>

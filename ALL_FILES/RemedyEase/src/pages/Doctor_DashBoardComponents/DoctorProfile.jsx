@@ -11,15 +11,22 @@ export default function DoctorProfile({ doctorEmail }) {
   const email = doctorEmail || localStorage.getItem("doctorEmail");
 
   useEffect(() => {
-    fetch(`/api/v1/doctors/profile?email=${email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setDoctor(data.data);
-        setForm(data.data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [doctorEmail, editMode]);
+    if (email) {
+      setLoading(true);
+      fetch(`/api/v1/doctors/profile?email=${email}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setDoctor(data.data);
+            setForm(data.data);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [email, editMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,23 +35,27 @@ export default function DoctorProfile({ doctorEmail }) {
 
   const handleSave = async () => {
     setMessage("");
-    const res = await fetch("/api/v1/doctors/profile/update", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, ...form }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setDoctor(data.data);
-      setEditMode(false);
-      setMessage("Profile updated!");
-    } else {
-      setMessage(data.message || "Update failed.");
+    try {
+      const res = await fetch("/api/v1/doctors/profile/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, ...form }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDoctor(data.data);
+        setEditMode(false);
+        setMessage("Profile updated successfully!");
+      } else {
+        setMessage(data.message || "Update failed.");
+      }
+    } catch (error) {
+      setMessage("Cannot connect to server. Please try again.");
     }
   };
 
   if (loading) return <div>Loading profile...</div>;
-  if (!doctor) return <div>No profile found.</div>;
+  if (!doctor) return <div>No profile found. Please log in again.</div>;
 
   return (
     <div className="profile-container">
@@ -59,19 +70,17 @@ export default function DoctorProfile({ doctorEmail }) {
           className="profile-photo"
         />
         <div className="profile-details">
-          <div className="profile-details">
-  <p><strong>Name:</strong> {doctor.fullname}</p>
-  <p><strong>Email:</strong> {doctor.email}</p>
-  <p><strong>Specialization:</strong> {doctor.specialization}</p>
-  <p><strong>Degree:</strong> {doctor.degree}</p>
-  <p><strong>Registration No:</strong> {doctor.registrationNumber}</p>
-  <p><strong>Phone:</strong> {doctor.phone || "Not set"}</p>
-  <p><strong>Clinic:</strong> {doctor.clinic || "Not set"}</p>
-  <p><strong>Address:</strong> {doctor.address || "Not set"}</p>
-  <p><strong>Timings:</strong> {doctor.timings || "Not set"}</p>
-  <p><strong>Fee:</strong> {doctor.fee || "Not set"}</p>
-  <p><strong>Languages:</strong> {doctor.languages || "Not set"}</p>
-</div>
+          <p><strong>Name:</strong> {doctor.fullname}</p>
+          <p><strong>Email:</strong> {doctor.email}</p>
+          <p><strong>Specialization:</strong> {doctor.specialization}</p>
+          <p><strong>Degree:</strong> {doctor.degree}</p>
+          <p><strong>Registration No:</strong> {doctor.registrationNumber}</p>
+          <p><strong>Phone:</strong> {doctor.phone || "Not set"}</p>
+          <p><strong>Clinic:</strong> {doctor.clinic || "Not set"}</p>
+          <p><strong>Address:</strong> {doctor.address || "Not set"}</p>
+          <p><strong>Timings:</strong> {doctor.timings || "Not set"}</p>
+          <p><strong>Fee:</strong> {doctor.fee || "Not set"}</p>
+          <p><strong>Languages:</strong> {doctor.languages || "Not set"}</p>
         </div>
       </div>
       <div className="about">
@@ -132,7 +141,7 @@ export default function DoctorProfile({ doctorEmail }) {
             </label>
             <button onClick={handleSave}>Save Changes</button>
             <button onClick={() => setEditMode(false)}>Cancel</button>
-            {message && <div style={{ color: "green", marginTop: 10 }}>{message}</div>}
+            {message && <div style={{ color: message.includes("success") ? "green" : "red", marginTop: 10 }}>{message}</div>}
           </div>
         ) : (
           <button onClick={() => setEditMode(true)}>Edit Profile</button>

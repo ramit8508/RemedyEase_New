@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import "../../Css_for_all/Login.css";
 import { Link, useNavigate } from "react-router-dom";
-import { API_CONFIG } from "../../config/api.js";
-import { fetchWithRetry } from "../../utils/backendUtils.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,13 +15,13 @@ export default function Login() {
     setLoading(true);
     
     try {
-      setMessage("� Logging you in...");
+      setMessage("Logging you in...");
       
-      const res = await fetchWithRetry(`${API_CONFIG.ENDPOINTS.USERS}/login`, {
+      const res = await fetch(`/api/v1/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      }, 2);
+      });
       
       const data = await res.json();
       if (res.ok) {
@@ -39,11 +37,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      if (err.message.includes("fetch")) {
-        setMessage("Cannot connect to servers. Please check your internet connection.");
-      } else {
-        setMessage("Something went wrong. Please try again.");
-      }
+      setMessage("Cannot connect to servers. Please try again.");
     }
     setLoading(false);
   };
@@ -96,7 +90,7 @@ export default function Login() {
           </form>
           <p className="signin">
             If you don't have account you can{" "}
-            <Link to="/signup" className="login-signup-link">
+            <Link to="/user/signup" className="login-signup-link">
               Sign-up
             </Link>
           </p>

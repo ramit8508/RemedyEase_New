@@ -13,13 +13,12 @@ export default function Chat() {
   const user = JSON.parse(localStorage.getItem("user"));
   const userEmail = user?.email;
 
-  useEffect(() => {
-    if (userEmail) {
-      fetchChatConversations();
-    }
-  }, [userEmail]);
-
   const fetchChatConversations = async () => {
+    if (!userEmail) {
+        setLoading(false);
+        setError('User not logged in.');
+        return;
+    }
     try {
       setLoading(true);
       const response = await fetch(`/api/v1/live/chat/conversations/${userEmail}`);
@@ -37,6 +36,10 @@ export default function Chat() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchChatConversations();
+  }, [userEmail]);
 
   const filteredConversations = conversations.filter(conv =>
     conv.doctorName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -67,8 +70,7 @@ export default function Chat() {
   const closeLiveChat = () => {
     setShowLiveChat(false);
     setSelectedConversation(null);
-    // Refresh conversations to get updated last messages
-    fetchChatConversations();
+    fetchChatConversations(); // Refresh conversations
   };
 
   if (loading) {
@@ -98,7 +100,7 @@ export default function Chat() {
 
   return (
     <div className="chat-container">
-      {showLiveChat ? (
+      {showLiveChat && selectedConversation ? (
         <LiveChat
           appointmentId={selectedConversation.appointmentId}
           currentUser={user}
@@ -129,7 +131,7 @@ export default function Chat() {
               <p>
                 {searchTerm 
                   ? `No conversations found matching "${searchTerm}"`
-                  : "You haven't started any chats with doctors yet. Book an appointment and start chatting!"
+                  : "You haven't started any chats with doctors yet."
                 }
               </p>
             </div>
@@ -149,36 +151,32 @@ export default function Chat() {
                       </span>
                     </div>
                     <div className="conversation-meta">
-                      <span className={`status ${conversation.status}`}>
-                        {conversation.status}
-                      </span>
-                      <span className="message-count">
-                        {conversation.messageCount} messages
-                      </span>
+                      <span className={`status ${conversation.status}`}>{conversation.status}</span>
+                      <span className="message-count">{conversation.messageCount} messages</span>
                     </div>
                   </div>
                   
-                  <div className="last-message">
-                    <div className="message-preview">
-                      <span className="sender">
-                        {conversation.lastMessage.senderType === 'user' ? 'You' : `Dr. ${conversation.doctorName}`}:
-                      </span>
-                      <span className="message-text">
-                        {conversation.lastMessage.messageType === 'text' 
-                          ? conversation.lastMessage.message
-                          : `📎 ${conversation.lastMessage.fileName || 'File'}`
-                        }
-                      </span>
+                  {conversation.lastMessage && (
+                    <div className="last-message">
+                        <div className="message-preview">
+                        <span className="sender">
+                            {conversation.lastMessage.senderType === 'user' ? 'You' : `Dr. ${conversation.doctorName}`}:
+                        </span>
+                        <span className="message-text">
+                            {conversation.lastMessage.messageType === 'text' 
+                            ? conversation.lastMessage.message
+                            : `📎 ${conversation.lastMessage.fileName || 'File'}`
+                            }
+                        </span>
+                        </div>
+                        <div className="message-time">
+                        {formatTime(conversation.lastMessage.timestamp)}
+                        </div>
                     </div>
-                    <div className="message-time">
-                      {formatTime(conversation.lastMessage.timestamp)}
-                    </div>
-                  </div>
+                  )}
                   
                   <div className="conversation-actions">
-                    <button className="view-chat-btn">
-                      💬 View Chat
-                    </button>
+                    <button className="view-chat-btn">💬 View Chat</button>
                   </div>
                 </div>
               ))}
@@ -189,4 +187,3 @@ export default function Chat() {
     </div>
   );
 }
-

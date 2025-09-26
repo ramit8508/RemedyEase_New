@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LiveChat from '../../components/LiveChat';
 import '../../Css_for_all/DoctorHome.css';
-import { API_CONFIG } from '../../config/api';
 
 export default function DoctorHome() {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -16,22 +15,16 @@ export default function DoctorHome() {
   const doctor = JSON.parse(localStorage.getItem("doctor"));
   const doctorEmail = doctor?.email;
 
-  useEffect(() => {
-    if (doctorEmail) {
-      fetchAllAppointments();
-    }
-  }, [doctorEmail]);
-
   const fetchAllAppointments = async () => {
+    if (!doctorEmail) return;
     try {
-      const response = await fetch(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/doctor/${doctorEmail}`);
+      const response = await fetch(`/api/v1/appointments/doctor/${doctorEmail}`);
       const data = await response.json();
       
       if (data.success || data.data) {
         const appointmentData = data.data || data;
         setAppointments(appointmentData);
         
-        // Group appointments by date
         const grouped = appointmentData.reduce((acc, appointment) => {
           const date = appointment.date;
           if (!acc[date]) {
@@ -48,33 +41,28 @@ export default function DoctorHome() {
     }
   };
 
+  useEffect(() => {
+    if (doctorEmail) {
+      fetchAllAppointments();
+    }
+  }, [doctorEmail]);
+
   const fetchChatHistoryForDate = async (date) => {
     try {
       setLoading(true);
       const appointmentsForDate = appointmentsByDate[date] || [];
       const chatHistoryPromises = appointmentsForDate.map(async (appointment) => {
         try {
-          const response = await fetch(`${API_CONFIG.ENDPOINTS.LIVE}/chat/history/${appointment._id}`);
+          const response = await fetch(`/api/v1/live/chat/history/${appointment._id}`);
           const data = await response.json();
           
-          if (data.success && data.data.length > 0) {
-            return {
-              appointment,
-              messages: data.data,
-              hasChat: true
-            };
-          }
           return {
             appointment,
-            messages: [],
-            hasChat: false
+            messages: data.data || [],
+            hasChat: data.success && data.data.length > 0
           };
         } catch (error) {
-          return {
-            appointment,
-            messages: [],
-            hasChat: false
-          };
+          return { appointment, messages: [], hasChat: false };
         }
       });
 
@@ -95,7 +83,6 @@ export default function DoctorHome() {
     today.setHours(0, 0, 0, 0);
     
     if (date < today) {
-      // Past date - show chat history
       fetchChatHistoryForDate(dateString);
     }
   };
@@ -124,12 +111,10 @@ export default function DoctorHome() {
 
     const days = [];
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
     
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
     }
@@ -140,12 +125,6 @@ export default function DoctorHome() {
   const hasAppointmentsOnDate = (date) => {
     const dateString = formatDateForAPI(date);
     return appointmentsByDate[dateString] && appointmentsByDate[dateString].length > 0;
-  };
-
-  const isPastDate = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
   };
 
   const isToday = (date) => {
@@ -176,13 +155,13 @@ export default function DoctorHome() {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const today = new Date();
   const selectedDateString = selectedDate ? formatDateForAPI(selectedDate) : null;
   const appointmentsForSelectedDate = selectedDateString ? (appointmentsByDate[selectedDateString] || []) : [];
+  const isPastSelectedDate = selectedDate && isToday(new Date()) > selectedDate;
 
   return (
     <div className="doctor-home-container">
-      {showLiveChat ? (
+      {showLiveChat && selectedAppointment ? (
         <LiveChat
           appointmentId={selectedAppointment._id}
           currentUser={doctor}
@@ -243,8 +222,7 @@ export default function DoctorHome() {
             <div className="date-details">
               <h3>📅 {formatDateDisplay(selectedDateString)}</h3>
               
-              {isPastDate(selectedDate) ? (
-                // Show chat history for past dates
+              {isPastSelectedDate ? (
                 <div className="chat-history-section">
                   <h4>💬 Chat History</h4>
                   {loading ? (
@@ -255,11 +233,10 @@ export default function DoctorHome() {
                         <div key={index} className="chat-history-card">
                           <div className="patient-info">
                             <h5>👤 {item.appointment.userName}</h5>
-                            <p>📧 {item.appointment.userEmail}</p>
                             <p>🕐 {item.appointment.time}</p>
                           </div>
                           <div className="chat-summary">
-                            <p>{item.messages.length} messages exchanged</p>
+                            <p>{item.messages.length} messages</p>
                             <button 
                               onClick={() => openChatForAppointment(item.appointment)}
                               className="view-chat-btn"
@@ -275,7 +252,6 @@ export default function DoctorHome() {
                   )}
                 </div>
               ) : (
-                // Show appointments for current/future dates
                 <div className="appointments-section">
                   <h4>📋 Appointments</h4>
                   {appointmentsForSelectedDate.length > 0 ? (
@@ -284,11 +260,8 @@ export default function DoctorHome() {
                         <div key={index} className="appointment-card">
                           <div className="patient-info">
                             <h5>👤 {appointment.userName}</h5>
-                            <p>📧 {appointment.userEmail}</p>
                             <p>🕐 {appointment.time}</p>
-                            <span className={`status ${appointment.status}`}>
-                              {appointment.status}
-                            </span>
+                            <span className={`status ${appointment.status}`}>{appointment.status}</span>
                           </div>
                           {isToday(selectedDate) && (
                             <button 
@@ -313,4 +286,3 @@ export default function DoctorHome() {
     </div>
   );
 }
-

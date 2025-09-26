@@ -65,6 +65,11 @@ export default function DoctorSignUp() {
       setMessage("Please upload your avatar.");
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
@@ -90,34 +95,11 @@ export default function DoctorSignUp() {
         setTimeout(() => {
           navigate("/doctor/login");
         }, 2000);
-        setForm({
-          fullname: "",
-          degree: "",
-          specialization: "",
-          registrationNumber: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-          bio: "",
-          experience: "",
-          agree: false,
-        });
-        avatarRef.current.value = "";
       } else {
-        if (
-          data.error &&
-          (data.error.toLowerCase().includes("duplicate") ||
-            data.error.toLowerCase().includes("already exists"))
-        ) {
-          setMessage(
-            "User already signed up with this registration number or email."
-          );
-        } else {
-          setMessage(data.message || data.error || "Registration failed.");
-        }
+        setMessage(data.message || data.error || "Registration failed.");
       }
     } catch (err) {
-      setMessage("Something went wrong. Please try again.");
+      setMessage("Cannot connect to server. Please try again.");
     }
     setLoading(false);
   };
@@ -135,147 +117,53 @@ export default function DoctorSignUp() {
           <form onSubmit={handleSubmit} encType="multipart/form-data">
             <div className="signup-input-group">
               <label className="signup-label">Full Name</label>
-              <input
-                type="text"
-                name="fullname"
-                placeholder="John Doe"
-                required
-                className="signup_input"
-                value={form.fullname}
-                onChange={handleChange}
-              />
+              <input type="text" name="fullname" placeholder="John Doe" required className="signup_input" value={form.fullname} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Your Degree</label>
-              <input
-                type="text"
-                name="degree"
-                placeholder="MD-MEDICINE"
-                required
-                className="signup_input"
-                value={form.degree}
-                onChange={handleChange}
-              />
+              <input type="text" name="degree" placeholder="MD-MEDICINE" required className="signup_input" value={form.degree} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Specialization</label>
-              <input
-                type="text"
-                name="specialization"
-                placeholder="cardiology"
-                required
-                className="signup_input"
-                value={form.specialization}
-                onChange={handleChange}
-              />
+              <input type="text" name="specialization" placeholder="Cardiology" required className="signup_input" value={form.specialization} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Registration Number</label>
-              <input
-                type="text"
-                name="registrationNumber"
-                placeholder="PMC/2023/12345"
-                required
-                className="signup_input"
-                value={form.registrationNumber}
-                onChange={handleChange}
-              />
+              <input type="text" name="registrationNumber" placeholder="PMC/2023/12345" required className="signup_input" value={form.registrationNumber} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Email</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="john@example.com"
-                required
-                className="signup_input"
-                value={form.email}
-                onChange={handleChange}
-              />
+              <input type="email" name="email" placeholder="john@example.com" required className="signup_input" value={form.email} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Password</label>
-              <input
-                type="password"
-                name="password"
-                placeholder="At least 6 characters"
-                required
-                className="signup_input"
-                value={form.password}
-                onChange={handleChange}
-              />
+              <input type="password" name="password" placeholder="At least 6 characters" required className="signup_input" value={form.password} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Confirm Password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Re-enter your password"
-                required
-                className="signup_input"
-                value={form.confirmPassword}
-                onChange={handleChange}
-              />
+              <input type="password" name="confirmPassword" placeholder="Re-enter your password" required className="signup_input" value={form.confirmPassword} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">About You (Bio)</label>
-              <textarea
-                name="bio"
-                placeholder="Tell us about yourself, your expertise, and your approach to patient care."
-                required
-                className="signup_input"
-                value={form.bio}
-                onChange={handleChange}
-                rows={3}
-                style={{ resize: "vertical" }}
-              />
+              <textarea name="bio" placeholder="Tell us about yourself..." required className="signup_input" value={form.bio} onChange={handleChange} rows={3} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Experience</label>
-              <input
-                type="text"
-                name="experience"
-                placeholder="e.g. 5 years in cardiology"
-                required
-                className="signup_input"
-                value={form.experience}
-                onChange={handleChange}
-              />
+              <input type="text" name="experience" placeholder="e.g. 5 years in cardiology" required className="signup_input" value={form.experience} onChange={handleChange} />
             </div>
             <div className="signup-input-group">
               <label className="signup-label">Avatar (Profile Photo)</label>
-              <input
-                type="file"
-                name="avatar"
-                accept="image/*"
-                required
-                className="signup_input"
-                ref={avatarRef}
-              />
+              <input type="file" name="avatar" accept="image/*" required className="signup_input" ref={avatarRef} />
             </div>
             <div className="agree-row">
-              <input
-                type="checkbox"
-                id="agree"
-                name="agree"
-                checked={form.agree}
-                onChange={handleChange}
-                required
-              />
-              <label htmlFor="agree" className="agree-label">
-                I agree to the terms and conditions
-              </label>
+              <input type="checkbox" id="agree" name="agree" checked={form.agree} onChange={handleChange} required />
+              <label htmlFor="agree" className="agree-label">I agree to the terms and conditions</label>
             </div>
             <button type="submit" className="signup-button" disabled={loading}>
               {loading ? "Creating..." : "Create Account"}
             </button>
             {message && (
-              <div
-                style={{
-                  color: message.includes("success") ? "green" : "red",
-                  marginTop: 10,
-                }}
-              >
+              <div style={{ color: message.includes("success") ? "green" : "red", marginTop: 10 }}>
                 {message}
               </div>
             )}

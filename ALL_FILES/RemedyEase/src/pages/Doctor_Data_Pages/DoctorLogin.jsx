@@ -22,9 +22,7 @@ export default function DoctorLogin() {
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem("doctorEmail", email);
-        //saves email of doctor for profile fetch
-       localStorage.setItem("doctor", JSON.stringify(data.data.doctor));
-        // used to display avatar in nav bar after login
+        localStorage.setItem("doctor", JSON.stringify(data.data.doctor));
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/doctor/dashboard/home");
@@ -33,7 +31,7 @@ export default function DoctorLogin() {
         setMessage(data.message || "Login failed.");
       }
     } catch (err) {
-      setMessage("Something went wrong. Please try again.");
+      setMessage("Cannot connect to server. Please try again.");
     }
     setLoading(false);
   };

@@ -11,15 +11,22 @@ export default function UserProfile({ userEmail }) {
   const email = userEmail || localStorage.getItem("userEmail");
 
   useEffect(() => {
-    fetch(`/api/v1/users/profile?email=${email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setUser(data.data);
-        setForm(data.data);
+    if (email) {
+      setLoading(true);
+      fetch(`/api/v1/users/profile?email=${email}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setUser(data.data);
+            setForm(data.data);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [userEmail, editMode]);
+    }
+  }, [email, editMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,18 +35,22 @@ export default function UserProfile({ userEmail }) {
 
   const handleSave = async () => {
     setMessage("");
-    const res = await fetch("/api/v1/users/profile/update", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, ...form }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setUser(data.data);
-      setEditMode(false);
-      setMessage("Profile updated!");
-    } else {
-      setMessage(data.message || "Update failed.");
+    try {
+        const res = await fetch("/api/v1/users/profile/update", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, ...form }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            setUser(data.data);
+            setEditMode(false);
+            setMessage("Profile updated successfully!");
+        } else {
+            setMessage(data.message || "Update failed.");
+        }
+    } catch (error) {
+        setMessage("Cannot connect to server. Please try again.");
     }
   };
 
@@ -72,46 +83,21 @@ export default function UserProfile({ userEmail }) {
         </div>
       </div>
 
-      {/* Editable Section */}
       <div className="edit-profile-box">
         <h3>Edit Profile Info</h3>
         {editMode ? (
           <div className="edit-form">
-            <label>
-              Phone:
-              <input name="phone" value={form.phone || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Gender:
-              <input name="gender" value={form.gender || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Date of Birth:
-              <input name="dob" value={form.dob || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Address:
-              <input name="address" value={form.address || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Blood Group:
-              <input name="bloodGroup" value={form.bloodGroup || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Emergency Contact:
-              <input name="emergencyContact" value={form.emergencyContact || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Allergies:
-              <input name="allergies" value={form.allergies || ""} onChange={handleChange} />
-            </label>
-            <label>
-              Medications:
-              <input name="medications" value={form.medications || ""} onChange={handleChange} />
-            </label>
+            <label>Phone: <input name="phone" value={form.phone || ""} onChange={handleChange} /></label>
+            <label>Gender: <input name="gender" value={form.gender || ""} onChange={handleChange} /></label>
+            <label>Date of Birth: <input name="dob" value={form.dob || ""} onChange={handleChange} /></label>
+            <label>Address: <input name="address" value={form.address || ""} onChange={handleChange} /></label>
+            <label>Blood Group: <input name="bloodGroup" value={form.bloodGroup || ""} onChange={handleChange} /></label>
+            <label>Emergency Contact: <input name="emergencyContact" value={form.emergencyContact || ""} onChange={handleChange} /></label>
+            <label>Allergies: <input name="allergies" value={form.allergies || ""} onChange={handleChange} /></label>
+            <label>Medications: <input name="medications" value={form.medications || ""} onChange={handleChange} /></label>
             <button onClick={handleSave}>Save Changes</button>
             <button onClick={() => setEditMode(false)}>Cancel</button>
-            {message && <div style={{ color: "green", marginTop: 10 }}>{message}</div>}
+            {message && <div style={{ color: message.includes("success") ? "green" : "red", marginTop: 10 }}>{message}</div>}
           </div>
         ) : (
           <button onClick={() => setEditMode(true)}>Edit Profile</button>

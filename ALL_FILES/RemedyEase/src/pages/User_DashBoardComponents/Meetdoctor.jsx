@@ -13,7 +13,9 @@ export default function Meetdoctor() {
     fetch("/api/v1/doctors/all")
       .then(res => res.json())
       .then(data => {
-        setDoctors(data.data);
+        if (data.success) {
+            setDoctors(data.data);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -51,7 +53,7 @@ export default function Meetdoctor() {
       ) : (
         <div className="doctor-list">
           {filteredDoctors.length === 0 ? (
-            <div>No doctors found.</div>
+            <div>No doctors found matching your search.</div>
           ) : (
             filteredDoctors.map((doc) => (
               <div className="doctor-card" key={doc._id}>

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import "../../Css_for_all/AIRecommanded.css";
-import { API_CONFIG } from "../../config/api";
 
 export default function DoctorAi() {
   const [symptoms, setSymptoms] = useState("");
@@ -13,8 +12,9 @@ export default function DoctorAi() {
     setLoading(true);
     setSuggestion("");
     try {
+      // Correct, simplified API call
       const res = await fetch(
-        `${API_CONFIG.ENDPOINTS.AI_DOCTOR}/doctorsuggestions`,
+        "/api/v1/ai/doctorsuggestions",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -22,12 +22,15 @@ export default function DoctorAi() {
         }
       );
       const data = await res.json();
-      setSuggestion(
-        data.suggestion ||
+      if (res.ok) {
+        setSuggestion(
+          data.suggestion ||
           data.recommendation ||
-          data.error ||
-          "No remedy found."
-      );
+          "No suggestion found."
+        );
+      } else {
+        setSuggestion(data.error || "Failed to get suggestion.");
+      }
     } catch (err) {
       setSuggestion("Connection failed. Please try again.");
     }
