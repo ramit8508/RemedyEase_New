@@ -1,7 +1,7 @@
 import { Appointment } from "../models/Appointments.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/ApiHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Book appointment (user)
 export const bookAppointment = asyncHandler(async (req, res) => {
