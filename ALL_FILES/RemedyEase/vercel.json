@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/socket.io/:path*",
+      "destination": "https://remedyease-new-doctor.onrender.com/socket.io/:path*"
+    },
+    {
       "source": "/api/v1/doctors/:path*",
       "destination": "https://remedyease-new-doctor.onrender.com/api/v1/doctors/:path*"
     },
@@ -13,8 +17,8 @@
       "destination": "https://remedyease-new-doctor.onrender.com/api/v1/live/:path*"
     },
     {
-      "source": "/socket.io/:path*",
-      "destination": "https://remedyease-new-doctor.onrender.com/socket.io/:path*"
+      "source": "/api/v1/doctor-ai/:path*",
+      "destination": "https://remedyease-new-doctor.onrender.com/api/v1/doctor-ai/:path*"
     },
     {
       "source": "/api/v1/:path*",
@@ -26,4 +30,3 @@
     }
   ]
 }
-
