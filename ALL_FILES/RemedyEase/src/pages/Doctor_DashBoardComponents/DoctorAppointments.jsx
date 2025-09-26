@@ -7,17 +7,18 @@ export default function DoctorAppointments() {
   const doctor = JSON.parse(localStorage.getItem("doctor"));
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [selectedAppointmentForLive, setSelectedAppointmentForLive] = useState(null);
+  const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
+    useState(null);
 
   const fetchAppointments = () => {
     if (doctor?.email) {
       setLoading(true);
       fetch(`/api/v1/appointments/doctor/${doctor.email}`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success) {
             setAppointments(data.data || []);
           }
@@ -28,7 +29,7 @@ export default function DoctorAppointments() {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchAppointments();
   }, [doctor?.email]);
@@ -38,64 +39,36 @@ export default function DoctorAppointments() {
       const res = await fetch(`/api/v1/appointments/confirm/${appointmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorEmail: doctor.email })
+        body: JSON.stringify({ doctorEmail: doctor.email }),
       });
-      if(res.ok) {
+      if (res.ok) {
         fetchAppointments();
       }
     } catch (error) {
       console.error("Failed to confirm appointment", error);
     }
   };
-  
-  const isAppointmentLive = (appt) => {
-    if (!['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase())) {
-      return false;
-    }
-    const now = new Date();
-    const appointmentDateTime = new Date(`${appt.date}T${appt.time}`);
-    const startTime = new Date(appointmentDateTime.getTime() - 15 * 60 * 1000);
-    const endTime = new Date(appointmentDateTime.getTime() + 60 * 60 * 1000);
-    return now >= startTime && now <= endTime;
-  };
 
-  const getTimeUntilLive = (appt) => {
-    if (!['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase())) {
-      return 'Waiting for confirmation';
-    }
-    const now = new Date();
-    const appointmentDateTime = new Date(`${appt.date}T${appt.time}`);
-    const startTime = new Date(appointmentDateTime.getTime() - 15 * 60 * 1000);
-    if (now < startTime) {
-      const diff = startTime - now;
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      if (hours > 0) return `Available in ${hours}h ${minutes}m`;
-      return `Available in ${minutes}m`;
-    }
-    return 'Available Now';
-  };
-  
   const startLiveChat = (appt) => {
     setSelectedAppointmentForLive(appt);
     setShowLiveChat(true);
   };
-  
+
   const startVideoCall = async (appt) => {
     try {
       await fetch(`/api/v1/live/status/${appt._id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: doctor.email,
-          userType: 'doctor',
-          onlineStatus: true
-        })
+          userType: "doctor",
+          onlineStatus: true,
+        }),
       });
       setSelectedAppointmentForLive(appt);
       setShowVideoCall(true);
     } catch (error) {
-      console.error('Error starting video call:', error);
+      console.error("Error starting video call:", error);
     }
   };
 
@@ -108,7 +81,7 @@ export default function DoctorAppointments() {
   if (loading) {
     return <div>Loading appointments...</div>;
   }
-  
+
   if (!doctor || !doctor.email) {
     return <div>No doctor info found. Please log in as a doctor.</div>;
   }
@@ -120,29 +93,57 @@ export default function DoctorAppointments() {
         <div>No appointments found.</div>
       ) : (
         <ul className="history-list">
-          {appointments.map(appt => (
-            <li key={appt._id} className="history-item" style={{
-              backgroundColor: ['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '#e8f5e8' : '#fff3e0',
-              border: `2px solid ${['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '#4caf50' : '#ff9800'}`,
-            }}>
-              <div style={{ marginBottom: '8px' }}>
-                <strong style={{ fontSize: '18px' }}>Patient: {appt.userName}</strong>
+          {appointments.map((appt) => (
+            <li
+              key={appt._id}
+              className="history-item"
+              style={{
+                backgroundColor: ["confirmed", "approved", "accepted"].includes(
+                  appt.status?.toLowerCase()
+                )
+                  ? "#e8f5e8"
+                  : "#fff3e0",
+                border: `2px solid ${
+                  ["confirmed", "approved", "accepted"].includes(
+                    appt.status?.toLowerCase()
+                  )
+                    ? "#4caf50"
+                    : "#ff9800"
+                }`,
+              }}
+            >
+              <div style={{ marginBottom: "8px" }}>
+                <strong style={{ fontSize: "18px" }}>
+                  Patient: {appt.userName}
+                </strong>
               </div>
-              <div style={{ marginBottom: '5px' }}>
-                <strong>📅 Date:</strong> {new Date(appt.date).toLocaleDateString()}
+              <div style={{ marginBottom: "5px" }}>
+                <strong>📅 Date:</strong>{" "}
+                {new Date(appt.date).toLocaleDateString()}
               </div>
-              <div style={{ marginBottom: '5px' }}>
+              <div style={{ marginBottom: "5px" }}>
                 <strong>🕒 Time:</strong> {appt.time}
               </div>
-              <div style={{ marginBottom: '10px' }}>
-                <strong>Status:</strong> <span style={{
-                  color: ['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '#4caf50' : '#ff9800',
-                  fontWeight: 'bold'
-                }}>
-                  {['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '✅ Confirmed' : '⏳ Pending'}
+              <div style={{ marginBottom: "10px" }}>
+                <strong>Status:</strong>{" "}
+                <span
+                  style={{
+                    color: ["confirmed", "approved", "accepted"].includes(
+                      appt.status?.toLowerCase()
+                    )
+                      ? "#4caf50"
+                      : "#ff9800",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {["confirmed", "approved", "accepted"].includes(
+                    appt.status?.toLowerCase()
+                  )
+                    ? "✅ Confirmed"
+                    : "⏳ Pending"}
                 </span>
               </div>
-              
+
               {appt.status === "pending" && (
                 <button
                   className="book-btn"
@@ -152,25 +153,28 @@ export default function DoctorAppointments() {
                   Confirm Appointment
                 </button>
               )}
-              
+
               {/* --- THIS IS THE UPDATED SECTION --- */}
-              {['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) && (
+              {/* It now directly shows the buttons for any confirmed appointment */}
+              {["confirmed", "approved", "accepted"].includes(
+                appt.status?.toLowerCase()
+              ) && (
                 <div className="live-features-section">
                   <h4>Live Features</h4>
-                  {isAppointmentLive(appt) ? (
-                    <div className="live-buttons-container">
-                      <button className="live-feature-btn chat-btn" onClick={() => startLiveChat(appt)}>
-                        💬 Live Chat
-                      </button>
-                      <button className="live-feature-btn video-btn" onClick={() => startVideoCall(appt)}>
-                        📹 Video Call
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="time-until-live">
-                      🕒 {getTimeUntilLive(appt)}
-                    </div>
-                  )}
+                  <div className="live-buttons-container">
+                    <button
+                      className="live-feature-btn chat-btn"
+                      onClick={() => startLiveChat(appt)}
+                    >
+                      💬 Live Chat
+                    </button>
+                    <button
+                      className="live-feature-btn video-btn"
+                      onClick={() => startVideoCall(appt)}
+                    >
+                      📹 Video Call
+                    </button>
+                  </div>
                 </div>
               )}
               {/* --- END OF UPDATED SECTION --- */}
@@ -207,5 +211,3 @@ export default function DoctorAppointments() {
     </div>
   );
 }
-
-
