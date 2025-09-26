@@ -6,8 +6,8 @@ import {
     updateUserProfile, 
     getUserAppointments 
 } from "../controllers/user.controller.js";
-// This is the line that was fixed. The folder is "middlewares" (plural).
-import { upload } from "../middlewares/multer.middleware.js";
+// This path is now corrected to use the singular "middleware" folder name.
+import { upload } from "../middleware/multer.middleware.js";
 
 const router = new Router(); 
 
