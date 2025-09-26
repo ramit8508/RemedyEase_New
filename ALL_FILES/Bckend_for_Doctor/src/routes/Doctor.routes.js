@@ -7,7 +7,7 @@ import {
 } from "../controllers/Doctor.controllers.js";
 
 
-import { upload } from "../utils/multer.middlewares.js";
+import { upload } from "../utils/multer.middleware.js";
 
 const router = new Router(); 
 
