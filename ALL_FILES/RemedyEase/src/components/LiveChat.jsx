@@ -1,23 +1,25 @@
-import React from  'react';
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-// NOTE: We connect the socket directly. On Vercel, this will connect to the same
-// origin as the frontend. Your vercel.json rewrite rules will handle routing it.
-// On local, it connects to your Vite dev server, and the vite.config.js proxy handles it.
-const socket = io(); 
+// Get the backend URL from environment variables
+const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL;
 
 export default function LiveChat({ appointmentId, currentUser, userType, onClose }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    // Fetch chat history when component mounts
+    // Explicitly connect to the backend server
+    socketRef.current = io(SOCKET_URL, {
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+    });
+
+    const socket = socketRef.current;
+
     const fetchHistory = async () => {
       try {
         const res = await fetch(`/api/v1/live/chat/history/${appointmentId}`);
@@ -31,23 +33,20 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
     };
     fetchHistory();
 
-    // Join the chat room
     socket.emit('join_chat', appointmentId);
-
-    // Listen for incoming messages
     socket.on('receive_message', (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
-    // Cleanup on component unmount
     return () => {
       socket.off('receive_message');
       socket.emit('leave_chat', appointmentId);
+      socket.disconnect();
     };
   }, [appointmentId]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSendMessage = (e) => {
@@ -56,7 +55,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
 
     const messageData = {
       appointmentId,
-      senderId: currentUser.id,
+      senderId: currentUser.id || currentUser.email,
       senderName: currentUser.name || currentUser.fullname,
       senderType: userType,
       message: newMessage,
@@ -64,8 +63,8 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
       timestamp: new Date().toISOString(),
     };
 
-    socket.emit('send_message', messageData);
-    setMessages((prevMessages) => [...prevMessages, messageData]); // Optimistically add message
+    socketRef.current.emit('send_message', messageData);
+    setMessages((prevMessages) => [...prevMessages, messageData]);
     setNewMessage('');
   };
 
@@ -98,3 +97,4 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
     </div>
   );
 }
+
