@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
 // Get the backend URL from environment variables
@@ -9,10 +8,11 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
+  const socketRef = useRef(null); // Use ref to hold the socket instance
 
   useEffect(() => {
-    // Explicitly connect to the backend server
+    // We create the socket connection INSIDE useEffect.
+    // This ensures it only connects when the component is actually on the screen.
     socketRef.current = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 5,
@@ -20,30 +20,29 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
 
     const socket = socketRef.current;
 
-    const fetchHistory = async () => {
-      try {
-        const res = await fetch(`/api/v1/live/chat/history/${appointmentId}`);
-        const data = await res.json();
+    // Fetch chat history
+    fetch(`/api/v1/live/chat/history/${appointmentId}`)
+      .then(res => res.json())
+      .then(data => {
         if (data.success) {
           setMessages(data.data || []);
         }
-      } catch (error) {
-        console.error("Failed to fetch chat history:", error);
-      }
-    };
-    fetchHistory();
+      })
+      .catch(error => console.error("Failed to fetch chat history:", error));
 
+    // Setup socket event listeners
     socket.emit('join_chat', appointmentId);
     socket.on('receive_message', (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
+    // This is the cleanup function. It runs when the component is removed.
     return () => {
       socket.off('receive_message');
       socket.emit('leave_chat', appointmentId);
-      socket.disconnect();
+      socket.disconnect(); // Disconnect the socket
     };
-  }, [appointmentId]);
+  }, [appointmentId]); // Only run this effect when the appointmentId changes
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,7 +50,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim() === '') return;
+    if (newMessage.trim() === '' || !socketRef.current) return;
 
     const messageData = {
       appointmentId,
