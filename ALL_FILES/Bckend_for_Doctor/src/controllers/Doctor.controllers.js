@@ -1,132 +1,134 @@
-import { asyncHandler } from "../utils/ApiHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js"; // Corrected import path
 import { ApiError } from "../utils/ApiError.js";
 import { Doctor } from "../models/Doctor.models.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const registerDoctor = asyncHandler(async (req, res) => {
-  console.log("Doctor registration request received:", req.body);
-  console.log("Files received:", req.files);
+  const {
+    fullname,
+    email,
+    registrationNumber,
+    password,
+    confirmPassword,
+    degree,
+    specialization,
+    bio,
+    experience,
+  } = req.body;
 
-  const fullname = req.body.fullname?.trim();
-  const email = req.body.email?.trim();
-  const registrationNumber = req.body.registrationNumber?.trim();
-  const password = req.body.password;
-  const confirmPassword = req.body.confirmPassword;
-  const degree = req.body.degree?.trim();
-  const specialization = req.body.specialization?.trim();
-  const bio = req.body.bio?.trim() || "";
-  const experience = req.body.experience?.trim() || "";
-
-  // Validation
+  // 1. Validation for required fields and password match
   if (
     !fullname ||
     !email ||
     !registrationNumber ||
     !password ||
-    !confirmPassword ||
     !degree ||
     !specialization
   ) {
-    console.log("Validation failed - missing fields");
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(400, "All required fields must be filled");
   }
-
-  // Password match validation
   if (password !== confirmPassword) {
-    console.log("Password validation failed");
     throw new ApiError(400, "Password and Confirm Password do not match");
   }
-
-  // Already registered or not
-  const AlreadyDoctor = await Doctor.findOne({ email });
-  if (AlreadyDoctor) {
-    console.log("Doctor already exists with email:", email);
-    throw new ApiError(409, "Doctor already registered with this email");
-  }
-
-  // Check avatar file
-  const avatarLocalPath = req.files?.avatar?.[0]?.path;
-  if (!avatarLocalPath) {
-    console.log("Avatar file missing");
+  // 2. Check for the avatar file in memory buffer
+  if (!req.file || !req.file.buffer) {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  console.log("Avatar path:", avatarLocalPath);
-
-  // Upload to cloudinary
-  const uploadResponse = await uploadOnCloudinary(avatarLocalPath);
-  if (!uploadResponse) {
-    console.log("Cloudinary upload failed");
-    throw new ApiError(500, "File upload failed, please try again later");
+  // 3. Check if a doctor with the same email or registration number already exists
+  const existedDoctor = await Doctor.findOne({
+    $or: [{ email }, { registrationNumber }],
+  });
+  if (existedDoctor) {
+    throw new ApiError(
+      409,
+      "Doctor with this email or registration number already exists"
+    );
   }
 
-  console.log("Cloudinary upload successful:", uploadResponse.url);
+  // 4. Upload the avatar from the memory buffer directly to Cloudinary
+  const cloudinaryResponse = await uploadOnCloudinary(req.file.buffer);
+  if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+    throw new ApiError(
+      500,
+      "Avatar upload to Cloudinary failed, please try again"
+    );
+  }
+  const avatarUrl = cloudinaryResponse.secure_url;
 
-  // Store in DB
+  // 5. Create the new doctor in the database
   const doctor = await Doctor.create({
     fullname,
     email,
-    password,
+    password, // The model's pre-save hook will handle hashing
     confirmPassword,
     degree,
     specialization,
     registrationNumber,
-    avatar: uploadResponse.url,
-    bio,
-    experience
+    avatar: avatarUrl,
+    bio: bio || "",
+    experience: experience || "",
   });
 
-  const createddoctor = await Doctor.findById(doctor._id).select(
-    "-password -confirmPassword -createdAt -updatedAt"
+  const createdDoctor = await Doctor.findById(doctor._id).select(
+    "-password -confirmPassword -refreshToken"
   );
-  if (!createddoctor) {
+
+  if (!createdDoctor) {
     throw new ApiError(
       500,
-      "Doctor registration failed, please try again later"
+      "Something went wrong while registering the doctor"
     );
   }
-
-  console.log("Doctor created successfully:", createddoctor.email);
 
   return res
     .status(201)
     .json(
-      new ApiResponse(200, createddoctor, "Doctor registered successfully")
+      new ApiResponse(201, createdDoctor, "Doctor registered successfully")
     );
 });
+
 const loginDoctor = asyncHandler(async (req, res) => {
-  console.log("Login request body:", req.body);
   const { email, password } = req.body;
-  // Find doctor by email
+
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
+
   const doctor = await Doctor.findOne({ email });
   if (!doctor) {
     throw new ApiError(404, "Doctor not found with this email");
   }
-  // Check password
-  const isPasswordMatched = await doctor.isPasswordCorrect(password);
-  if (!isPasswordMatched) {
+
+  const isPasswordCorrect = await doctor.isPasswordCorrect(password);
+  if (!isPasswordCorrect) {
     throw new ApiError(401, "Incorrect password");
   }
+
+  const loggedInDoctor = await Doctor.findById(doctor._id).select(
+    "-password -confirmPassword"
+  );
 
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { doctor },
+        { doctor: loggedInDoctor },
         "Doctor logged in successfully"
       )
     );
 });
- const getDoctorProfile = asyncHandler(async (req, res) => {
-  const email = req.user?.email || req.query.email;
+
+const getDoctorProfile = asyncHandler(async (req, res) => {
+  const email = req.query.email;
   if (!email) {
-    throw new ApiError(400, "Doctor email is required");
+    throw new ApiError(400, "Doctor email is required in the query string");
   }
 
   const doctor = await Doctor.findOne({ email }).select(
-    "-password -confirmPassword -createdAt -updatedAt"
+    "-password -confirmPassword"
   );
   if (!doctor) {
     throw new ApiError(404, "Doctor not found");
@@ -136,22 +138,26 @@ const loginDoctor = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, doctor, "Doctor profile fetched successfully"));
 });
+
 const updateDoctorProfile = asyncHandler(async (req, res) => {
-  const email = req.user?.email || req.body.email;
-  if (!email) throw new ApiError(400, "Email is required");
+  const { email, ...updateFields } = req.body;
+  if (!email) {
+    throw new ApiError(
+      400,
+      "Email is required to identify the doctor to update"
+    );
+  }
 
-  // Only update provided fields
-  const updateFields = { ...req.body };
-  delete updateFields.email; // Don't allow email change
+  const doctor = await Doctor.findOneAndUpdate({ email }, updateFields, {
+    new: true,
+  }).select("-password -confirmPassword");
+  if (!doctor) {
+    throw new ApiError(404, "Doctor not found");
+  }
 
-  const doctor = await Doctor.findOneAndUpdate(
-    { email },
-    updateFields,
-    { new: true }
-  ).select("-password -confirmPassword -createdAt -updatedAt");
-  if (!doctor) throw new ApiError(404, "Doctor not found");
-
-  return res.status(200).json(new ApiResponse(200, doctor, "Profile updated"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, doctor, "Profile updated successfully"));
 });
 
 export { registerDoctor, loginDoctor, getDoctorProfile, updateDoctorProfile };
