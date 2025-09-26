@@ -8,12 +8,21 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        // Any request starting with /api/v1/doctors, send it to the doctor backend
+        // Routes that should go to the DOCTOR backend
         '/api/v1/doctors': {
           target: env.VITE_DOCTOR_BACKEND_URL || 'http://localhost:5001',
           changeOrigin: true,
         },
-        // Any other request starting with /api/v1, send it to the user backend
+        '/api/v1/appointments': {
+          target: env.VITE_DOCTOR_BACKEND_URL || 'http://localhost:5001',
+          changeOrigin: true,
+        },
+        '/api/v1/live': {
+          target: env.VITE_DOCTOR_BACKEND_URL || 'http://localhost:5001',
+          changeOrigin: true,
+        },
+
+        // All other /api/v1 routes go to the USER backend
         '/api/v1': {
           target: env.VITE_USER_BACKEND_URL || 'http://localhost:8000',
           changeOrigin: true,

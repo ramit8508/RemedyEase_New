@@ -99,6 +99,14 @@ export default function Signup() {
       if (res.ok) {
         setMessage("Account created successfully! Redirecting to login...");
         setMessageType("success");
+        setForm({
+            fullName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            agree: false,
+        });
+        avatarRef.current.value = "";
         setTimeout(() => {
           navigate("/user/login");
         }, 2000);

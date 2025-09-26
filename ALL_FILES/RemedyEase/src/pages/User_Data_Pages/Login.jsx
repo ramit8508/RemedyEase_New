@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
     
     try {
-      setMessage("Logging you in...");
+      setMessage(" Logging you in...");
       
       const res = await fetch(`/api/v1/users/login`, {
         method: "POST",
@@ -25,9 +25,8 @@ export default function Login() {
       
       const data = await res.json();
       if (res.ok) {
-        // Save full user object to localStorage for profile and navbar
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        localStorage.setItem("userEmail", email); // for profile fetch
+        localStorage.setItem("userEmail", email);
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/user/dashboard/Home");
@@ -37,7 +36,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      setMessage("Cannot connect to servers. Please try again.");
+      setMessage("Cannot connect to servers. Please check your internet connection.");
     }
     setLoading(false);
   };
@@ -89,7 +88,7 @@ export default function Login() {
             )}
           </form>
           <p className="signin">
-            If you don't have account you can{" "}
+            If you don't have an account you can{" "}
             <Link to="/user/signup" className="login-signup-link">
               Sign-up
             </Link>
