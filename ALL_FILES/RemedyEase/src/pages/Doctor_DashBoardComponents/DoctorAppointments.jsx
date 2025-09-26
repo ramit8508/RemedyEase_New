@@ -63,23 +63,16 @@ export default function DoctorAppointments() {
     if (!['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase())) {
       return 'Waiting for confirmation';
     }
-    
     const now = new Date();
     const appointmentDateTime = new Date(`${appt.date}T${appt.time}`);
     const startTime = new Date(appointmentDateTime.getTime() - 15 * 60 * 1000);
-    
     if (now < startTime) {
       const diff = startTime - now;
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      if (hours > 0) {
-        return `Available in ${hours}h ${minutes}m`;
-      } else {
-        return `Available in ${minutes}m`;
-      }
+      if (hours > 0) return `Available in ${hours}h ${minutes}m`;
+      return `Available in ${minutes}m`;
     }
-    
     return 'Available Now';
   };
   
@@ -131,15 +124,12 @@ export default function DoctorAppointments() {
             <li key={appt._id} className="history-item" style={{
               backgroundColor: ['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '#e8f5e8' : '#fff3e0',
               border: `2px solid ${['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) ? '#4caf50' : '#ff9800'}`,
-              borderRadius: '8px',
-              padding: '15px',
-              marginBottom: '10px'
             }}>
               <div style={{ marginBottom: '8px' }}>
                 <strong style={{ fontSize: '18px' }}>Patient: {appt.userName}</strong>
               </div>
               <div style={{ marginBottom: '5px' }}>
-                <strong>📅 Date:</strong> {appt.date}
+                <strong>📅 Date:</strong> {new Date(appt.date).toLocaleDateString()}
               </div>
               <div style={{ marginBottom: '5px' }}>
                 <strong>🕒 Time:</strong> {appt.time}
@@ -163,30 +153,35 @@ export default function DoctorAppointments() {
                 </button>
               )}
               
+              {/* --- THIS IS THE UPDATED SECTION --- */}
               {['confirmed', 'approved', 'accepted'].includes(appt.status?.toLowerCase()) && (
-                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: 'rgba(102, 126, 234, 0.1)', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#667eea' }}>Live Features</h4>
-                  
+                <div className="live-features-section">
+                  <h4>Live Features</h4>
                   {isAppointmentLive(appt) ? (
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <button onClick={() => startLiveChat(appt)}>💬 Live Chat</button>
-                      <button onClick={() => startVideoCall(appt)}>📹 Video Call</button>
+                    <div className="live-buttons-container">
+                      <button className="live-feature-btn chat-btn" onClick={() => startLiveChat(appt)}>
+                        💬 Live Chat
+                      </button>
+                      <button className="live-feature-btn video-btn" onClick={() => startVideoCall(appt)}>
+                        📹 Video Call
+                      </button>
                     </div>
                   ) : (
-                    <div style={{ color: '#666', fontSize: '14px' }}>
+                    <div className="time-until-live">
                       🕒 {getTimeUntilLive(appt)}
                     </div>
                   )}
                 </div>
               )}
+              {/* --- END OF UPDATED SECTION --- */}
             </li>
           ))}
         </ul>
       )}
 
       {showLiveChat && selectedAppointmentForLive && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '12px', width: '90%', maxWidth: '500px', maxHeight: '80%', overflow: 'hidden' }}>
+        <div className="modal-overlay">
+          <div className="modal-content">
             <LiveChat
               appointmentId={selectedAppointmentForLive._id}
               currentUser={{ id: doctor.email, name: doctor.fullname }}
@@ -198,8 +193,8 @@ export default function DoctorAppointments() {
       )}
 
       {showVideoCall && selectedAppointmentForLive && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ width: '95%', height: '95%', maxWidth: '900px', maxHeight: '700px' }}>
+        <div className="modal-overlay video-overlay">
+          <div className="modal-content video-modal">
             <VideoCall
               appointmentId={selectedAppointmentForLive._id}
               currentUser={{ id: doctor.email, name: doctor.fullname }}
@@ -212,3 +207,5 @@ export default function DoctorAppointments() {
     </div>
   );
 }
+
+
