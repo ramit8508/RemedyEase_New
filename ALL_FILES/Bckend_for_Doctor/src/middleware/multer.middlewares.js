@@ -1,7 +1,7 @@
 import multer from "multer";
 
-// Configure multer to store files in memory as buffers instead of saving to disk.
-// This is essential for platforms with ephemeral/read-only filesystems like Render.
+// This configures multer to store uploaded files in memory as a buffer.
+// This is the correct way to handle file uploads on platforms like Render.
 const storage = multer.memoryStorage();
 
 export const upload = multer({ 
