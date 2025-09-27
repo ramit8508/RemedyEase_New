@@ -1,3 +1,83 @@
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .heading {
+    font-size: 36px;
+    margin-top: -120px;
+  }
+  .key-heading, .how-heading, .feedback-heading, .ready-heading {
+    font-size: 28px;
+  }
+  .how-cards, .key-features, .feedback-container {
+    gap: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .first-container {
+    height: auto;
+    padding: 30px 0;
+  }
+  .heading {
+    font-size: 28px;
+    margin-top: -60px;
+    text-align: center;
+  }
+  .subheading {
+    font-size: 16px;
+    text-align: center;
+  }
+  .buttons {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+  .key-heading, .how-heading, .feedback-heading, .ready-heading {
+    font-size: 22px;
+    text-align: center;
+  }
+  .key-features, .how-cards, .feedback-container {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+  .feature1, .feature2, .feature3, .how-card1, .feedback1, .feedback2, .feedback3 {
+    max-width: 90vw;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .first-container {
+    padding: 10px 0;
+  }
+  .heading {
+    font-size: 20px;
+    margin-top: -30px;
+  }
+  .subheading {
+    font-size: 12px;
+  }
+  .btn1, .btn2, .ready-button {
+    font-size: 14px;
+    padding: 10px 18px;
+  }
+  .key-heading, .how-heading, .feedback-heading, .ready-heading {
+    font-size: 16px;
+  }
+  .key_para, .how-para, .feedback-para, .ready-para {
+    font-size: 14px;
+  }
+  .feature-title, .how-card-title {
+    font-size: 16px;
+  }
+  .feature-description, .how-card1 p, .feedback-text {
+    font-size: 12px;
+  }
+  .img4, .emoji, .emoji1, .person, .person1 {
+    width: 36px;
+    height: 36px;
+  }
+}
 .first-container {
   display: flex;
   justify-content: center;
