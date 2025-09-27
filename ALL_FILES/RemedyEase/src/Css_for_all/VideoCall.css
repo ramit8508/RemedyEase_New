@@ -3,8 +3,8 @@
 
 .video-call-container {
   width: 100%;
-  max-width: 900px;
-  height: 700px;
+  max-width: 1100px;
+  height: 850px;
   background: #1a1a1a;
   border-radius: 12px;
   overflow: hidden;
