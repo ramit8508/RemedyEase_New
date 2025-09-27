@@ -72,7 +72,7 @@ export default function DoctorAi() {
           disabled={loading}
           style={{ marginTop: "12px" }}
         >
-          {loading ? "Analyzing..." : "✨Get AI Suggestions"}
+          {loading ? "Analyzing..." : "Get AI Suggestions"}
         </button>
       </div>
       <div className="output_container">
