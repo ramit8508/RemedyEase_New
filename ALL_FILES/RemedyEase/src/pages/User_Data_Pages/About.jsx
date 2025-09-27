@@ -3,7 +3,7 @@ import "../../Css_for_all/About.css";
 import doctor1 from "../../images/doctor1.jpg";
 import doctor2 from "../../images/doctor2.jpg";
 import doctor3 from "../../images/doctor3.jpg";
-import star from "../../images/star.png";
+import star from "../../images/star-shape.svg";
 import people from "../../images/people.webp";
 import like  from "../../images/like.webp";
 import Footerforuser from "../../components/Footerforuser";
