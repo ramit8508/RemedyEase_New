@@ -69,7 +69,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
   };
 
   return (
-  <div className="live-chat-container" style={{ maxWidth: '700px', width: '100%', height: '800px' }}>
+  <div className="live-chat-container" style={{ maxWidth: '700px', width: '100%', height: '600px' }}>
       <div className="chat-header">
         <h3>Live Chat</h3>
         <button onClick={onClose} className="close-btn">&times;</button>
