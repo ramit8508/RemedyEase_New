@@ -7,7 +7,9 @@
   height: 800px;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
-  background: white;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border: 1.5px solid rgba(40, 167, 69, 0.12);
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -16,7 +18,8 @@
 }
 
 .live-chat-header {
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  background: linear-gradient(120deg, #27ae60 60%, #b2f7c1 100%);
+  box-shadow: 0 2px 12px rgba(72, 168, 96, 0.08);
   color: white;
   padding: 16px;
   display: flex;
@@ -108,7 +111,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #f8f9fa;
+  background: linear-gradient(120deg, #f8fff8 60%, #e6ffe6 100%);
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -181,13 +184,15 @@
   background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
   color: white;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.12);
 }
 
 .other-message .message-content {
-  background: white;
-  color: #333;
+  background: rgba(255,255,255,0.95);
+  color: #222;
   border: 1px solid #e0e0e0;
   border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(72, 168, 96, 0.07);
 }
 
 .typing-indicator {
@@ -250,20 +255,23 @@
 
 .chat-input {
   flex: 1;
-  border: 1px solid #ddd;
+  border: 1.5px solid #b2f7c1;
+  background: rgba(255,255,255,0.7);
   border-radius: 20px;
-  padding: 12px 16px;
-  font-size: 14px;
+  padding: 14px 18px;
+  font-size: 15px;
   resize: none;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: inherit;
-  min-height: 40px;
-  max-height: 100px;
+  min-height: 44px;
+  max-height: 120px;
+  box-shadow: 0 2px 8px rgba(72, 168, 96, 0.07);
 }
 
 .chat-input:focus {
   border-color: #27ae60;
+  box-shadow: 0 0 0 2px #b2f7c1;
 }
 
 .chat-input:disabled {
@@ -273,17 +281,19 @@
 }
 
 .send-message-btn {
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-  color: white;
+  background: linear-gradient(120deg, #27ae60 60%, #b2f7c1 100%);
+  color: #fff;
   border: none;
-  border-radius: 20px;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 22px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: box-shadow 0.2s, transform 0.1s, opacity 0.2s;
   white-space: nowrap;
-  min-height: 40px;
+  min-height: 44px;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.10);
 }
 
 .send-message-btn:hover:not(:disabled) {
