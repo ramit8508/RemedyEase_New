@@ -39,7 +39,7 @@
 .close-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: white;
+  color: #275c43;
   font-size: 24px;
   font-weight: bold;
   width: 32px;
@@ -178,3 +178,4 @@
     height: 90vh; /* Better for mobile */
   }
 }
+
