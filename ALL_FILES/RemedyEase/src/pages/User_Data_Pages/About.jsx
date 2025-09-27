@@ -5,7 +5,7 @@ import doctor2 from "../../images/doctor2.jpg";
 import doctor3 from "../../images/doctor3.jpg";
 import star from "../../images/star-shape.svg";
 import people from "../../images/people.webp";
-import like  from "../../images/like.webp";
+import like  from "../../images/feedback.svg";
 import Footerforuser from "../../components/Footerforuser";
 
 export default function About() {
