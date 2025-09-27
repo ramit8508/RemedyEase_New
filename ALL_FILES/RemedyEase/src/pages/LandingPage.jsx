@@ -17,7 +17,7 @@ function LandingPage() {
             <div className="user-section">
               <img src={user} alt="user" className="User" />
               <Link to="/user" className="user-link">
-                <button className="user-button">Continue as User</button>
+                <button className="user-button">Continue as Patient</button>
               </Link>
               <p className="para0">Find doctor and have consultations</p>
             </div>
