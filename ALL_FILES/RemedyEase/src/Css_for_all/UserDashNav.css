@@ -1,3 +1,4 @@
+/* Responsive improvements for UserDashNav.css */
 
 .nav {
   display: flex;
@@ -7,24 +8,26 @@
   background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-family: 'Poppins', sans-serif;
+  flex-wrap: wrap;
 }
+
 .nav-logo {
   font-size: 1.8rem;
   font-weight: 700;
   color: #388e3c;
-  margin: 0; 
+  margin: 0;
+  white-space: nowrap;
 }
-
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 40px; 
+  gap: 40px;
+  flex-wrap: wrap;
 }
 
-
 .nav-link {
-  color:#444444 ; 
+  color: #444444;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 500;
@@ -34,17 +37,17 @@
 }
 
 .nav-link:hover {
-  color: #388e3c; 
+  color: #388e3c;
 }
 
 .nav-avatar {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  border: 2px solid #008080; 
-  object-fit: cover; 
+  border: 2px solid #388e3c;
+  object-fit: cover;
   cursor: pointer;
-  border : 2px solid #388e3c;
+  margin-left: 16px;
 }
 
 @media (max-width: 900px) {
@@ -73,6 +76,7 @@
     flex-direction: column;
     gap: 12px;
     width: 100%;
+    align-items: flex-start;
   }
   .nav-link {
     font-size: 0.95rem;
@@ -83,5 +87,6 @@
     width: 38px;
     height: 38px;
     margin-top: 8px;
+    margin-left: 0;
   }
 }
