@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import '../Css_for_all/LiveChat.css';
 
 // Get the backend URL from environment variables
 const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL;
