@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
-import '../Css_for_all/VideoCall.css';
+import React, { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
+import "../Css_for_all/VideoCall.css";
 
 // Get the backend URL from environment variables.
-// This will be used to create the socket connection inside the component.
 const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL;
 
 const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
@@ -12,13 +11,13 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   const [remoteStream, setRemoteStream] = useState(null);
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  
+
   // Media controls
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
-  
+
   // Status and error handling
-  const [callStatus, setCallStatus] = useState('Initializing...');
+  const [callStatus, setCallStatus] = useState("Initializing...");
   const [error, setError] = useState(null);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
 
@@ -30,150 +29,185 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
   const pcConfig = {
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:1932" }, // Corrected port number
     ],
   };
 
+  // *** MAJOR FIX AREA ***
+  // useEffect is used for side effects like setting up connections and listeners.
+  // The JSX for rendering should be outside of it, in the component's main return statement.
   useEffect(() => {
-    // --- THIS IS THE CRITICAL FIX ---
-    // The socket connection is created here, inside useEffect, so it only
-    // happens when the VideoCall component is actually on the screen.
-    socketRef.current = io(SOCKET_URL, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 5,
-    });
-    
-    initializeCall();
+    // Function to start local media stream
+    const startMedia = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        // After getting media, setup the socket connection
+        setupSocket();
+      } catch (err) {
+        console.error("Error accessing media devices.", err);
+        setError("Could not access camera or microphone. Please check permissions.");
+        setCallStatus("Failed to start");
+      }
+    };
 
-    // Cleanup function: This will run when the component is removed.
+    startMedia();
+
+    // Return a cleanup function to be run when the component unmounts
     return () => {
       cleanup();
     };
-  }, [appointmentId]); // Rerun if the appointmentId changes
+  }, []); // Empty dependency array means this effect runs once on mount
 
-  const initializeCall = async () => {
-    try {
-      setupSocketListeners();
-      await initializeMedia();
-      socketRef.current.emit('join_video_call', {
+  const setupSocket = () => {
+    // Socket connection setup
+    socketRef.current = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      query: {
         appointmentId,
         userId: currentUser.id,
         userType,
-        userName: currentUser.name || currentUser.fullname
-      });
-    } catch (error) {
-      console.error('Error initializing call:', error);
-      setError('Failed to initialize video call: ' + error.message);
-    }
-  };
+      },
+    });
 
-  const initializeMedia = async () => {
-    try {
-      setCallStatus('Getting camera and microphone access...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: { echoCancellation: true, noiseSuppression: true }
-      });
-      setLocalStream(stream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      setCallStatus('Ready to connect...');
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      throw new Error('Could not access camera or microphone. Please check permissions.');
-    }
-  };
-
-  const setupSocketListeners = () => {
     const socket = socketRef.current;
-    socket.on('connect', () => console.log('✅ Connected to video call server'));
-    socket.on('video_call_joined', () => setCallStatus('Waiting for other participant...'));
-    socket.on('user_joined_call', (data) => {
-      setOtherUserOnline(true);
-      setCallStatus('Connecting...');
+
+    // Setup all socket event listeners
+    socket.on("connect", () => {
+      console.log("Socket connected, joining call room...");
+      socket.emit("join_video_call", { appointmentId, userId: currentUser.id });
+      setCallStatus("Connecting to room...");
+    });
+    
+    socket.on("connect_error", (err) => {
+        console.error("Socket connection error:", err);
+        setError("Failed to connect to the server.");
+        setCallStatus("Connection Failed");
+    });
+
+    socket.on("joined_call", (data) => {
+      console.log("Successfully joined call room:", data);
+      setOtherUserOnline(data.otherUserPresent);
+      setCallStatus("Waiting for other participant...");
       setIsConnecting(true);
       if (data.initiator) {
+        console.log("You are the initiator, creating offer...");
         initiateCall();
       }
     });
-    socket.on('user_left_call', () => {
+
+    socket.on("user_left_call", () => {
       setOtherUserOnline(false);
-      setCallStatus('Other participant left the call');
+      setCallStatus("Other participant left the call");
       setIsCallActive(false);
       setRemoteStream(null);
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     });
-    socket.on('webrtc_offer', (data) => handleOffer(data.offer));
-    socket.on('webrtc_answer', (data) => handleAnswer(data.answer));
-    socket.on('webrtc_ice_candidate', (data) => handleIceCandidate(data.candidate));
-    socket.on('call_ended', () => {
-      setCallStatus('Call ended by other user');
-      endCall();
-    });
-    socket.on('video_call_error', (error) => setError(error.message || 'Video call error occurred'));
-  };
 
+    socket.on("webrtc_offer", (data) => handleOffer(data.offer));
+    socket.on("webrtc_answer", (data) => handleAnswer(data.answer));
+    socket.on("webrtc_ice_candidate", (data) => handleIceCandidate(data.candidate));
+    
+    socket.on("call_ended", () => {
+      setCallStatus("Call ended by other user");
+      endCall(false); // Pass false to avoid emitting end_call again
+    });
+
+    socket.on("video_call_error", (error) =>
+      setError(error.message || "Video call error occurred")
+    );
+  };
+  
   const createPeerConnection = () => {
     const peerConnection = new RTCPeerConnection(pcConfig);
+
     if (localStream) {
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      localStream
+        .getTracks()
+        .forEach((track) => peerConnection.addTrack(track, localStream));
     }
+
     peerConnection.ontrack = (event) => {
       const [stream] = event.streams;
       setRemoteStream(stream);
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      }
       setIsCallActive(true);
       setIsConnecting(false);
-      setCallStatus('Connected');
+      setCallStatus("Connected");
     };
+
     peerConnection.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
-        socketRef.current.emit('webrtc_ice_candidate', { appointmentId, candidate: event.candidate });
+        socketRef.current.emit("webrtc_ice_candidate", {
+          appointmentId,
+          candidate: event.candidate,
+        });
       }
     };
+    
     return peerConnection;
   };
 
   const initiateCall = async () => {
+    if (!localStream) {
+        setError("Local video stream is not available to initiate the call.");
+        return;
+    }
     try {
       peerConnectionRef.current = createPeerConnection();
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
-      socketRef.current.emit('webrtc_offer', { appointmentId, offer });
-    } catch (error) {
-      setError('Failed to initiate call');
+      socketRef.current.emit("webrtc_offer", { appointmentId, offer });
+    } catch (err) {
+      console.error("Failed to initiate call:", err);
+      setError("Failed to initiate call");
     }
   };
 
   const handleOffer = async (offer) => {
+    if (!localStream) {
+        setError("Local video stream is not available to answer the call.");
+        return;
+    }
     try {
-      if (!peerConnectionRef.current) peerConnectionRef.current = createPeerConnection();
-      await peerConnectionRef.current.setRemoteDescription(offer);
+      if (!peerConnectionRef.current) {
+        peerConnectionRef.current = createPeerConnection();
+      }
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
-      socketRef.current.emit('webrtc_answer', { appointmentId, answer });
-    } catch (error) {
-      setError('Failed to accept call');
+      socketRef.current.emit("webrtc_answer", { appointmentId, answer });
+    } catch (err) {
+      console.error("Failed to accept call:", err);
+      setError("Failed to accept call");
     }
   };
 
   const handleAnswer = async (answer) => {
     try {
-      await peerConnectionRef.current.setRemoteDescription(answer);
-    } catch (error) {
-      setError('Failed to complete call setup');
+      await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+    } catch (err) {
+      console.error("Failed to complete call setup:", err);
+      setError("Failed to complete call setup");
     }
   };
 
   const handleIceCandidate = async (candidate) => {
     try {
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(candidate);
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
-    } catch (error) {
-      console.error('Error handling ICE candidate:', error);
+    } catch (err) {
+      console.error("Error handling ICE candidate:", err);
     }
   };
 
@@ -191,94 +225,98 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     }
   };
 
-  const endCall = async () => {
-    try {
-      await fetch(`/api/v1/live/call/end/${appointmentId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, userType })
-      });
-      if (socketRef.current) {
-        socketRef.current.emit('end_video_call', { appointmentId });
-      }
-    } catch (error) {
-      console.error('Error ending call:', error);
-    } finally {
-        cleanup();
-        onClose();
+  const endCall = (notifyServer = true) => {
+    if (notifyServer && socketRef.current) {
+        socketRef.current.emit("end_video_call", { appointmentId });
     }
+    cleanup();
+    onClose();
   };
 
   const cleanup = () => {
-    if (localStream) localStream.getTracks().forEach(track => track.stop());
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
     if (socketRef.current) {
-        socketRef.current.disconnect();
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
     setLocalStream(null);
     setRemoteStream(null);
     setIsCallActive(false);
   };
   
+  // *** THIS IS THE CORRECT PLACE FOR THE JSX RETURN ***
   return (
-<<<<<<< HEAD
-  <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
-    <div className="video-call-header">
-      <div className="call-info">
-        <h3>Video Call</h3>
-        <span className="call-status">{callStatus}</span>
-=======
-
-  <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
-
-    <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
-
+    <div className="video-call-container" style={{ maxWidth: "1100px", width: "100vw", height: "850px" }}>
       <div className="video-call-header">
         <div className="call-info">
           <h3>Video Call</h3>
           <span className="call-status">{callStatus}</span>
         </div>
-        <button className="close-call-btn" onClick={endCall}>✕</button>
->>>>>>> 2235a5d15a342e688fe1a6a5ecdfe32e120c0183
+        <button className="close-call-btn" onClick={() => endCall(true)}>✕</button>
       </div>
-      <button className="close-call-btn" onClick={endCall}>✕</button>
-    </div>
 
-    {error && <div className="call-error"><p>{error}</p></div>}
+      {error && (
+        <div className="call-error">
+          <p>{error}</p>
+        </div>
+      )}
 
-    <div className="video-container">
-      <div className="remote-video-wrapper">
-        {remoteStream ? (
-          <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
-        ) : (
-          <div className="no-remote-video">
-            <div className="avatar-placeholder">
-              {isConnecting ? (
-                <div className="connecting-animation"><div className="spinner"></div><p>Connecting...</p></div>
-              ) : (
-                <div className="waiting-message"><p>Waiting for other participant</p></div>
-              )}
+      <div className="video-container">
+        <div className="remote-video-wrapper">
+          {remoteStream ? (
+            <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
+          ) : (
+            <div className="no-remote-video">
+              <div className="avatar-placeholder">
+                {isConnecting ? (
+                  <div className="connecting-animation">
+                    <div className="spinner"></div>
+                    <p>Connecting...</p>
+                  </div>
+                ) : (
+                  <div className="waiting-message">
+                    <p>Waiting for other participant</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        <div className="local-video-wrapper">
+          <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
+          {isVideoMuted && (
+            <div className="video-muted-overlay">
+              <span>📷 Off</span>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="local-video-wrapper">
-        <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
-        {isVideoMuted && <div className="video-muted-overlay"><span>📹</span></div>}
-      </div>
-    </div>
 
-    <div className="call-controls">
-      <button className={`control-btn ${isAudioMuted ? 'muted' : ''}`} onClick={toggleAudio}>
-        {isAudioMuted ? '🔇' : '🔊'}
-      </button>
-      <button className={`control-btn ${isVideoMuted ? 'muted' : ''}`} onClick={toggleVideo}>
-        {isVideoMuted ? '📷' : '📹'}
-      </button>
-      <button className="control-btn end-call-btn" onClick={endCall}>📞</button>
+      <div className="call-controls">
+        <button
+          className={`control-btn ${isAudioMuted ? "muted" : ""}`}
+          onClick={toggleAudio}
+        >
+          {isAudioMuted ? "🔇" : "🔊"}
+        </button>
+        <button
+          className={`control-btn ${isVideoMuted ? "muted" : ""}`}
+          onClick={toggleVideo}
+        >
+          {isVideoMuted ? "📷" : "📹"}
+        </button>
+        <button className="control-btn end-call-btn" onClick={() => endCall(true)}>
+          📞
+        </button>
+      </div>
     </div>
-  </div>
-);
-}
+  );
+};
 
 export default VideoCall;
