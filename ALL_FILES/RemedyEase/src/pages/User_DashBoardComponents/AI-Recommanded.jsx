@@ -123,7 +123,7 @@ Disclaimer: These are AI-generated suggestions for home remedies only. Please co
             onClick={handleGetRecommendation}
             disabled={loading}
           >
-            {loading ? "Loading..." : "✨Get Recommendations"}
+            {loading ? "Loading..." : "Get Recommendations"}
           </button>
         </div>
         <div className="output_container">
