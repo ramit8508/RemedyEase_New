@@ -4,7 +4,7 @@ import doctor1 from "../../images/doctor1.jpg";
 import doctor2 from "../../images/doctor2.jpg";
 import doctor3 from "../../images/doctor3.jpg";
 import star from "../../images/star-shape.svg";
-import people from "../../images/people.webp";
+import people from "../../images/people.svg";
 import like  from "../../images/feedback.svg";
 import Footerforuser from "../../components/Footerforuser";
 
