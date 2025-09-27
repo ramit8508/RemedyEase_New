@@ -219,56 +219,52 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     setRemoteStream(null);
     setIsCallActive(false);
   };
-
+  
   return (
-<<<<<<< HEAD
   <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
-=======
-    <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
->>>>>>> 7067c25e342b2a9ea525781904586497bc74b42b
-      <div className="video-call-header">
-        <div className="call-info">
-          <h3>Video Call</h3>
-          <span className="call-status">{callStatus}</span>
-        </div>
-        <button className="close-call-btn" onClick={endCall}>✕</button>
+    <div className="video-call-header">
+      <div className="call-info">
+        <h3>Video Call</h3>
+        <span className="call-status">{callStatus}</span>
       </div>
+      <button className="close-call-btn" onClick={endCall}>✕</button>
+    </div>
 
-      {error && <div className="call-error"><p>{error}</p></div>}
+    {error && <div className="call-error"><p>{error}</p></div>}
 
-      <div className="video-container">
-        <div className="remote-video-wrapper">
-          {remoteStream ? (
-            <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
-          ) : (
-            <div className="no-remote-video">
-              <div className="avatar-placeholder">
-                {isConnecting ? (
-                  <div className="connecting-animation"><div className="spinner"></div><p>Connecting...</p></div>
-                ) : (
-                  <div className="waiting-message"><p>Waiting for other participant</p></div>
-                )}
-              </div>
+    <div className="video-container">
+      <div className="remote-video-wrapper">
+        {remoteStream ? (
+          <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
+        ) : (
+          <div className="no-remote-video">
+            <div className="avatar-placeholder">
+              {isConnecting ? (
+                <div className="connecting-animation"><div className="spinner"></div><p>Connecting...</p></div>
+              ) : (
+                <div className="waiting-message"><p>Waiting for other participant</p></div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="local-video-wrapper">
-          <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
-          {isVideoMuted && <div className="video-muted-overlay"><span>📹</span></div>}
-        </div>
+          </div>
+        )}
       </div>
-
-      <div className="call-controls">
-        <button className={`control-btn ${isAudioMuted ? 'muted' : ''}`} onClick={toggleAudio}>
-          {isAudioMuted ? '🔇' : '🔊'}
-        </button>
-        <button className={`control-btn ${isVideoMuted ? 'muted' : ''}`} onClick={toggleVideo}>
-          {isVideoMuted ? '📷' : '📹'}
-        </button>
-        <button className="control-btn end-call-btn" onClick={endCall}>📞</button>
+      <div className="local-video-wrapper">
+        <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
+        {isVideoMuted && <div className="video-muted-overlay"><span>📹</span></div>}
       </div>
     </div>
-  );
-};
+
+    <div className="call-controls">
+      <button className={`control-btn ${isAudioMuted ? 'muted' : ''}`} onClick={toggleAudio}>
+        {isAudioMuted ? '🔇' : '🔊'}
+      </button>
+      <button className={`control-btn ${isVideoMuted ? 'muted' : ''}`} onClick={toggleVideo}>
+        {isVideoMuted ? '📷' : '📹'}
+      </button>
+      <button className="control-btn end-call-btn" onClick={endCall}>📞</button>
+    </div>
+  </div>
+);
+}
 
 export default VideoCall;
