@@ -221,7 +221,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   };
 
   return (
-    <div className="video-call-container">
+  <div className="video-call-container" style={{ maxWidth: '1100px', width: '100vw', height: '850px' }}>
       <div className="video-call-header">
         <div className="call-info">
           <h3>Video Call</h3>
