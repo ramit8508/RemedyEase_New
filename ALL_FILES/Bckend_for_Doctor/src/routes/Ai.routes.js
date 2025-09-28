@@ -4,7 +4,7 @@ import { Router } from "express";
 
 import { getAIDoctorSuggestion } from "../controllers/Ai.controller.js";
 
-const router = Router(); // Corrected: No "new" needed
+const router = Router(); 
 
 router.post("/doctorsuggestions", getAIDoctorSuggestion);
 
