@@ -10,7 +10,7 @@ import {
 // --- CRITICAL AND FINAL FIX ---
 // This import path is now corrected to use the singular "middleware" folder name,
 // which matches your project's actual folder structure.
-import { upload } from "../middleware/multer.middlewares.js";
+import { upload } from "../middleware/multer.middleware.js";
 
 const router = new Router(); 
 
