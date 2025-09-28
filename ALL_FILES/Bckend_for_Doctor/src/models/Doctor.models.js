@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { registerDoctor } from "../controllers/Doctor.controllers.js";
-import { upload } from "../middleware/multer.middlewares.js";
+import { upload } from "../middleware/multer.middleware.js";
 
 const DoctorSchema = new mongoose.Schema(
   {
