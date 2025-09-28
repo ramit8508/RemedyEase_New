@@ -4,28 +4,26 @@ import {
     loginDoctor, 
     getDoctorProfile, 
     updateDoctorProfile,
-    getAllDoctors // 1. Import the new function
+    getAllDoctors
 } from "../controllers/Doctor.controllers.js";
-import { upload } from "../middleware/multer.middlewares.js";
+
+// --- CRITICAL AND FINAL FIX ---
+// This import path is now corrected to use the singular "middleware" folder name,
+// which matches your project's actual folder structure.
+import { upload } from "../middleware/multer.middleware.js";
 
 const router = new Router(); 
 
-// Route for doctor registration
+// This route correctly uses the multer middleware to handle the avatar upload.
 router.route("/register").post(
-    upload.single("avatar"),
+    upload.single("avatar"), // This tells multer to look for a single file field named "avatar"
     registerDoctor
 );
 
-// Route for doctor login
+// Other routes for the doctor
 router.route("/login").post(loginDoctor);
-
-// Routes for getting and updating a doctor's profile
 router.route("/profile").get(getDoctorProfile);
 router.route("/profile/update").put(updateDoctorProfile);
-
-// --- THIS IS THE NEW ROUTE ---
-// 2. This creates the GET endpoint at /api/v1/doctors/all that your
-// "Meet Doctor" page needs to fetch the list of doctors.
 router.route("/all").get(getAllDoctors);
 
 export default router;
