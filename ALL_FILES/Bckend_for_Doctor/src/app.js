@@ -30,15 +30,12 @@ app.use("/api/v1/doctor-ai", aiRouter);
 app.use("/api/v1/appointments", appointmentRouter);
 app.use("/api/v1/live", liveFeaturesRouter);
 
-// Health check route for the root URL
+
 app.get("/", (req, res) => {
   res.status(200).json({ message: "RemedyEase Doctor Backend is responsive!" });
 });
 
-// --- FINAL ERROR HANDLING MIDDLEWARE ---
-// This is the essential part that was missing. It catches all errors from your
-// controllers and ensures a clean JSON response is sent to the frontend.
-// It MUST be the last `app.use()` in the file.
+
 app.use((err, req, res, next) => {
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
@@ -48,7 +45,7 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // For any unexpected server crashes, log it and send a generic error message.
+
   console.error("UNEXPECTED DOCTOR BACKEND ERROR:", err);
   return res.status(500).json({
     success: false,

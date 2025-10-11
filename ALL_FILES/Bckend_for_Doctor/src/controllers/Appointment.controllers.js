@@ -31,6 +31,16 @@ export const getDoctorAppointments = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, appointments, "Doctor appointments fetched"));
 });
 
+// Get single appointment by ID
+export const getAppointmentById = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found");
+  }
+  return res.status(200).json(new ApiResponse(200, appointment, "Appointment fetched successfully"));
+});
+
 // Confirm appointment by email
 export const confirmAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;

@@ -5,7 +5,8 @@ import {
   getUserAppointments,
   getDoctorConsultationHistory,
   addTreatmentDetails,
-  addSymptomsToAppointment
+  addSymptomsToAppointment,
+  getAppointmentById
 } from "../controllers/Appointment.controllers.js";
 import { Router } from "express";
 const router = new Router();
@@ -13,6 +14,7 @@ const router = new Router();
 router.post("/book", bookAppointment);
 router.get("/doctor/:doctorEmail", getDoctorAppointments);
 router.get("/user/:userEmail", getUserAppointments);
+router.get("/:appointmentId", getAppointmentById);
 router.put("/confirm/:appointmentId", confirmAppointment);
 
 // New history-related routes
