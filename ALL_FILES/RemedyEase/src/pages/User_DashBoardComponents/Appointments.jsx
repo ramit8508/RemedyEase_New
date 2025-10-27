@@ -88,20 +88,25 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchHistoryAndDoctors();
+  }, [user?.email, doctorFromState]);
 
-    // Set up polling to check for appointment updates every 5 seconds
+  // Separate effect for polling to avoid infinite loop
+  useEffect(() => {
+    if (!user?.email) return;
+
+    // Set up polling to check for appointment updates every 10 seconds
     const pollingInterval = setInterval(() => {
-      if (user?.email) {
-        // Silently fetch updates without showing loading state
-        fetch(`/api/v1/appointments/user/${user.email}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) {
-              const newHistory = data.data || [];
-              
+      // Silently fetch updates without showing loading state
+      fetch(`/api/v1/appointments/user/${user.email}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            const newHistory = data.data || [];
+            
+            setHistory((prevHistory) => {
               // Check for newly confirmed appointments
               newHistory.forEach((newAppt) => {
-                const oldAppt = history.find((h) => h._id === newAppt._id);
+                const oldAppt = prevHistory.find((h) => h._id === newAppt._id);
                 
                 // If appointment was pending and is now confirmed
                 if (
@@ -136,16 +141,16 @@ export default function Appointments() {
                 }
               });
               
-              setHistory(newHistory);
-            }
-          })
-          .catch((err) => console.error("Polling error:", err));
-      }
-    }, 5000); // Poll every 5 seconds
+              return newHistory;
+            });
+          }
+        })
+        .catch((err) => console.error("Polling error:", err));
+    }, 10000); // Poll every 10 seconds
 
     // Cleanup interval on unmount
     return () => clearInterval(pollingInterval);
-  }, [user?.email, doctorFromState, history]);
+  }, [user?.email]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
