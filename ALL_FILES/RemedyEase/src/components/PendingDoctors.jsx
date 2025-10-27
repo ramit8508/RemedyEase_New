@@ -8,6 +8,7 @@ const PendingDoctors = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
 
   const wakeUpBackend = async (doctorBackendUrl) => {
     try {
@@ -28,7 +29,22 @@ const PendingDoctors = () => {
     const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL;
     if (doctorBackendUrl) {
       console.log('🔄 Waking up doctor backend...');
+      toast.info('⏳ Waking up backend server... Please wait 30 seconds before approving.', { 
+        autoClose: 5000,
+        position: 'top-center'
+      });
       wakeUpBackend(doctorBackendUrl);
+      
+      // Show ready message after 30 seconds
+      setTimeout(() => {
+        setBackendReady(true);
+        toast.success('✅ Backend is ready! You can now approve doctors.', {
+          autoClose: 3000,
+          position: 'top-center'
+        });
+      }, 30000); // 30 seconds
+    } else {
+      setBackendReady(true); // If no backend URL, assume local/ready
     }
     
     fetchPendingDoctors();
@@ -191,14 +207,16 @@ const PendingDoctors = () => {
                 <button
                   onClick={() => handleApprove(doctor._id)}
                   className="btn-approve"
-                  disabled={actionLoading}
+                  disabled={actionLoading || !backendReady}
+                  title={!backendReady ? "Please wait for backend to wake up..." : ""}
                 >
-                  {actionLoading ? "Processing..." : "✓ Approve"}
+                  {actionLoading ? "Processing..." : !backendReady ? "⏳ Waking up..." : "✓ Approve"}
                 </button>
                 <button
                   onClick={() => setSelectedDoctor(doctor)}
                   className="btn-reject"
-                  disabled={actionLoading}
+                  disabled={actionLoading || !backendReady}
+                  title={!backendReady ? "Please wait for backend to wake up..." : ""}
                 >
                   ✗ Reject
                 </button>
