@@ -1,9 +1,10 @@
-import nodemailer from 'nodemailer';
+import pkg from 'nodemailer';
+const { createTransport } = pkg;
 
 // Create email transporter
 const createTransporter = () => {
   // Using Gmail as an example. You'll need to configure this with your email service
-  return nodemailer.createTransporter({
+  return createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
