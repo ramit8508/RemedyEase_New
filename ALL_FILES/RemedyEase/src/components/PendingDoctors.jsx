@@ -11,12 +11,13 @@ const PendingDoctors = () => {
 
   const wakeUpBackend = async (doctorBackendUrl) => {
     try {
-      // Wake up the backend first to reduce approval delay
-      fetch(`${doctorBackendUrl}/api/v1/doctors/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'wake-up', password: 'wake-up' })
-      }).catch(() => {}); // Ignore wake-up errors
+      // Wake up the backend by calling the pending doctors endpoint (which definitely exists)
+      fetch(`${doctorBackendUrl}/api/v1/admin/doctors/pending`, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem("adminToken")}`,
+        }
+      }).catch(() => {}); // Ignore wake-up errors - just to wake the backend
     } catch (error) {
       // Silently fail wake-up
     }
