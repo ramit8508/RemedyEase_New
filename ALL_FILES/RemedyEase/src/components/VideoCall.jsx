@@ -106,9 +106,11 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
               // give the server a moment to register both sockets
               setTimeout(() => {
                 // try to create an offer; if the remote isn't present it will be ignored
-                console.log("Patient initiating call attempt...");
+                console.log("Patient making initial call attempt...");
                 initiateCall();
-              }, 1200);
+              }, 2000); // Increased from 1200ms to 2000ms
+            } else {
+              console.log("Doctor connected and waiting...");
             }
           } else {
             console.error("Failed to load appointment for call joining:", data);
@@ -129,15 +131,18 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
     // When another user joins the appointment room, the server emits 'user-joined-room'
     socket.on("user-joined-room", (payload) => {
-      console.log("User joined room:", payload);
+      console.log("👤 User joined room:", payload);
       setOtherUserOnline(true);
       setCallStatus("Other participant present");
       setIsConnecting(true);
-      // If this client is patient and not already created an offer, try initiating
+      // Only patient initiates the call to avoid both sides creating offers simultaneously
       if (userType === "patient") {
         setTimeout(() => {
+          console.log("Patient initiating call...");
           initiateCall();
         }, 800);
+      } else {
+        console.log("Doctor waiting for patient to initiate...");
       }
     });
 
@@ -153,9 +158,18 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     });
 
     // WebRTC signaling (server uses dashed event names)
-    socket.on("webrtc-offer", (data) => handleOffer(data.offer));
-    socket.on("webrtc-answer", (data) => handleAnswer(data.answer));
-    socket.on("webrtc-ice-candidate", (data) => handleIceCandidate(data.candidate));
+    socket.on("webrtc-offer", (data) => {
+      console.log("📥 Received offer from remote peer");
+      handleOffer(data.offer);
+    });
+    socket.on("webrtc-answer", (data) => {
+      console.log("📥 Received answer from remote peer");
+      handleAnswer(data.answer);
+    });
+    socket.on("webrtc-ice-candidate", (data) => {
+      console.log("📥 Received ICE candidate from remote peer");
+      handleIceCandidate(data.candidate);
+    });
 
     // Server will broadcast call-ended to room
     socket.on("call-ended", () => {
@@ -179,10 +193,13 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     }
 
     peerConnection.ontrack = (event) => {
+      console.log("🎥 Received remote track:", event);
       const [stream] = event.streams;
+      console.log("🎥 Remote stream received:", stream);
       setRemoteStream(stream);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = stream;
+        console.log("🎥 Remote video element updated");
       }
       setIsCallActive(true);
       setIsConnecting(false);
@@ -191,24 +208,41 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
+        console.log("🧊 Sending ICE candidate");
         // Use server expected event name and include callRoomId
         fetch(`/api/v1/appointments/${appointmentId}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.success && data.data) {
               const callRoomId = data.data.callRoomId;
+              console.log("🧊 Emitting ICE candidate to callRoomId:", callRoomId);
               socketRef.current.emit("webrtc-ice-candidate", {
                 callRoomId,
                 candidate: event.candidate,
               });
             }
           })
-          .catch(() => {
+          .catch((err) => {
+            console.error("Failed to fetch appointment for ICE:", err);
             // fallback: send without callRoomId (server may ignore)
             socketRef.current.emit("webrtc-ice-candidate", {
               candidate: event.candidate,
             });
           });
+      }
+    };
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log("🔌 ICE connection state:", peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === "failed") {
+        setError("Connection failed. Please try again.");
+        setCallStatus("Connection Failed");
+      }
+      if (peerConnection.iceConnectionState === "disconnected") {
+        setCallStatus("Connection lost");
+      }
+      if (peerConnection.iceConnectionState === "connected") {
+        console.log("✅ ICE connection established!");
+        setCallStatus("Connected");
       }
     };
     
