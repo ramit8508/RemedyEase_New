@@ -28,7 +28,24 @@ export default function Appointments() {
     useState(null);
   const [justConfirmedIds, setJustConfirmedIds] = useState(new Set());
 
-  const startLiveChat = (appt) => {
+  const startLiveChat = async (appt) => {
+    try {
+      // Notify doctor that patient is starting live chat
+      await fetch(`/api/v1/live/notify-doctor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: appt._id,
+          doctorEmail: appt.doctorEmail,
+          patientName: user.fullname || user.email,
+          sessionType: "chat",
+          timestamp: new Date().toISOString()
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to notify doctor:", error);
+    }
+    
     setSelectedAppointmentForLive(appt);
     setShowLiveChat(true);
   };
@@ -44,6 +61,20 @@ export default function Appointments() {
           onlineStatus: true,
         }),
       });
+
+      // Notify doctor that patient is starting video call
+      await fetch(`/api/v1/live/notify-doctor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: appt._id,
+          doctorEmail: appt.doctorEmail,
+          patientName: user.fullname || user.email,
+          sessionType: "video",
+          timestamp: new Date().toISOString()
+        }),
+      });
+
       setSelectedAppointmentForLive(appt);
       setShowVideoCall(true);
     } catch (error) {

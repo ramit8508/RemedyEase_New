@@ -255,3 +255,93 @@ export const getUserChatConversations = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, conversations, "Chat conversations fetched"));
 });
+
+// In-memory storage for patient notifications to doctors
+const patientNotifications = new Map(); // key: doctorEmail, value: array of notifications
+
+// Notify doctor when patient starts live session
+export const notifyDoctor = asyncHandler(async (req, res) => {
+  const { appointmentId, doctorEmail, patientName, sessionType, timestamp } = req.body;
+
+  if (!appointmentId || !doctorEmail || !patientName || !sessionType) {
+    throw new ApiError(400, "Missing required fields");
+  }
+
+  // Create notification object
+  const notification = {
+    id: `${appointmentId}-${Date.now()}`,
+    appointmentId,
+    patientName,
+    sessionType, // 'chat' or 'video'
+    timestamp: timestamp || new Date().toISOString(),
+    read: false
+  };
+
+  // Store notification for doctor
+  if (!patientNotifications.has(doctorEmail)) {
+    patientNotifications.set(doctorEmail, []);
+  }
+  
+  const doctorNotifs = patientNotifications.get(doctorEmail);
+  doctorNotifs.push(notification);
+
+  // Keep only last 50 notifications per doctor
+  if (doctorNotifs.length > 50) {
+    doctorNotifs.shift();
+  }
+
+  console.log(`📢 Patient ${patientName} is starting ${sessionType} session - notifying doctor ${doctorEmail}`);
+
+  return res.status(200).json(new ApiResponse(200, notification, "Doctor notified successfully"));
+});
+
+// Get pending notifications for doctor
+export const getDoctorNotifications = asyncHandler(async (req, res) => {
+  const { doctorEmail } = req.params;
+
+  if (!doctorEmail) {
+    throw new ApiError(400, "Doctor email required");
+  }
+
+  const notifications = patientNotifications.get(doctorEmail) || [];
+  
+  // Return only unread notifications
+  const unreadNotifications = notifications.filter(n => !n.read);
+
+  return res.status(200).json(new ApiResponse(200, {
+    notifications: unreadNotifications,
+    count: unreadNotifications.length
+  }, "Notifications fetched"));
+});
+
+// Mark notification as read
+export const markNotificationRead = asyncHandler(async (req, res) => {
+  const { doctorEmail, notificationId } = req.body;
+
+  if (!doctorEmail || !notificationId) {
+    throw new ApiError(400, "Missing required fields");
+  }
+
+  const notifications = patientNotifications.get(doctorEmail);
+  if (notifications) {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+      notification.read = true;
+    }
+  }
+
+  return res.status(200).json(new ApiResponse(200, null, "Notification marked as read"));
+});
+
+// Clear all notifications for doctor
+export const clearDoctorNotifications = asyncHandler(async (req, res) => {
+  const { doctorEmail } = req.params;
+
+  if (!doctorEmail) {
+    throw new ApiError(400, "Doctor email required");
+  }
+
+  patientNotifications.set(doctorEmail, []);
+
+  return res.status(200).json(new ApiResponse(200, null, "Notifications cleared"));
+});

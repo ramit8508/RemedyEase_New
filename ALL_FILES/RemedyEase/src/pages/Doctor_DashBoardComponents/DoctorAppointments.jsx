@@ -20,6 +20,11 @@ export default function DoctorAppointments() {
   const [notificationData, setNotificationData] = useState(null);
   const [notifiedIds, setNotifiedIds] = useState(new Set());
 
+  // Patient-initiated session notifications
+  const [patientNotifications, setPatientNotifications] = useState([]);
+  const [showPatientNotification, setShowPatientNotification] = useState(false);
+  const [currentPatientNotif, setCurrentPatientNotif] = useState(null);
+
   const fetchAppointments = () => {
     if (doctor?.email) {
       setLoading(true);
@@ -48,14 +53,29 @@ export default function DoctorAppointments() {
       const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
       const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
+      console.log('🔍 Checking appointments at:', new Date().toLocaleTimeString());
+      console.log('Current time in minutes:', currentTime);
+      console.log('Current date:', currentDate);
+      console.log('Total appointments:', appointments.length);
+
       appointments.forEach((appt) => {
+        console.log('Checking appointment:', {
+          id: appt._id,
+          status: appt.status,
+          date: appt.date,
+          time: appt.time,
+          patient: appt.userName
+        });
+
         // Only check confirmed appointments
         if (!["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())) {
+          console.log('❌ Skipped - Status not confirmed:', appt.status);
           return;
         }
 
         // Skip if already notified
         if (notifiedIds.has(appt._id)) {
+          console.log('❌ Skipped - Already notified');
           return;
         }
 
@@ -63,6 +83,7 @@ export default function DoctorAppointments() {
         
         // Only check appointments for today
         if (appointmentDate !== currentDate) {
+          console.log('❌ Skipped - Not today. Appointment date:', appointmentDate);
           return;
         }
 
@@ -73,8 +94,17 @@ export default function DoctorAppointments() {
         // Calculate time difference in minutes
         const timeDiff = appointmentTimeInMinutes - currentTime;
 
+        console.log('⏰ Time check:', {
+          appointmentTime: appt.time,
+          appointmentMinutes: appointmentTimeInMinutes,
+          currentMinutes: currentTime,
+          timeDiff: timeDiff,
+          shouldNotify: timeDiff <= 10 && timeDiff >= -5
+        });
+
         // Notify if appointment is within 10 minutes or has started
         if (timeDiff <= 10 && timeDiff >= -5) { // 10 min before to 5 min after
+          console.log('✅ SHOWING NOTIFICATION for appointment:', appt.userName);
           setNotifiedIds((prev) => new Set(prev).add(appt._id));
           setNotificationData(appt);
           setShowNotification(true);
@@ -93,12 +123,62 @@ export default function DoctorAppointments() {
       });
     };
 
-    // Check immediately and then every minute
+    // Check immediately and then every 30 seconds
     checkAppointmentTime();
-    const interval = setInterval(checkAppointmentTime, 60000); // Every 60 seconds
+    const interval = setInterval(checkAppointmentTime, 30000); // Every 30 seconds for faster response
 
     return () => clearInterval(interval);
   }, [appointments, notifiedIds]);
+
+  // Poll for patient-initiated notifications (when patient starts live chat/video)
+  useEffect(() => {
+    if (!doctor?.email) return;
+
+    const checkPatientNotifications = async () => {
+      try {
+        const res = await fetch(`/api/v1/live/notifications/${doctor.email}`);
+        const data = await res.json();
+        
+        if (data.success && data.data.notifications.length > 0) {
+          console.log('📢 Patient notifications received:', data.data.notifications);
+          const latestNotif = data.data.notifications[0];
+          
+          // Show notification popup
+          setCurrentPatientNotif(latestNotif);
+          setShowPatientNotification(true);
+
+          // Play notification sound
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(() => {});
+          } catch (e) {}
+
+          // Mark as read after showing
+          await fetch(`/api/v1/live/notifications/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              doctorEmail: doctor.email,
+              notificationId: latestNotif.id
+            })
+          });
+
+          // Auto-hide after 30 seconds
+          setTimeout(() => {
+            setShowPatientNotification(false);
+          }, 30000);
+        }
+      } catch (error) {
+        console.error('Failed to fetch patient notifications:', error);
+      }
+    };
+
+    // Check immediately and then every 10 seconds
+    checkPatientNotifications();
+    const interval = setInterval(checkPatientNotifications, 10000);
+
+    return () => clearInterval(interval);
+  }, [doctor?.email]);
 
   const handleConfirm = async (appointmentId) => {
     try {
@@ -113,6 +193,20 @@ export default function DoctorAppointments() {
     } catch (error) {
       console.error("Failed to confirm appointment", error);
     }
+  };
+
+  const handleJoinPatientSession = (notif) => {
+    // Find the appointment
+    const appt = appointments.find(a => a._id === notif.appointmentId);
+    if (!appt) return;
+
+    if (notif.sessionType === 'chat') {
+      startLiveChat(appt);
+    } else if (notif.sessionType === 'video') {
+      startVideoCall(appt);
+    }
+    
+    setShowPatientNotification(false);
   };
 
   const startLiveChat = (appt) => {
@@ -188,6 +282,43 @@ export default function DoctorAppointments() {
                 onClick={() => startLiveChat(notificationData)}
               >
                 💬 Start Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient-Initiated Session Notification */}
+      {showPatientNotification && currentPatientNotif && (
+        <div className="patient-waiting-notification-popup">
+          <div className="notification-header">
+            <div className="notification-icon">👤</div>
+            <h3>Patient Waiting!</h3>
+            <button 
+              className="notification-close"
+              onClick={() => setShowPatientNotification(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="notification-body">
+            <div className="notification-patient">
+              <strong>Patient:</strong> {currentPatientNotif.patientName}
+            </div>
+            <div className="notification-time">
+              <strong>Started:</strong> {new Date(currentPatientNotif.timestamp).toLocaleTimeString()}
+            </div>
+            <div className="notification-message">
+              {currentPatientNotif.sessionType === 'video' 
+                ? '📹 Patient is waiting in video call' 
+                : '💬 Patient started live chat'}
+            </div>
+            <div className="notification-actions">
+              <button
+                className="notification-btn join-btn-notif"
+                onClick={() => handleJoinPatientSession(currentPatientNotif)}
+              >
+                🚀 Join Now
               </button>
             </div>
           </div>

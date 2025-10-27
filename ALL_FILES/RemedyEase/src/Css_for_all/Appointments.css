@@ -623,3 +623,54 @@
   }
 }
 
+
+/* Patient-Initiated Session Notification */
+.patient-waiting-notification-popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  max-width: 95vw;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  animation: slideInBounce 0.5s ease-out;
+  color: white;
+  border: 3px solid #ffffff;
+}
+
+.notification-message {
+  font-size: 15px;
+  margin: 15px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.join-btn-notif {
+  background: white;
+  color: #27ae60;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  animation: pulse-join 1.5s infinite;
+}
+
+.join-btn-notif:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 5px 20px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes pulse-join {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+  }
+}
+
