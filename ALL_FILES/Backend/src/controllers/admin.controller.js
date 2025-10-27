@@ -96,29 +96,16 @@ export const toggleUserBlock = asyncHandler(async (req, res) => {
 // Get Admin Stats
 export const getAdminStats = asyncHandler(async (req, res) => {
   try {
-    // Fetch stats from doctor backend
-    const doctorBackendUrl = process.env.DOCTOR_BACKEND_URL || "http://localhost:5001";
-    
-    const [doctorsResponse, appointmentsResponse] = await Promise.all([
-      fetch(`${doctorBackendUrl}/api/v1/admin/doctors/stats`),
-      fetch(`${doctorBackendUrl}/api/v1/admin/appointments/stats`)
-    ]);
-
-    const doctorsData = await doctorsResponse.json();
-    const appointmentsData = await appointmentsResponse.json();
-
+    // Count total users
     const totalUsers = await User.countDocuments();
     const blockedUsers = await User.countDocuments({ isBlocked: true });
+    const activeUsers = totalUsers - blockedUsers;
 
     return res.status(200).json(
       new ApiResponse(200, {
-        users: {
-          total: totalUsers,
-          blocked: blockedUsers,
-          active: totalUsers - blockedUsers
-        },
-        doctors: doctorsData.data || { total: 0, pending: 0, approved: 0, rejected: 0 },
-        appointments: appointmentsData.data || { total: 0, pending: 0, confirmed: 0, completed: 0 }
+        totalUsers,
+        blockedUsers,
+        activeUsers
       }, "Admin stats fetched successfully")
     );
   } catch (error) {

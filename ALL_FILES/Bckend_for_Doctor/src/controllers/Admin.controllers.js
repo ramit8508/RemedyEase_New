@@ -132,3 +132,14 @@ export const getAppointmentStats = asyncHandler(async (req, res) => {
     new ApiResponse(200, { total, pending, confirmed, completed, cancelled }, "Appointment stats fetched")
   );
 });
+
+// Get prescription statistics
+export const getPrescriptionStats = asyncHandler(async (req, res) => {
+  const totalPrescriptions = await Appointment.countDocuments({ 
+    prescriptionFile: { $exists: true, $ne: null } 
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { total: totalPrescriptions }, "Prescription stats fetched")
+  );
+});

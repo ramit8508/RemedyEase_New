@@ -76,13 +76,31 @@ const AdminOverview = () => {
       
       const appointmentStatsData = await appointmentStatsRes.json();
 
+      // Fetch prescription stats
+      const prescriptionStatsRes = await fetch(
+        `${import.meta.env.VITE_DOCTOR_BACKEND_URL}/api/v1/admin/prescriptions/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      const prescriptionContentType = prescriptionStatsRes.headers.get("content-type");
+      if (!prescriptionContentType || !prescriptionContentType.includes("application/json")) {
+        console.error('Prescription backend returned non-JSON response. Backend may be sleeping.');
+        throw new Error('Prescription backend is waking up. Please refresh the page in 30 seconds.');
+      }
+      
+      const prescriptionStatsData = await prescriptionStatsRes.json();
+
       setStats({
         totalUsers: userStatsData.data?.totalUsers || 0,
-        totalDoctors: doctorStatsData.data?.totalDoctors || 0,
-        pendingDoctors: doctorStatsData.data?.pendingDoctors || 0,
-        totalAppointments: appointmentStatsData.data?.totalAppointments || 0,
-        completedAppointments: appointmentStatsData.data?.completedAppointments || 0,
-        totalPrescriptions: appointmentStatsData.data?.totalPrescriptions || 0,
+        totalDoctors: doctorStatsData.data?.total || 0,
+        pendingDoctors: doctorStatsData.data?.pending || 0,
+        totalAppointments: appointmentStatsData.data?.total || 0,
+        completedAppointments: appointmentStatsData.data?.completed || 0,
+        totalPrescriptions: prescriptionStatsData.data?.total || 0,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);

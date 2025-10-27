@@ -8,7 +8,8 @@ import {
   cancelAppointment,
   getAllPrescriptions,
   getDoctorStats,
-  getAppointmentStats
+  getAppointmentStats,
+  getPrescriptionStats
 } from "../controllers/Admin.controllers.js";
 
 const router = Router();
@@ -27,5 +28,6 @@ router.get("/appointments/stats", getAppointmentStats);
 
 // Prescription management
 router.get("/prescriptions", getAllPrescriptions);
+router.get("/prescriptions/stats", getPrescriptionStats);
 
 export default router;
