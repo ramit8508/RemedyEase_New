@@ -68,6 +68,17 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     };
   }, []); // Empty dependency array means this effect runs once on mount
 
+  // Effect to handle remote stream updates
+  useEffect(() => {
+    if (remoteStream && remoteVideoRef.current) {
+      console.log("🔄 Remote stream state updated, applying to video element");
+      remoteVideoRef.current.srcObject = remoteStream;
+      remoteVideoRef.current.play().catch(err => {
+        console.error("Failed to play remote video in useEffect:", err);
+      });
+    }
+  }, [remoteStream]);
+
   const setupSocket = () => {
     // Socket connection setup
     socketRef.current = io(SOCKET_URL, {
@@ -196,11 +207,21 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       console.log("🎥 Received remote track:", event);
       const [stream] = event.streams;
       console.log("🎥 Remote stream received:", stream);
+      console.log("🎥 Stream has video tracks:", stream.getVideoTracks().length);
+      console.log("🎥 Stream has audio tracks:", stream.getAudioTracks().length);
+      
       setRemoteStream(stream);
+      
+      // Force update the video element
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = stream;
         console.log("🎥 Remote video element updated");
+        // Force play in case autoplay didn't work
+        remoteVideoRef.current.play().catch(err => {
+          console.error("Failed to play remote video:", err);
+        });
       }
+      
       setIsCallActive(true);
       setIsConnecting(false);
       setCallStatus("Connected");
