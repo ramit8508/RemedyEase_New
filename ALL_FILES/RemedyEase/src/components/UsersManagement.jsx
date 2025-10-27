@@ -4,16 +4,35 @@ import "../Css_for_all/UsersManagement.css";
 const UsersManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    // Auto-retry after 3 seconds if there was an error and retry count < 3
+    if (error && retryCount < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Retrying users fetch... (Attempt ${retryCount + 1}/3)`);
+        setError(null);
+        setLoading(true);
+        setRetryCount(prev => prev + 1);
+        fetchUsers();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount]);
+
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("adminToken");
+      const userBackendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/users`,
+        userBackendUrl ? `${userBackendUrl}/api/v1/admin/users` : '/api/v1/admin/users',
         {
           headers: { Authorization: `Bearer ${token}` },
           credentials: "include",
@@ -24,16 +43,16 @@ const UsersManagement = () => {
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         console.error('Backend returned non-JSON response. Backend may be sleeping.');
-        alert('Backend is waking up. Please refresh the page in 30 seconds.');
-        setLoading(false);
-        return;
+        throw new Error('Backend is waking up. Retrying automatically...');
       }
       
       const data = await response.json();
       setUsers(data.data || []);
+      setError(null);
+      setRetryCount(0);
     } catch (error) {
       console.error("Error fetching users:", error);
-      alert('Error loading users. Backend may be sleeping. Please refresh the page in 30 seconds.');
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -42,12 +61,18 @@ const UsersManagement = () => {
   const toggleBlock = async (userId, currentStatus) => {
     try {
       const token = localStorage.getItem("adminToken");
+      const userBackendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/users/${userId}/block`,
+        userBackendUrl ? `${userBackendUrl}/api/v1/admin/users/${userId}/block` : `/api/v1/admin/users/${userId}/block`,
         {
           method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
           credentials: "include",
+          body: JSON.stringify({ isBlocked: !currentStatus })
         }
       );
 
@@ -60,7 +85,45 @@ const UsersManagement = () => {
     }
   };
 
-  if (loading) return <div className="admin-loading">Loading users...</div>;
+  if (loading) {
+    return (
+      <div className="admin-loading" style={{ textAlign: 'center', padding: '50px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
+        <h2>Loading users...</h2>
+        {retryCount > 0 && <p>Retry attempt {retryCount}/3</p>}
+        <p style={{ color: '#666', fontSize: '14px' }}>Backend is waking up, please wait...</p>
+      </div>
+    );
+  }
+
+  if (error && retryCount >= 3) {
+    return (
+      <div className="admin-error" style={{ textAlign: 'center', padding: '50px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+        <h2>Unable to load users</h2>
+        <p style={{ color: '#d32f2f', marginBottom: '20px' }}>{error}</p>
+        <button 
+          onClick={() => {
+            setRetryCount(0);
+            setError(null);
+            setLoading(true);
+            fetchUsers();
+          }}
+          style={{
+            backgroundColor: '#388e3c',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="users-management">
