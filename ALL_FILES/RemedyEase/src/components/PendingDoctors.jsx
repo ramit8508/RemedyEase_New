@@ -9,6 +9,19 @@ const PendingDoctors = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
+  const wakeUpBackend = async (doctorBackendUrl) => {
+    try {
+      // Wake up the backend first to reduce approval delay
+      fetch(`${doctorBackendUrl}/api/v1/doctors/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'wake-up', password: 'wake-up' })
+      }).catch(() => {}); // Ignore wake-up errors
+    } catch (error) {
+      // Silently fail wake-up
+    }
+  };
+
   useEffect(() => {
     // Wake up the backend when page loads
     const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL;
@@ -42,20 +55,6 @@ const PendingDoctors = () => {
     }
   };
 
-  const wakeUpBackend = async (doctorBackendUrl) => {
-    try {
-      // Wake up the backend first to reduce approval delay
-      const wakeUpPromise = fetch(`${doctorBackendUrl}/api/v1/doctors/health`, {
-        method: 'GET',
-      }).catch(() => {}); // Ignore wake-up errors
-      
-      // Don't wait for wake-up to complete, just trigger it
-      return wakeUpPromise;
-    } catch (error) {
-      // Silently fail wake-up
-    }
-  };
-
   const handleApprove = async (doctorId) => {
     setActionLoading(true);
     
@@ -65,11 +64,6 @@ const PendingDoctors = () => {
       
       console.log('Approving doctor...', doctorId);
       toast.info("Processing approval...", { autoClose: 1000 });
-      
-      // Wake up backend immediately (don't wait)
-      if (doctorBackendUrl) {
-        wakeUpBackend(doctorBackendUrl);
-      }
       
       const response = await fetch(
         doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${doctorId}/approval` : `/api/v1/admin/doctors/${doctorId}/approval`,
