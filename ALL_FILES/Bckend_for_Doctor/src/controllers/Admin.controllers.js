@@ -24,6 +24,12 @@ export const updateDoctorApproval = asyncHandler(async (req, res) => {
   const { doctorId } = req.params;
   const { approvalStatus, rejectionReason } = req.body;
 
+  console.log('📋 Approval request received:', {
+    doctorId,
+    approvalStatus,
+    rejectionReason: rejectionReason || 'N/A'
+  });
+
   if (!['approved', 'rejected'].includes(approvalStatus)) {
     throw new ApiError(400, "Invalid approval status");
   }
@@ -43,17 +49,34 @@ export const updateDoctorApproval = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Doctor not found");
   }
 
+  console.log('✅ Doctor status updated in database:', {
+    email: doctor.email,
+    name: doctor.fullname,
+    status: approvalStatus
+  });
+
   // Send email notification
   try {
+    console.log('📧 Attempting to send email to:', doctor.email);
+    
     if (approvalStatus === 'approved') {
-      await sendApprovalEmail(doctor.email, doctor.fullname);
-      console.log(`Approval email sent to ${doctor.email}`);
+      const emailSent = await sendApprovalEmail(doctor.email, doctor.fullname);
+      if (emailSent) {
+        console.log(`✅ Approval email sent successfully to ${doctor.email}`);
+      } else {
+        console.log(`⚠️ Approval email failed to send to ${doctor.email}`);
+      }
     } else if (approvalStatus === 'rejected') {
-      await sendRejectionEmail(doctor.email, doctor.fullname, rejectionReason || 'Not specified');
-      console.log(`Rejection email sent to ${doctor.email}`);
+      const emailSent = await sendRejectionEmail(doctor.email, doctor.fullname, rejectionReason || 'Not specified');
+      if (emailSent) {
+        console.log(`✅ Rejection email sent successfully to ${doctor.email}`);
+      } else {
+        console.log(`⚠️ Rejection email failed to send to ${doctor.email}`);
+      }
     }
   } catch (emailError) {
-    console.error('Error sending email notification:', emailError);
+    console.error('❌ Error sending email notification:', emailError.message);
+    console.error('Email error details:', emailError);
     // Don't fail the approval/rejection if email fails
   }
 

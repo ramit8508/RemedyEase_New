@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { toast } from 'react-toastify';
 import "../Css_for_all/PendingDoctors.css";
 
 const PendingDoctors = () => {
@@ -40,6 +41,8 @@ const PendingDoctors = () => {
       const token = localStorage.getItem("adminToken");
       const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
       
+      console.log('Approving doctor...', doctorId);
+      
       const response = await fetch(
         doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${doctorId}/approval` : `/api/v1/admin/doctors/${doctorId}/approval`,
         {
@@ -52,16 +55,19 @@ const PendingDoctors = () => {
         }
       );
 
+      const result = await response.json();
+      console.log('Approval response:', result);
+
       if (response.ok) {
-        const result = await response.json();
-        alert("Doctor approved successfully! Email notification has been sent.");
+        toast.success(result.message || "Doctor approved successfully! Email notification sent to doctor.");
         fetchPendingDoctors();
       } else {
-        alert("Failed to approve doctor");
+        toast.error(result.message || "Failed to approve doctor. Please try again.");
+        console.error('Approval error:', result);
       }
     } catch (error) {
       console.error("Error approving doctor:", error);
-      alert("Error approving doctor");
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setActionLoading(false);
     }
@@ -69,7 +75,7 @@ const PendingDoctors = () => {
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert("Please provide a reason for rejection");
+      toast.warning("Please provide a reason for rejection");
       return;
     }
 
@@ -77,6 +83,8 @@ const PendingDoctors = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      
+      console.log('Rejecting doctor...', selectedDoctor._id);
       
       const response = await fetch(
         doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${selectedDoctor._id}/approval` : `/api/v1/admin/doctors/${selectedDoctor._id}/approval`,
@@ -93,17 +101,21 @@ const PendingDoctors = () => {
         }
       );
 
+      const result = await response.json();
+      console.log('Rejection response:', result);
+
       if (response.ok) {
-        alert("Doctor rejected successfully! Email notification has been sent.");
+        toast.success(result.message || "Doctor rejected successfully! Email notification sent to doctor.");
         setSelectedDoctor(null);
         setRejectionReason("");
         fetchPendingDoctors();
       } else {
-        alert("Failed to reject doctor");
+        toast.error(result.message || "Failed to reject doctor. Please try again.");
+        console.error('Rejection error:', result);
       }
     } catch (error) {
       console.error("Error rejecting doctor:", error);
-      alert("Error rejecting doctor");
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setActionLoading(false);
     }
@@ -158,7 +170,7 @@ const PendingDoctors = () => {
                   className="btn-approve"
                   disabled={actionLoading}
                 >
-                  ✓ Approve
+                  {actionLoading ? "Processing..." : "✓ Approve"}
                 </button>
                 <button
                   onClick={() => setSelectedDoctor(doctor)}
