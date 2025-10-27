@@ -64,7 +64,31 @@ const AdminLogin = () => {
         <h1 className="admin-login-title">Admin Login</h1>
         <p className="admin-login-subtitle">Access the admin dashboard</p>
 
+        <div style={{ 
+          backgroundColor: '#e7f3ff', 
+          color: '#004085', 
+          padding: '10px', 
+          borderRadius: '5px', 
+          marginBottom: '15px',
+          fontSize: '13px',
+          border: '1px solid #b8daff'
+        }}>
+          ℹ️ <strong>Note:</strong> If you haven't used the app recently, click "Wake Up Backend" first and wait 30-60 seconds before logging in.
+        </div>
+
         {error && <div className="admin-error-message">{error}</div>}
+
+        {backendStatus === "waking" && (
+          <div className="admin-info-message" style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
+            ⏳ Waking up backend server... This may take 30-60 seconds.
+          </div>
+        )}
+
+        {backendStatus === "online" && (
+          <div className="admin-success-message" style={{ backgroundColor: '#d4edda', color: '#155724', border: '1px solid #28a745' }}>
+            ✅ Backend is online! You can now login.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="admin-login-form">
           <div className="admin-form-group">
@@ -98,11 +122,32 @@ const AdminLogin = () => {
           <button 
             type="submit" 
             className="admin-login-button"
-            disabled={loading}
+            disabled={loading || wakingUp}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <button 
+          onClick={wakeUpBackend}
+          className="admin-wake-button"
+          disabled={loading || wakingUp}
+          style={{
+            marginTop: '10px',
+            backgroundColor: '#ffc107',
+            color: '#000',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '5px',
+            cursor: wakingUp ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            opacity: wakingUp ? 0.6 : 1,
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {wakingUp ? "⏳ Waking up backend..." : "🚀 Wake Up Backend"}
+        </button>
 
         <button 
           onClick={() => navigate("/")} 
