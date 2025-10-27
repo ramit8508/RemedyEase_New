@@ -9,6 +9,8 @@ const AdminLogin = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [wakingUp, setWakingUp] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("unknown");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -19,25 +21,80 @@ const AdminLogin = () => {
     setError("");
   };
 
+  // Wake up the backend server
+  const wakeUpBackend = async () => {
+    setWakingUp(true);
+    setError("");
+    setBackendStatus("waking");
+    
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const healthUrl = backendUrl ? `${backendUrl}/` : '/';
+      
+      console.log('Waking up backend at:', healthUrl);
+      
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        setBackendStatus("online");
+        setError("");
+      } else {
+        setBackendStatus("offline");
+        setError("Backend responded but may not be fully ready. Please try logging in.");
+      }
+    } catch (err) {
+      console.error('Backend wake-up error:', err);
+      setBackendStatus("offline");
+      setError("Backend is starting up. Please wait 30 seconds and try again.");
+    } finally {
+      setWakingUp(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-          credentials: "include",
+      // Use relative path for production (proxied by Vercel)
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const apiUrl = backendUrl ? `${backendUrl}/api/v1/admin/login` : '/api/v1/admin/login';
+      
+      console.log('Attempting admin login to:', apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+        credentials: "include",
+      });
+
+      console.log('Response status:', response.status);
+
+      // Handle non-JSON responses (like HTML error pages)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error('Received non-JSON response. Response might be HTML error page.');
+        
+        // Special handling for 405 Method Not Allowed
+        if (response.status === 405) {
+          setError("Backend server is waking up. Please click 'Wake Up Backend' button and wait 30 seconds, then try again.");
+          setLoading(false);
+          return;
         }
-      );
+        
+        setError(`Server error (${response.status}). The backend may be starting up. Please wait a moment and try again.`);
+        setLoading(false);
+        return;
+      }
 
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok) {
         // Store admin token in localStorage
@@ -52,7 +109,15 @@ const AdminLogin = () => {
       }
     } catch (err) {
       console.error("Admin login error:", err);
-      setError("An error occurred. Please try again.");
+      
+      // Better error messages
+      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+        setError("Cannot connect to server. Please click 'Wake Up Backend' button and wait 30-60 seconds.");
+      } else if (err instanceof SyntaxError) {
+        setError("Server is starting up. Please click 'Wake Up Backend' button and wait 30 seconds.");
+      } else {
+        setError(`Error: ${err.message}. Please try again.`);
+      }
     } finally {
       setLoading(false);
     }
