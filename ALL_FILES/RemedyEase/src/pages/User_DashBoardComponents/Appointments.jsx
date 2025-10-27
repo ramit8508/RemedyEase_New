@@ -26,6 +26,7 @@ export default function Appointments() {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
     useState(null);
+  const [justConfirmedIds, setJustConfirmedIds] = useState(new Set());
 
   const startLiveChat = (appt) => {
     setSelectedAppointmentForLive(appt);
@@ -87,7 +88,64 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchHistoryAndDoctors();
-  }, [user?.email, doctorFromState]);
+
+    // Set up polling to check for appointment updates every 5 seconds
+    const pollingInterval = setInterval(() => {
+      if (user?.email) {
+        // Silently fetch updates without showing loading state
+        fetch(`/api/v1/appointments/user/${user.email}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              const newHistory = data.data || [];
+              
+              // Check for newly confirmed appointments
+              newHistory.forEach((newAppt) => {
+                const oldAppt = history.find((h) => h._id === newAppt._id);
+                
+                // If appointment was pending and is now confirmed
+                if (
+                  oldAppt &&
+                  oldAppt.status?.toLowerCase() === "pending" &&
+                  ["confirmed", "approved", "accepted"].includes(
+                    newAppt.status?.toLowerCase()
+                  )
+                ) {
+                  // Mark this appointment as just confirmed
+                  setJustConfirmedIds((prev) => new Set(prev).add(newAppt._id));
+                  
+                  // Show success message
+                  setMessage(
+                    `✅ Dr. ${newAppt.doctorName} confirmed your appointment! Live features are now available.`
+                  );
+                  setMessageType("success");
+                  
+                  // Auto-hide message after 5 seconds
+                  setTimeout(() => {
+                    setMessage("");
+                  }, 5000);
+                  
+                  // Remove the highlight after 10 seconds
+                  setTimeout(() => {
+                    setJustConfirmedIds((prev) => {
+                      const newSet = new Set(prev);
+                      newSet.delete(newAppt._id);
+                      return newSet;
+                    });
+                  }, 10000);
+                }
+              });
+              
+              setHistory(newHistory);
+            }
+          })
+          .catch((err) => console.error("Polling error:", err));
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(pollingInterval);
+  }, [user?.email, doctorFromState, history]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -222,7 +280,12 @@ export default function Appointments() {
         ) : (
           <ul className="history-list">
             {history.map((appt) => (
-              <li key={appt._id} className="history-item">
+              <li 
+                key={appt._id} 
+                className={`history-item ${
+                  justConfirmedIds.has(appt._id) ? 'just-confirmed' : ''
+                }`}
+              >
                 <div style={{ marginBottom: "8px" }}>
                   <strong>Dr. {appt.doctorName}</strong>
                 </div>
@@ -238,13 +301,18 @@ export default function Appointments() {
                     <div className="pending-text">
                       <strong>Waiting for Confirmation</strong>
                       <span>The doctor will review your request shortly.</span>
+                      <span className="auto-update-badge">🔄 Auto-updating...</span>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div>
                       <strong>Status:</strong>{" "}
-                      <span className="status-confirmed">{appt.status}</span>
+                      <span className="status-confirmed">
+                        {justConfirmedIds.has(appt._id) && "🎉 "}
+                        {appt.status}
+                        {justConfirmedIds.has(appt._id) && " (Just Confirmed!)"}
+                      </span>
                     </div>
                     {["confirmed", "approved", "accepted"].includes(
                       appt.status?.toLowerCase()

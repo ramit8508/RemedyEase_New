@@ -14,20 +14,26 @@ function Home() {
     <>
       <div className="main_head">
         <h1 className="head_title">
-          Find the right care, right now with RemedyEase
+          AI-Powered Health Analysis at Your Fingertips
         </h1>
         <p className="head_para">
-          Connect with experienced healthcare professionals from the comfort of
-          your home. Get personalized advice and treatment plans tailored to
-          your needs.
+          Get instant symptom analysis and personalized health recommendations. 
+          Our AI determines if you need to see a doctor or if home remedies can help you feel better.
         </p>
-        <Link to="/user/dashboard/Meetdoctor">
-          <button className="head_btn">Find a doctor</button>
+        <Link to="/user/dashboard/SymptomChecker">
+          <button className="head_btn">Check Your Symptoms Now</button>
         </Link>
       </div>
       <div className="services">
         <h2 className="service_title">Explore Our Services</h2>
         <div className="service_cards">
+          <div className="service_card">
+            <img src={service4} alt="AI Health Check" className="service_image4" />
+            <h3 className="service_name">AI Health Check</h3>
+            <p className="service_desc">
+              Smart symptom analysis that tells you if you need a doctor or home care.
+            </p>
+          </div>
           <div className="service_card">
             <img src={service1} alt="Find a doctor" className="service_image1" />
             <h3 className="service_name">Find a doctor</h3>
@@ -47,14 +53,6 @@ function Home() {
             <h3 className="service_name">Chat with Doctor</h3>
             <p className="service_desc">
               Get instant answers to your health questions via secure chat.
-            </p>
-          </div>
-          <div className="service_card">
-            <img src={service4} alt="AI Recommendations" className="service_image4" />
-            <h3 className="service_name">AI Recommendations</h3>
-            <p className="service_desc">
-              Receive personalized health tips and recommendations powered by
-              AI.
             </p>
           </div>
         </div>
@@ -80,9 +78,9 @@ function Home() {
         </div>
       </div>
       <div className="ready">
-        <h2 className="ready_title">Ready to take control on your Health?</h2>
-        <Link to="/user/dashboard/Meetdoctor">
-          <button className="ready_btn">Find a doctor</button>
+        <h2 className="ready_title">Ready to take control of your Health?</h2>
+        <Link to="/user/dashboard/SymptomChecker">
+          <button className="ready_btn">Start AI Health Check</button>
         </Link>
       </div>
     </>

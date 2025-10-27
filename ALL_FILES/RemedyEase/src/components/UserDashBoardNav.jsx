@@ -10,6 +10,8 @@ function UserDashBoardNav() {
       <h1 className="nav-logo">☘RemedyEase</h1>
       <div className="nav-links">
         
+          <Link className="nav-link" to="/User/dashboard/SymptomChecker">AI Health Check</Link>
+
           <Link className="nav-link" to="/User/dashboard/Meetdoctor">Meet Doctor</Link>
 
           <Link className="nav-link" to="/User/dashboard/Appointments">Appointments</Link>
@@ -18,7 +20,7 @@ function UserDashBoardNav() {
 
           <Link className="nav-link" to="/User/dashboard/Chat">Chat</Link>
 
-          <Link className="nav-link" to="/User/dashboard/AIRecommanded">AI Recommendations</Link>
+          <Link className="nav-link" to="/User/dashboard/AIRecommanded">Home Remedies</Link>
 
           <Link className="nav-link" to="/User/dashboard/Profile">Profile</Link>
 

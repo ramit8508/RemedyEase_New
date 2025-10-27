@@ -10,6 +10,7 @@ import Home from "./User_DashBoardComponents/Home";
 import MedicalStoreHome from "./User_DashBoardComponents/MedicalStoreHome";
 import MedicalStoreCart from "./User_DashBoardComponents/MedicalStoreCart";
 import MedicalStoreCheckout from "./User_DashBoardComponents/MedicalStoreCheckout";
+import SymptomChecker from "./User_DashBoardComponents/SymptomChecker";
 
 export default function UserDashboard() {
   return (
@@ -21,6 +22,7 @@ export default function UserDashboard() {
         <Route path="Appointments" element={<Appointments />} />
         <Route path="Chat" element={<Chat />} />
         <Route path="Meetdoctor" element={<Meetdoctor />} />
+        <Route path="SymptomChecker" element={<SymptomChecker />} />
         <Route path="Profile" element={<Profile />} />
         <Route path="Home" element={<Home />} />
         <Route path="medical-store" element={<MedicalStoreHome />} />
