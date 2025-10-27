@@ -26,6 +26,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const socketRef = useRef(null);
+  const localStreamRef = useRef(null); // Store stream in ref for immediate access
 
   const pcConfig = {
     iceServers: [
@@ -46,6 +47,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
           audio: true,
         });
         setLocalStream(stream);
+        localStreamRef.current = stream; // Store in ref for immediate access
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
@@ -169,10 +171,11 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   const createPeerConnection = () => {
     const peerConnection = new RTCPeerConnection(pcConfig);
 
-    if (localStream) {
-      localStream
+    const stream = localStreamRef.current || localStream;
+    if (stream) {
+      stream
         .getTracks()
-        .forEach((track) => peerConnection.addTrack(track, localStream));
+        .forEach((track) => peerConnection.addTrack(track, stream));
     }
 
     peerConnection.ontrack = (event) => {
@@ -213,7 +216,9 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   };
 
   const initiateCall = async () => {
-    if (!localStream) {
+    const stream = localStreamRef.current || localStream;
+    if (!stream) {
+        console.error("Local stream not available yet");
         setError("Local video stream is not available to initiate the call.");
         return;
     }
@@ -225,6 +230,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
+      console.log("Sending offer to callRoomId:", callRoomId);
       socketRef.current.emit("webrtc-offer", { callRoomId, offer });
     } catch (err) {
       console.error("Failed to initiate call:", err);
@@ -233,7 +239,9 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   };
 
   const handleOffer = async (offer) => {
-    if (!localStream) {
+    const stream = localStreamRef.current || localStream;
+    if (!stream) {
+        console.error("Local stream not available to answer");
         setError("Local video stream is not available to answer the call.");
         return;
     }
@@ -248,6 +256,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
+      console.log("Sending answer to callRoomId:", callRoomId);
       socketRef.current.emit("webrtc-answer", { callRoomId, answer });
     } catch (err) {
       console.error("Failed to accept call:", err);
@@ -275,16 +284,18 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   };
 
   const toggleAudio = () => {
-    if (localStream) {
-      localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-      setIsAudioMuted(!localStream.getAudioTracks()[0].enabled);
+    const stream = localStreamRef.current || localStream;
+    if (stream) {
+      stream.getAudioTracks()[0].enabled = !stream.getAudioTracks()[0].enabled;
+      setIsAudioMuted(!stream.getAudioTracks()[0].enabled);
     }
   };
 
   const toggleVideo = () => {
-    if (localStream) {
-      localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-      setIsVideoMuted(!localStream.getVideoTracks()[0].enabled);
+    const stream = localStreamRef.current || localStream;
+    if (stream) {
+      stream.getVideoTracks()[0].enabled = !stream.getVideoTracks()[0].enabled;
+      setIsVideoMuted(!stream.getVideoTracks()[0].enabled);
     }
   };
 
@@ -307,8 +318,9 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   };
 
   const cleanup = () => {
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
+    const stream = localStreamRef.current || localStream;
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
@@ -318,6 +330,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
+    localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     setIsCallActive(false);
