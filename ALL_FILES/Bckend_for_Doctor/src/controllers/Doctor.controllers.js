@@ -47,6 +47,22 @@ const loginDoctor = asyncHandler(async (req, res) => {
     if (!doctor) {
         throw new ApiError(404, "Doctor not found with this email");
     }
+    
+    // Check if doctor is blocked
+    if (doctor.isBlocked) {
+        throw new ApiError(403, "Your account has been blocked by the admin. Please contact support.");
+    }
+    
+    // Check approval status
+    if (doctor.approvalStatus === 'pending') {
+        throw new ApiError(403, "Your account is pending approval. Please wait for admin verification. You will be notified via email once approved.");
+    }
+    
+    if (doctor.approvalStatus === 'rejected') {
+        const reason = doctor.rejectionReason || "Your application was not approved.";
+        throw new ApiError(403, `Your account has been rejected. Reason: ${reason}`);
+    }
+    
     const isPasswordCorrect = await doctor.isPasswordCorrect(password);
     if (!isPasswordCorrect) {
         throw new ApiError(401, "Incorrect password");

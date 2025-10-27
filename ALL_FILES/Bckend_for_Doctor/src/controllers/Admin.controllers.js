@@ -3,6 +3,7 @@ import { Appointment } from "../models/Appointments.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { sendApprovalEmail, sendRejectionEmail } from "../utils/emailService.js";
 
 // Get all doctors (for admin)
 export const getAllDoctors = asyncHandler(async (req, res) => {
@@ -42,8 +43,22 @@ export const updateDoctorApproval = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Doctor not found");
   }
 
+  // Send email notification
+  try {
+    if (approvalStatus === 'approved') {
+      await sendApprovalEmail(doctor.email, doctor.fullname);
+      console.log(`Approval email sent to ${doctor.email}`);
+    } else if (approvalStatus === 'rejected') {
+      await sendRejectionEmail(doctor.email, doctor.fullname, rejectionReason || 'Not specified');
+      console.log(`Rejection email sent to ${doctor.email}`);
+    }
+  } catch (emailError) {
+    console.error('Error sending email notification:', emailError);
+    // Don't fail the approval/rejection if email fails
+  }
+
   return res.status(200).json(
-    new ApiResponse(200, doctor, `Doctor ${approvalStatus} successfully`)
+    new ApiResponse(200, doctor, `Doctor ${approvalStatus} successfully. Email notification sent.`)
   );
 });
 

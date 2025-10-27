@@ -34,18 +34,40 @@ A comprehensive healthcare platform connecting patients with doctors through rea
 - 💬 Real-time live chat with doctors during appointments
 - 🎥 Video call consultations with doctors
 - 🤖 AI-powered health recommendations
-- 📝 Update personal profile and medical information
+- � **Medical Store** - Order medicines prescribed by doctors
+- 📦 **Multi-day medicine supply** - Choose 15, 30, 45, or 60 days supply
+- 🏢 **Company alternatives** - View and compare medicine brands
+- 💰 **Price filters** - Find medicines within your budget
+- 🛒 **Shopping cart** - Add multiple medicines and checkout
+- �📝 Update personal profile and medical information
 
 ### 👨‍⚕️ **For Doctors**
 - 🔐 Secure doctor registration and authentication
-- 📋 Manage appointment requests (confirm/reject)
+- ⏳ **Admin approval system** - Doctors must be approved before login
+- � **Email notifications** - Automated emails on approval/rejection
+- 🚫 **Account status tracking** - Pending, Approved, or Rejected status
+- �📋 Manage appointment requests (confirm/reject)
 - 📅 Calendar view of scheduled appointments
 - 👥 View patient consultation history
 - 💬 Real-time live chat with patients
 - 🎥 Video call consultations with patients
 - 🤖 AI-powered treatment suggestions based on symptoms and history
 - 📄 Add treatment details and medical notes
+- 💊 Upload prescriptions for patients
 - 📊 Comprehensive dashboard with analytics
+
+### 🔧 **Admin Panel**
+- 🔐 **Secure admin authentication** - Restricted to authorized email only
+- 👨‍⚕️ **Doctor Approval System** - Review and approve/reject doctor registrations
+- 📧 **Automated Email Notifications** - Send approval/rejection emails to doctors
+- 👥 **User Management** - View and manage all registered users
+- 🚫 **Block/Unblock Users** - Control user access to the platform
+- 👨‍⚕️ **Doctor Management** - View and block/unblock doctors
+- 📅 **Appointment Management** - View all appointments and cancel if needed
+- 💊 **Prescription Management** - View all uploaded prescriptions
+- 📊 **Dashboard Analytics** - Real-time stats for users, doctors, appointments
+- 📱 **Responsive Design** - Mobile-friendly admin interface
+- 🎨 **Green Theme** - Professional healthcare color scheme (#388e3c)
 
 ### 🚀 **Core Features**
 - ⚡ Real-time communication using Socket.io
@@ -119,7 +141,116 @@ RemedyEase
 
 ---
 
-## 🚀 Getting Started
+## � Doctor Approval Workflow
+
+### How It Works
+
+1. **Doctor Registration**
+   - Doctor signs up with credentials and medical information
+   - Account status is set to **"Pending"**
+   - Doctor cannot login until approved
+
+2. **Admin Review**
+   - Admin logs in to the admin panel
+   - Views pending doctor applications in "Pending Doctors" section
+   - Reviews doctor credentials (registration number, degree, specialization)
+
+3. **Approval Process**
+   - **Option 1: Approve**
+     - Admin clicks "✓ Approve" button
+     - Doctor account status changes to "Approved"
+     - Automated email sent to doctor with approval notification
+     - Doctor can now login and access the platform
+   
+   - **Option 2: Reject**
+     - Admin clicks "✗ Reject" button
+     - Admin provides rejection reason in modal dialog
+     - Doctor account status changes to "Rejected"
+     - Automated email sent with rejection reason and support contact
+
+4. **Doctor Login Experience**
+   - **Pending Status:** 
+     ```
+     "Your account is pending approval. Please wait for admin verification. 
+     You will be notified via email once approved."
+     ```
+   - **Approved Status:** 
+     ```
+     ✅ Login succeeds - Full access to doctor dashboard
+     ```
+   - **Rejected Status:** 
+     ```
+     "Your account has been rejected. Reason: [specific reason]. 
+     Please contact support team."
+     ```
+   - **Blocked Status:** 
+     ```
+     "Your account has been blocked by the admin. 
+     Please contact support."
+     ```
+
+### Email Notifications
+
+#### Approval Email
+- **Subject:** 🎉 Your RemedyEase Account Has Been Approved!
+- **Content:** 
+  - Congratulations message
+  - Login button with direct link
+  - Support contact information
+- **Delivery:** Sent immediately after admin approval
+
+#### Rejection Email
+- **Subject:** RemedyEase Account Application Update
+- **Content:**
+  - Professional rejection message
+  - Specific rejection reason (provided by admin)
+  - Contact support button
+  - Information about reapplication
+- **Delivery:** Sent immediately after admin rejection
+
+### Admin Access
+- **Restricted Email:** Only `ramitgoyal1987@gmail.com` can access admin panel
+- **Login URL:** `/admin/login`
+- **Features:**
+  - Dashboard with real-time statistics
+  - Pending doctors approval queue
+  - User management (block/unblock)
+  - Doctor management (block/unblock)
+  - Appointments overview
+  - Prescriptions management
+
+---
+
+## 🛒 Medical Store Feature
+
+### Overview
+Patients can order medicines prescribed by their doctors directly through the platform.
+
+### Features
+- **Medicine Catalog:** Browse 6 different medicines with 4 company alternatives each (24 total options)
+- **Days Supply:** Select 15, 30, 45, or 60 days supply
+- **Company Filter:** Filter by pharmaceutical company
+- **Price Range:** Filter medicines by price
+- **Search:** Quick search by medicine name
+- **Shopping Cart:** Add multiple medicines with quantity controls
+- **Order Summary:** View subtotal, delivery charges (₹40), and total
+- **Checkout:** Delivery information form with COD/Online payment options
+- **Order Confirmation:** Success page with 24-48 hour delivery estimate
+
+### Workflow
+1. Doctor prescribes medicine during consultation
+2. Patient views prescription in their dashboard
+3. Patient clicks "Order from Medical Store"
+4. Patient selects days supply and company preference
+5. Add to cart with toast notification
+6. Proceed to checkout
+7. Fill delivery information
+8. Place order
+9. Order delivered in 24-48 hours
+
+---
+
+## �🚀 Getting Started
 
 ### Prerequisites
 
@@ -246,7 +377,17 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 # Groq AI
 GROQ_API_KEY=your_groq_api_key
+
+# Email Configuration (for doctor approval notifications)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+FRONTEND_URL=http://localhost:5173
 ```
+
+> **Note:** To set up email notifications for doctor approvals:
+> 1. Enable 2-Factor Authentication in your Gmail account
+> 2. Generate an App Password at https://myaccount.google.com/apppasswords
+> 3. Use the 16-character app password (not your regular password) for `EMAIL_PASSWORD`
 
 ---
 
@@ -372,8 +513,14 @@ GET    /api/v1/appointments/user/:email  # Get user appointments
 #### Authentication
 ```
 POST   /api/v1/doctors/register     # Register new doctor
-POST   /api/v1/doctors/login        # Doctor login
+POST   /api/v1/doctors/login        # Doctor login (requires admin approval)
 ```
+
+> **Doctor Login Restrictions:**
+> - **Pending Approval:** "Your account is pending approval. Please wait for admin verification. You will be notified via email once approved."
+> - **Rejected:** "Your account has been rejected. Reason: [rejection reason]. Please contact support team."
+> - **Blocked:** "Your account has been blocked by the admin. Please contact support."
+> - **Approved:** Login succeeds ✅
 
 #### Doctor Profile
 ```
@@ -407,6 +554,41 @@ GET    /api/v1/live/status/:appointmentId      # Get online status
 #### AI Suggestions
 ```
 POST   /api/v1/doctor-ai/doctorsuggestions    # Get AI treatment suggestions
+```
+
+#### Admin APIs
+```
+# Doctor Management
+GET    /api/v1/admin/doctors                     # Get all doctors
+GET    /api/v1/admin/doctors/pending             # Get pending doctor approvals
+PUT    /api/v1/admin/doctors/:doctorId/approval  # Approve/reject doctor
+PUT    /api/v1/admin/doctors/:doctorId/block     # Block/unblock doctor
+GET    /api/v1/admin/doctors/stats               # Get doctor statistics
+
+# Appointment Management
+GET    /api/v1/admin/appointments                # Get all appointments
+PUT    /api/v1/admin/appointments/:id/cancel     # Cancel appointment
+GET    /api/v1/admin/appointments/stats          # Get appointment statistics
+
+# Prescription Management
+GET    /api/v1/admin/prescriptions               # Get all prescriptions
+GET    /api/v1/admin/prescriptions/stats         # Get prescription statistics
+```
+
+---
+
+### **User Backend Admin APIs (Port 8000)**
+
+#### Admin Authentication
+```
+POST   /api/v1/admin/login                       # Admin login (restricted email)
+```
+
+#### User Management
+```
+GET    /api/v1/admin/users                       # Get all users
+PUT    /api/v1/admin/users/:userId/block         # Block/unblock user
+GET    /api/v1/admin/stats                       # Get user statistics
 ```
 
 ---
@@ -472,14 +654,18 @@ For support, email your-email@example.com or create an issue in the repository.
 ## 🔮 Future Enhancements
 
 - [ ] Mobile app (React Native)
-- [ ] Prescription management system
+- [x] **Prescription management system** ✅
+- [x] **Admin panel for managing doctors and users** ✅
+- [x] **Email notifications for doctor approval** ✅
+- [x] **Medical Store for ordering medicines** ✅
 - [ ] Payment gateway integration
 - [ ] Multi-language support
 - [ ] Advanced analytics dashboard
-- [ ] Email notifications
 - [ ] SMS reminders for appointments
 - [ ] Medical report upload and storage
 - [ ] Lab test integration
+- [ ] Insurance integration
+- [ ] Telemedicine recording and playback
 
 ---
 

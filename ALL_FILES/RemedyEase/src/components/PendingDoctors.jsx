@@ -15,8 +15,10 @@ const PendingDoctors = () => {
   const fetchPendingDoctors = async () => {
     try {
       const token = localStorage.getItem("adminToken");
+      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      
       const response = await fetch(
-        `${import.meta.env.VITE_DOCTOR_BACKEND_URL}/api/v1/admin/doctors/pending`,
+        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/pending` : '/api/v1/admin/doctors/pending',
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -36,8 +38,10 @@ const PendingDoctors = () => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
+      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      
       const response = await fetch(
-        `${import.meta.env.VITE_DOCTOR_BACKEND_URL}/api/v1/admin/doctors/${doctorId}/approval`,
+        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${doctorId}/approval` : `/api/v1/admin/doctors/${doctorId}/approval`,
         {
           method: "PUT",
           headers: {
@@ -49,7 +53,8 @@ const PendingDoctors = () => {
       );
 
       if (response.ok) {
-        alert("Doctor approved successfully!");
+        const result = await response.json();
+        alert("Doctor approved successfully! Email notification has been sent.");
         fetchPendingDoctors();
       } else {
         alert("Failed to approve doctor");
@@ -71,8 +76,10 @@ const PendingDoctors = () => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
+      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      
       const response = await fetch(
-        `${import.meta.env.VITE_DOCTOR_BACKEND_URL}/api/v1/admin/doctors/${selectedDoctor._id}/approval`,
+        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${selectedDoctor._id}/approval` : `/api/v1/admin/doctors/${selectedDoctor._id}/approval`,
         {
           method: "PUT",
           headers: {
@@ -87,7 +94,7 @@ const PendingDoctors = () => {
       );
 
       if (response.ok) {
-        alert("Doctor rejected successfully!");
+        alert("Doctor rejected successfully! Email notification has been sent.");
         setSelectedDoctor(null);
         setRejectionReason("");
         fetchPendingDoctors();
