@@ -30,6 +30,14 @@ const AdminOverview = () => {
           credentials: "include",
         }
       );
+      
+      // Check if response is JSON
+      const contentType = userStatsRes.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error('User backend returned non-JSON response. Backend may be sleeping.');
+        throw new Error('Backend is waking up. Please refresh the page in 30 seconds.');
+      }
+      
       const userStatsData = await userStatsRes.json();
 
       // Fetch doctor stats
@@ -41,6 +49,13 @@ const AdminOverview = () => {
           },
         }
       );
+      
+      const doctorContentType = doctorStatsRes.headers.get("content-type");
+      if (!doctorContentType || !doctorContentType.includes("application/json")) {
+        console.error('Doctor backend returned non-JSON response. Backend may be sleeping.');
+        throw new Error('Doctor backend is waking up. Please refresh the page in 30 seconds.');
+      }
+      
       const doctorStatsData = await doctorStatsRes.json();
 
       // Fetch appointment stats
@@ -52,6 +67,13 @@ const AdminOverview = () => {
           },
         }
       );
+      
+      const appointmentContentType = appointmentStatsRes.headers.get("content-type");
+      if (!appointmentContentType || !appointmentContentType.includes("application/json")) {
+        console.error('Appointment backend returned non-JSON response. Backend may be sleeping.');
+        throw new Error('Appointment backend is waking up. Please refresh the page in 30 seconds.');
+      }
+      
       const appointmentStatsData = await appointmentStatsRes.json();
 
       setStats({

@@ -19,10 +19,21 @@ const UsersManagement = () => {
           credentials: "include",
         }
       );
+      
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error('Backend returned non-JSON response. Backend may be sleeping.');
+        alert('Backend is waking up. Please refresh the page in 30 seconds.');
+        setLoading(false);
+        return;
+      }
+      
       const data = await response.json();
       setUsers(data.data || []);
     } catch (error) {
       console.error("Error fetching users:", error);
+      alert('Error loading users. Backend may be sleeping. Please refresh the page in 30 seconds.');
     } finally {
       setLoading(false);
     }

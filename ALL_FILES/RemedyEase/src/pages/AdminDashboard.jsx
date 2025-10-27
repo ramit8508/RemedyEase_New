@@ -11,13 +11,50 @@ import AdminOverview from "../components/AdminOverview";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
 
   useEffect(() => {
     const adminToken = localStorage.getItem("adminToken");
     if (!adminToken) {
       navigate("/admin/login");
+    } else {
+      // Wake up backends when dashboard loads
+      wakeUpBackends();
     }
   }, [navigate]);
+
+  // Wake up both backends on dashboard load
+  const wakeUpBackends = async () => {
+    try {
+      const userBackendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      
+      console.log('Waking up backends...');
+      
+      // Ping both backends simultaneously
+      const promises = [];
+      if (userBackendUrl) {
+        promises.push(fetch(`${userBackendUrl}/`).catch(e => console.log('User backend waking...')));
+      } else {
+        promises.push(fetch('/').catch(e => console.log('User backend waking...')));
+      }
+      
+      if (doctorBackendUrl) {
+        promises.push(fetch(`${doctorBackendUrl}/`).catch(e => console.log('Doctor backend waking...')));
+      }
+      
+      await Promise.all(promises);
+      console.log('Backends pinged successfully');
+      
+      // Wait 2 seconds for backends to fully wake up
+      setTimeout(() => {
+        setBackendReady(true);
+      }, 2000);
+    } catch (error) {
+      console.error('Error waking backends:', error);
+      setBackendReady(true); // Proceed anyway
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
