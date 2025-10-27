@@ -78,44 +78,85 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     });
 
     const socket = socketRef.current;
-
     // Setup all socket event listeners
     socket.on("connect", () => {
-      console.log("Socket connected, joining call room...");
-      socket.emit("join_video_call", { appointmentId, userId: currentUser.id });
+      console.log("Socket connected");
       setCallStatus("Connecting to room...");
-    });
-    
-    socket.on("connect_error", (err) => {
-        console.error("Socket connection error:", err);
-        setError("Failed to connect to the server.");
-        setCallStatus("Connection Failed");
+      // fetch appointment details (chatRoomId / callRoomId) before joining
+      // the room so server can add this socket to the correct rooms.
+      fetch(`/api/v1/appointments/${appointmentId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            const appt = data.data;
+            const { chatRoomId, callRoomId } = appt;
+            console.log("Joining appointment rooms:", { chatRoomId, callRoomId });
+            socket.emit("join-appointment-room", {
+              appointmentId,
+              chatRoomId,
+              callRoomId,
+            });
+            setCallStatus("Waiting for other participant...");
+            setIsConnecting(true);
+            // If this client is the patient, attempt to initiate after a short delay
+            // if the other user is already present they will trigger 'user-joined-room'.
+            if (userType === "patient") {
+              // give the server a moment to register both sockets
+              setTimeout(() => {
+                // try to create an offer; if the remote isn't present it will be ignored
+                console.log("Patient initiating call attempt...");
+                initiateCall();
+              }, 1200);
+            }
+          } else {
+            console.error("Failed to load appointment for call joining:", data);
+            setError("Failed to join call room");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch appointment on connect:", err);
+          setError("Failed to join call room");
+        });
     });
 
-    socket.on("joined_call", (data) => {
-      console.log("Successfully joined call room:", data);
-      setOtherUserOnline(data.otherUserPresent);
-      setCallStatus("Waiting for other participant...");
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+      setError("Failed to connect to the server.");
+      setCallStatus("Connection Failed");
+    });
+
+    // When another user joins the appointment room, the server emits 'user-joined-room'
+    socket.on("user-joined-room", (payload) => {
+      console.log("User joined room:", payload);
+      setOtherUserOnline(true);
+      setCallStatus("Other participant present");
       setIsConnecting(true);
-      if (data.initiator) {
-        console.log("You are the initiator, creating offer...");
-        initiateCall();
+      // If this client is patient and not already created an offer, try initiating
+      if (userType === "patient") {
+        setTimeout(() => {
+          initiateCall();
+        }, 800);
       }
     });
 
-    socket.on("user_left_call", () => {
-      setOtherUserOnline(false);
-      setCallStatus("Other participant left the call");
-      setIsCallActive(false);
-      setRemoteStream(null);
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    // Handle when a user disconnects or leaves (the server may broadcast statuses)
+    socket.on("user-status-change", (status) => {
+      if (status && status.userId && status.isOnline === false) {
+        // If the other participant went offline, update UI
+        if (status.userId !== currentUser.id) {
+          setOtherUserOnline(false);
+          setCallStatus("Other participant left the call");
+        }
+      }
     });
 
-    socket.on("webrtc_offer", (data) => handleOffer(data.offer));
-    socket.on("webrtc_answer", (data) => handleAnswer(data.answer));
-    socket.on("webrtc_ice_candidate", (data) => handleIceCandidate(data.candidate));
-    
-    socket.on("call_ended", () => {
+    // WebRTC signaling (server uses dashed event names)
+    socket.on("webrtc-offer", (data) => handleOffer(data.offer));
+    socket.on("webrtc-answer", (data) => handleAnswer(data.answer));
+    socket.on("webrtc-ice-candidate", (data) => handleIceCandidate(data.candidate));
+
+    // Server will broadcast call-ended to room
+    socket.on("call-ended", () => {
       setCallStatus("Call ended by other user");
       endCall(false); // Pass false to avoid emitting end_call again
     });
@@ -147,10 +188,24 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
-        socketRef.current.emit("webrtc_ice_candidate", {
-          appointmentId,
-          candidate: event.candidate,
-        });
+        // Use server expected event name and include callRoomId
+        fetch(`/api/v1/appointments/${appointmentId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.data) {
+              const callRoomId = data.data.callRoomId;
+              socketRef.current.emit("webrtc-ice-candidate", {
+                callRoomId,
+                candidate: event.candidate,
+              });
+            }
+          })
+          .catch(() => {
+            // fallback: send without callRoomId (server may ignore)
+            socketRef.current.emit("webrtc-ice-candidate", {
+              candidate: event.candidate,
+            });
+          });
       }
     };
     
@@ -166,7 +221,11 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       peerConnectionRef.current = createPeerConnection();
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
-      socketRef.current.emit("webrtc_offer", { appointmentId, offer });
+      // Send the offer using the server expected event naming and include callRoomId
+      const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
+      const data = await resp.json();
+      const callRoomId = data?.data?.callRoomId;
+      socketRef.current.emit("webrtc-offer", { callRoomId, offer });
     } catch (err) {
       console.error("Failed to initiate call:", err);
       setError("Failed to initiate call");
@@ -185,7 +244,11 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
-      socketRef.current.emit("webrtc_answer", { appointmentId, answer });
+      // reply using server expected event name
+      const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
+      const data = await resp.json();
+      const callRoomId = data?.data?.callRoomId;
+      socketRef.current.emit("webrtc-answer", { callRoomId, answer });
     } catch (err) {
       console.error("Failed to accept call:", err);
       setError("Failed to accept call");
@@ -227,7 +290,17 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
   const endCall = (notifyServer = true) => {
     if (notifyServer && socketRef.current) {
-        socketRef.current.emit("end_video_call", { appointmentId });
+        // notify server using its event name
+        // include callRoomId if available
+        fetch(`/api/v1/appointments/${appointmentId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            const callRoomId = data?.data?.callRoomId;
+            socketRef.current.emit("call-ended", { callRoomId });
+          })
+          .catch(() => {
+            socketRef.current.emit("call-ended", {});
+          });
     }
     cleanup();
     onClose();
