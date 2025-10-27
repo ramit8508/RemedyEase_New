@@ -9,7 +9,7 @@ const SignupStyles = () => (
       .signup-logo { font-size: 50px; color: #388e3c; font-weight: 800; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); }
       .signup-title { font-size: 36px; font-weight: 700; margin-top: 15px; margin-bottom: 10px; color: #333; }
       .signup-header { font-size: 18px; font-weight: 400; color: #555; margin-bottom: 30px; text-align: center; }
-      .signup-divider { display: flex; flex-direction: column; gap: 15px; background-color: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); min-width: 380px; border: 1px solid #ffffff30; }
+      .signup-divider { display: flex; flex-direction: column; gap: 15px; background-color: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); min-width: 500px; max-width: 550px; border: 1px solid #ffffff30; }
       .signup-input-group { display: flex; flex-direction: column; width: 100%; }
       .signup-label { font-size: 16px; margin-bottom: 8px; font-weight: 600; color: #333; }
       .signup_input { width: 100%; padding: 14px 18px; font-size: 16px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; }
