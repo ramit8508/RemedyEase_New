@@ -9,13 +9,15 @@ import DoctorLandingPage from "./pages/DoctorLandingPage";
 import Learn from "./pages/User_Data_Pages/Learn";
 import UserDashboard from "./pages/UserDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import { startHealthMonitoring } from './utils/backendUtils.js';
 import BackendStatus from './components/BackendStatus';
 
 function App() {
   useEffect(() => {
     // Start health monitoring for local backends
-    console.log('� Starting RemedyEase app with local backends');
+    console.log('🏥 Starting RemedyEase app with local backends');
     const cleanup = startHealthMonitoring();
     
     // Cleanup when component unmounts
@@ -33,6 +35,8 @@ function App() {
           <Route path="/learn" element={<Learn />} />
           <Route path="/user/dashboard/*" element={<UserDashboard />} />
           <Route path="/doctor/dashboard/*" element={<DoctorDashboard />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard/*" element={<AdminDashboard />} />
         </Routes>
       </Router>
     </div>
@@ -40,4 +44,3 @@ function App() {
 }
 
 export default App;
-

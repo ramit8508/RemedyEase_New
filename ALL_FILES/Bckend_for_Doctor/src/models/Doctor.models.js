@@ -76,6 +76,14 @@ const DoctorSchema = new mongoose.Schema(
     timings: { type: String, default: "" },
     fee: { type: String, default: "" },
     languages: { type: String, default: "" },
+    // Admin approval fields
+    approvalStatus: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected'], 
+      default: 'pending' 
+    },
+    isBlocked: { type: Boolean, default: false },
+    rejectionReason: { type: String, default: "" }
   },
   { timestamps: true }
 );

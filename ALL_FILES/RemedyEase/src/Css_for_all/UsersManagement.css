@@ -1,0 +1,241 @@
+.users-management,
+.doctors-management {
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  border: 2px solid #388e3c;
+  background: white;
+  color: #388e3c;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #e8f5e9;
+}
+
+.filter-btn.active {
+  background: #388e3c;
+  color: white;
+}
+
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: #388e3c;
+  color: white;
+}
+
+.data-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+  color: #333;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.table-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-badge.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.blocked {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-badge.approval-approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.approval-pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.approval-rejected {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.btn-toggle {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-block {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-unblock {
+  background: #388e3c;
+  color: white;
+}
+
+.btn-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .table-container {
+    font-size: 12px;
+    overflow-x: auto;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+
+  .table-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .filter-buttons {
+    gap: 8px;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .btn-toggle {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .users-management,
+  .doctors-management {
+    padding: 0;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .filter-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .table-container {
+    font-size: 11px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 6px;
+    font-size: 11px;
+  }
+
+  .data-table th {
+    white-space: nowrap;
+  }
+
+  .table-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .btn-toggle {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .admin-loading {
+    min-height: 300px;
+    font-size: 16px;
+  }
+}

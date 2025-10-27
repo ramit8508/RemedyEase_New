@@ -4,10 +4,8 @@ import { DB_NAME } from "../constants.js";
 // Enhanced database connection with proper error handling
 const connectdb = async () => {
   try {
-    // Connection options for better stability and performance
+    // Connection options (removed deprecated options)
     const connectionOptions = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10, // Connection pool size
       serverSelectionTimeoutMS: 5000, // Timeout for server selection
       socketTimeoutMS: 45000 // Socket timeout

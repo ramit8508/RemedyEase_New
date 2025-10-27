@@ -4,7 +4,8 @@ import {
     loginUser, 
     getUserProfile, 
     updateUserProfile, 
-    getUserAppointments 
+    getUserAppointments,
+    getUserPrescriptions 
 } from "../controllers/user.controller.js";
 // This path is now corrected to use the singular "middleware" folder name.
 import { upload } from "../middleware/multer.middleware.js";
@@ -20,6 +21,7 @@ router.route("/login").post(loginUser);
 router.route("/profile").get(getUserProfile);
 router.route("/profile/update").put(updateUserProfile);
 router.route("/:userEmail/appointments").get(getUserAppointments);
+router.route("/prescriptions").get(getUserPrescriptions);
 
 export default router;
 

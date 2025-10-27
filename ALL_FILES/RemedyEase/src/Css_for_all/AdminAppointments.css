@@ -1,0 +1,212 @@
+.admin-appointments,
+.admin-prescriptions {
+  padding: 0;
+}
+
+.status-badge.status-pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.status-confirmed {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.status-completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.status-cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.btn-cancel {
+  padding: 8px 16px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+}
+
+.cancel-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 20px;
+}
+
+.cancel-textarea:focus {
+  outline: none;
+  border-color: #388e3c;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.modal-content p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-confirm,
+.btn-back,
+.btn-download {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-back {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-download {
+  background: #388e3c;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-confirm:hover,
+.btn-download:hover {
+  transform: scale(1.02);
+}
+
+.btn-back:hover {
+  background: #d0d0d0;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 24px;
+    width: 95%;
+  }
+
+  .modal-content h2 {
+    font-size: 20px;
+  }
+
+  .modal-content p {
+    font-size: 14px;
+  }
+
+  .btn-confirm,
+  .btn-back,
+  .btn-download {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .btn-cancel {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .cancel-textarea {
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-appointments,
+  .admin-prescriptions {
+    padding: 0;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .modal-content h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .modal-content p {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-confirm,
+  .btn-back,
+  .btn-download {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .cancel-textarea {
+    padding: 8px;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}

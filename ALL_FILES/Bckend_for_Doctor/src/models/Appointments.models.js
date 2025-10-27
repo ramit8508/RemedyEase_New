@@ -28,7 +28,11 @@ const AppointmentSchema = new mongoose.Schema({
   prescription: { type: String },
   followUpRequired: { type: Boolean, default: false },
   followUpDate: { type: Date },
-  consultationNotes: { type: String }
+  consultationNotes: { type: String },
+  // Prescription File Upload
+  prescriptionFile: { type: String }, // Cloudinary URL
+  prescriptionUploadedAt: { type: Date },
+  prescriptionUploadedBy: { type: String } // Doctor email
 }, { timestamps: true });
 
 // Generate unique room IDs before saving

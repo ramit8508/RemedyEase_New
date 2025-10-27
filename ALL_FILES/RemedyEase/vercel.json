@@ -21,12 +21,43 @@
       "destination": "https://remedyease-new-doctor.onrender.com/api/v1/doctor-ai/:path*"
     },
     {
+      "source": "/api/v1/admin/doctors/:path*",
+      "destination": "https://remedyease-new-doctor.onrender.com/api/v1/admin/doctors/:path*"
+    },
+    {
+      "source": "/api/v1/admin/appointments/:path*",
+      "destination": "https://remedyease-new-doctor.onrender.com/api/v1/admin/appointments/:path*"
+    },
+    {
+      "source": "/api/v1/admin/prescriptions/:path*",
+      "destination": "https://remedyease-new-doctor.onrender.com/api/v1/admin/prescriptions/:path*"
+    },
+    {
       "source": "/api/v1/:path*",
       "destination": "https://remedyease-new.onrender.com/api/v1/:path*"
     },
     {
       "source": "/((?!api/|socket.io/).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
     }
   ]
 }

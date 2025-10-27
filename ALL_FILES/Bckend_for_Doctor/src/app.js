@@ -7,10 +7,30 @@ import { ApiError } from "./utils/ApiError.js";
 const app = express();
 
 // --- Standard Middleware ---
+// CORS configuration that works for BOTH local development and production deployment
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "https://remedy-ease-new.vercel.app",
+  process.env.CORS_ORIGIN
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 app.use(express.json({ limit: "16mb" }));
@@ -23,12 +43,14 @@ import doctorRouter from "./routes/Doctor.routes.js";
 import aiRouter from "./routes/Ai.routes.js";
 import appointmentRouter from "./routes/Appointment.routes.js";
 import liveFeaturesRouter from "./routes/LiveFeatures.routes.js";
+import adminRouter from "./routes/Admin.routes.js";
 
 // --- Route Declarations ---
 app.use("/api/v1/doctors", doctorRouter);
 app.use("/api/v1/doctor-ai", aiRouter);
 app.use("/api/v1/appointments", appointmentRouter);
 app.use("/api/v1/live", liveFeaturesRouter);
+app.use("/api/v1/admin", adminRouter);
 
 
 app.get("/", (req, res) => {

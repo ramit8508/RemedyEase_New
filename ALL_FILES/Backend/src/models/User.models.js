@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema(
     medications: { type: String, default: "" },
     bloodGroup: { type: String, default: "" },
     emergencyContact: { type: String, default: "" },
+    isBlocked: { type: Boolean, default: false },
     refreshToken: {
       type: String,
     },

@@ -2,6 +2,7 @@ import { Appointment } from "../models/Appointments.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 // Book appointment (user)
 export const bookAppointment = asyncHandler(async (req, res) => {
@@ -133,5 +134,78 @@ export const addSymptomsToAppointment = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, appointment, "Symptoms added successfully"));
   } catch (error) {
     throw new ApiError(500, "Failed to add symptoms");
+  }
+});
+
+// Upload prescription file for appointment
+export const uploadPrescription = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  const { doctorEmail } = req.body;
+  
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      throw new ApiError(400, "No prescription file uploaded");
+    }
+    
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    
+    if (!appointment) {
+      throw new ApiError(404, "Appointment not found");
+    }
+    
+    // Verify doctor owns this appointment
+    if (appointment.doctorEmail !== doctorEmail) {
+      throw new ApiError(403, "Unauthorized to upload prescription for this appointment");
+    }
+    
+    // Upload file to Cloudinary
+    const uploadResult = await uploadOnCloudinary(req.file.buffer);
+    
+    if (!uploadResult || !uploadResult.secure_url) {
+      throw new ApiError(500, "Failed to upload prescription file");
+    }
+    
+    // Update appointment with prescription file URL
+    appointment.prescriptionFile = uploadResult.secure_url;
+    appointment.prescriptionUploadedAt = new Date();
+    appointment.prescriptionUploadedBy = doctorEmail;
+    
+    await appointment.save();
+    
+    return res.status(200).json(
+      new ApiResponse(200, appointment, "Prescription uploaded successfully")
+    );
+  } catch (error) {
+    console.error("Prescription upload error:", error);
+    throw new ApiError(500, error.message || "Failed to upload prescription");
+  }
+});
+
+// Get prescription for appointment
+export const getPrescription = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  
+  try {
+    const appointment = await Appointment.findById(appointmentId);
+    
+    if (!appointment) {
+      throw new ApiError(404, "Appointment not found");
+    }
+    
+    if (!appointment.prescriptionFile) {
+      throw new ApiError(404, "No prescription found for this appointment");
+    }
+    
+    return res.status(200).json(
+      new ApiResponse(200, {
+        prescriptionFile: appointment.prescriptionFile,
+        uploadedAt: appointment.prescriptionUploadedAt,
+        uploadedBy: appointment.prescriptionUploadedBy
+      }, "Prescription fetched successfully")
+    );
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch prescription");
   }
 });

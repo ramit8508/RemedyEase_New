@@ -11,6 +11,9 @@ function LandingPage() {
       <div className="landing-page">
         <img src={Logo} alt="Logo" className="image" />
         <div className="content">
+          <Link to="/admin/login" className="admin-link-button">
+            <button className="admin-access-button">Admin Access</button>
+          </Link>
           <h1 className="head0">Choose Your Role</h1>
           <h1 className="head1">How would you like to use RemedyEase?</h1>
           <div className="button-container">

@@ -1,0 +1,406 @@
+.pending-doctors {
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+  word-wrap: break-word;
+}
+
+.admin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 18px;
+  color: #666;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 16px;
+}
+
+.doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.doctor-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.doctor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.doctor-avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+}
+
+.doctor-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #388e3c;
+}
+
+.doctor-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.doctor-info h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.doctor-email {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.doctor-specialization {
+  font-size: 16px;
+  color: #388e3c;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.doctor-credentials {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #555;
+  text-align: left;
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.doctor-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-approve,
+.btn-reject {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-approve {
+  background: #388e3c;
+  color: white;
+}
+
+.btn-approve:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(56, 142, 60, 0.4);
+}
+
+.btn-reject {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-reject:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+}
+
+.btn-approve:disabled,
+.btn-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.modal-content p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.rejection-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 20px;
+}
+
+.rejection-textarea:focus {
+  outline: none;
+  border-color: #388e3c;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-confirm-reject,
+.btn-cancel {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm-reject {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-confirm-reject:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.btn-cancel {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #d0d0d0;
+}
+
+.btn-confirm-reject:disabled,
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .doctors-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .doctor-card {
+    padding: 20px;
+  }
+
+  .doctor-avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .doctor-info h3 {
+    font-size: 18px;
+  }
+
+  .doctor-email {
+    font-size: 13px;
+  }
+
+  .doctor-specialization {
+    font-size: 15px;
+  }
+
+  .doctor-credentials {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .modal-content {
+    padding: 24px;
+    width: 95%;
+  }
+
+  .modal-content h2 {
+    font-size: 20px;
+  }
+
+  .btn-approve,
+  .btn-reject {
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .empty-state h3 {
+    font-size: 20px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  .doctor-card {
+    padding: 16px;
+  }
+
+  .doctor-avatar {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 12px;
+  }
+
+  .doctor-info h3 {
+    font-size: 16px;
+  }
+
+  .doctor-email {
+    font-size: 12px;
+  }
+
+  .doctor-specialization {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .doctor-credentials {
+    font-size: 12px;
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .doctor-actions {
+    gap: 10px;
+  }
+
+  .btn-approve,
+  .btn-reject {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .modal-content h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .modal-content p {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .rejection-textarea {
+    padding: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-confirm-reject,
+  .btn-cancel {
+    padding: 10px;
+    font-size: 14px;
+  }
+}

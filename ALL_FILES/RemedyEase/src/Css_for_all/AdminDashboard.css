@@ -1,0 +1,270 @@
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  position: relative;
+}
+
+/* Mobile Menu Overlay */
+.menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.menu-overlay.active {
+  display: block;
+}
+
+.admin-sidebar {
+  width: 280px;
+  background: #388e3c;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+
+.admin-sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-sidebar-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.menu-close {
+  display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.admin-nav {
+  flex: 1;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  color: white;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.admin-nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-nav-link.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-left: 4px solid white;
+}
+
+.nav-icon {
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.admin-logout-btn {
+  margin: 20px 24px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-logout-btn:hover {
+  background: white;
+  color: #388e3c;
+}
+
+.admin-main {
+  flex: 1;
+  margin-left: 280px;
+  padding: 24px;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
+  background: #388e3c;
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.admin-content {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 48px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .menu-close {
+    display: block;
+  }
+
+  .admin-main {
+    margin-left: 0;
+    padding: 12px;
+    width: 100%;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .admin-content {
+    padding: 20px 16px;
+    margin-top: 60px;
+    border-radius: 8px;
+  }
+
+  .admin-sidebar-header h2 {
+    font-size: 20px;
+  }
+
+  .admin-nav-link {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+
+  .nav-icon {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-sidebar {
+    width: 80%;
+    max-width: 300px;
+  }
+
+  .admin-main {
+    padding: 8px;
+  }
+
+  .admin-content {
+    padding: 16px 12px;
+    margin-top: 55px;
+    border-radius: 6px;
+  }
+
+  .admin-sidebar-header {
+    padding: 16px;
+  }
+
+  .admin-sidebar-header h2 {
+    font-size: 18px;
+  }
+
+  .admin-nav-link {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .nav-icon {
+    font-size: 16px;
+    margin-right: 10px;
+  }
+
+  .admin-logout-btn {
+    margin: 16px;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .menu-toggle {
+    top: 10px;
+    left: 10px;
+    padding: 10px 12px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-sidebar {
+    width: 85%;
+  }
+
+  .admin-content {
+    padding: 12px 8px;
+    margin-top: 52px;
+  }
+
+  .admin-sidebar-header h2 {
+    font-size: 16px;
+  }
+
+  .admin-nav-link {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .menu-toggle {
+    top: 8px;
+    left: 8px;
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+}

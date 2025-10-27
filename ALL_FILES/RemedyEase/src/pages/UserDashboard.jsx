@@ -7,6 +7,9 @@ import Chat from "./User_DashBoardComponents/Chat";
 import Meetdoctor from "./User_DashBoardComponents/Meetdoctor";
 import Profile from "./User_DashBoardComponents/Profile";
 import Home from "./User_DashBoardComponents/Home";
+import MedicalStoreHome from "./User_DashBoardComponents/MedicalStoreHome";
+import MedicalStoreCart from "./User_DashBoardComponents/MedicalStoreCart";
+import MedicalStoreCheckout from "./User_DashBoardComponents/MedicalStoreCheckout";
 
 export default function UserDashboard() {
   return (
@@ -20,6 +23,9 @@ export default function UserDashboard() {
         <Route path="Meetdoctor" element={<Meetdoctor />} />
         <Route path="Profile" element={<Profile />} />
         <Route path="Home" element={<Home />} />
+        <Route path="medical-store" element={<MedicalStoreHome />} />
+        <Route path="medical-store/cart" element={<MedicalStoreCart />} />
+        <Route path="medical-store/checkout" element={<MedicalStoreCheckout />} />
       </Routes>
     </>
   );

@@ -14,6 +14,8 @@ function UserDashBoardNav() {
 
           <Link className="nav-link" to="/User/dashboard/Appointments">Appointments</Link>
 
+          <Link className="nav-link" to="/User/dashboard/medical-store">Medical Store</Link>
+
           <Link className="nav-link" to="/User/dashboard/Chat">Chat</Link>
 
           <Link className="nav-link" to="/User/dashboard/AIRecommanded">AI Recommendations</Link>

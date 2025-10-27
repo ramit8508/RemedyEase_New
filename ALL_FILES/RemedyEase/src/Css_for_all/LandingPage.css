@@ -5,7 +5,41 @@
   background-repeat: no-repeat;
   min-height: 100vh;
   width: 100vw;
+  position: relative;
 }
+
+.admin-link-button {
+  display: block;
+  text-decoration: none;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.admin-access-button {
+  padding: 10px 24px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #388e3c;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  max-width: 200px;
+}
+
+.admin-access-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.admin-access-button:active {
+  transform: scale(0.98);
+}
+
 .image {
   width: 500px;
   height: 500px;

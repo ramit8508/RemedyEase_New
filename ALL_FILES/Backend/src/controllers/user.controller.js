@@ -102,4 +102,50 @@ const getUserAppointments = asyncHandler(async (req, res) => {
     }
 });
 
-export { registerUser, loginUser, getUserAppointments, getUserProfile, updateUserProfile };
+const getUserPrescriptions = asyncHandler(async (req, res) => {
+    const userEmail = req.query.email || req.user?.email;
+    if (!userEmail) {
+        throw new ApiError(400, "User email is required");
+    }
+    
+    const doctorBackendUrl = process.env.DOCTOR_BACKEND_URL;
+    if(!doctorBackendUrl){
+        throw new ApiError(500, "Doctor service URL is not configured");
+    }
+    
+    try {
+        // Fetch user appointments from doctor backend
+        const response = await fetch(`${doctorBackendUrl}/api/v1/appointments/user/${userEmail}`);
+        const appointmentsData = await response.json();
+        
+        if (response.ok && appointmentsData.data) {
+            // Filter appointments that have prescriptions
+            const prescriptions = appointmentsData.data
+                .filter(appointment => appointment.prescription)
+                .map(appointment => ({
+                    appointmentId: appointment._id,
+                    doctorName: appointment.doctorName,
+                    doctorEmail: appointment.doctorEmail,
+                    date: appointment.date,
+                    time: appointment.time,
+                    prescriptionFile: appointment.prescription,
+                    uploadedAt: appointment.treatmentDate || appointment.updatedAt,
+                    consultationNotes: appointment.consultationNotes,
+                    treatment: appointment.treatment
+                }));
+            
+            return res.status(200).json(
+                new ApiResponse(200, prescriptions, "User prescriptions fetched successfully")
+            );
+        } else {
+            return res.status(200).json(
+                new ApiResponse(200, [], "No prescriptions found")
+            );
+        }
+    } catch (error) {
+        console.error("Error fetching prescriptions:", error);
+        throw new ApiError(503, "Could not connect to the appointments service.");
+    }
+});
+
+export { registerUser, loginUser, getUserAppointments, getUserProfile, updateUserProfile, getUserPrescriptions };

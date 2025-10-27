@@ -55,6 +55,15 @@ export default function Services() {
             provide effective and safe recommendations.
           </p>
         </div>
+        <div className="cards">
+          <div className="service-icon" style={{fontSize: '80px', marginBottom: '20px'}}>🏥</div>
+          <h1 className="card-title">Medical Store</h1>
+          <p className="text_online_consult">
+            Order medicines directly from your prescriptions with multiple brand options.
+            Choose supply duration (15-60 days) and get medicines delivered to your doorstep
+            at competitive prices.
+          </p>
+        </div>
       </div>
       <Footerforuser />
     </>

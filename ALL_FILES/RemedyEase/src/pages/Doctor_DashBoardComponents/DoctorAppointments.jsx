@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../../Css_for_all/Appointments.css";
 import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
+import PrescriptionUpload from "../../components/PrescriptionUpload";
 
 export default function DoctorAppointments() {
   const doctor = JSON.parse(localStorage.getItem("doctor"));
@@ -154,8 +155,7 @@ export default function DoctorAppointments() {
                 </button>
               )}
 
-              {/* --- THIS IS THE UPDATED SECTION --- */}
-              {/* It now directly shows the buttons for any confirmed appointment */}
+
               {["confirmed", "approved", "accepted"].includes(
                 appt.status?.toLowerCase()
               ) && (
@@ -175,9 +175,16 @@ export default function DoctorAppointments() {
                       📹 Video Call
                     </button>
                   </div>
+                  
+                  {/* Prescription Upload Section */}
+                  <PrescriptionUpload
+                    appointmentId={appt._id}
+                    doctorEmail={doctor.email}
+                    onUploadSuccess={() => fetchAppointments()}
+                  />
                 </div>
               )}
-              {/* --- END OF UPDATED SECTION --- */}
+              
             </li>
           ))}
         </ul>

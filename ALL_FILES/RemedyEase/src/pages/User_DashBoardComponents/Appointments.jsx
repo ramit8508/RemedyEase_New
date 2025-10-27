@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../Css_for_all/Appointments.css";
 import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
+import PrescriptionView from "../../components/PrescriptionView";
 
 export default function Appointments() {
   const location = useLocation();
@@ -264,6 +265,9 @@ export default function Appointments() {
                             📹 Video Call
                           </button>
                         </div>
+                        
+                        {/* Prescription View Section */}
+                        <PrescriptionView appointmentId={appt._id} />
                       </div>
                     )}
                   </>

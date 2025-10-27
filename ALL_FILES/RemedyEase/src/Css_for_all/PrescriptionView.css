@@ -1,0 +1,88 @@
+.prescription-view-container {
+  background:#27ae60 ;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.prescription-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.prescription-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.upload-date {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.prescription-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.view-btn,
+.download-btn,
+.store-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.view-btn,
+.store-btn {
+  background: white;
+  color: #388e3c;
+}
+
+.view-btn:hover,
+.store-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
+  background: #f1f8f4;
+}
+
+.download-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+}
+
+.download-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.prescription-loading {
+  text-align: center;
+  padding: 15px;
+  color: #666;
+  font-style: italic;
+}
+
+.prescription-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #f5c6cb;
+  margin: 20px 0;
+}

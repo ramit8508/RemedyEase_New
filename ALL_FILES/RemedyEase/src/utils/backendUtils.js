@@ -13,9 +13,20 @@ export const startHealthMonitoring = () => {
       return;
     }
 
-    // We use the FULL, absolute URL for the health check.
-    fetch(url)
-      .then(res => console.log(`💚 ${name} backend is responsive. Status: ${res.status}`))
+    // We use the FULL, absolute URL for the health check (root endpoint returns JSON status)
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(res => {
+        if (res.ok) {
+          console.log(`💚 ${name} backend is responsive. Status: ${res.status}`);
+        } else {
+          console.warn(`⚠️ ${name} backend responded with status: ${res.status}`);
+        }
+      })
       .catch(err => console.error(`💔 ${name} backend health check failed:`, err.message));
   };
 
