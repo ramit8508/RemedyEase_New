@@ -348,6 +348,39 @@
   color: #667eea;
 }
 
+.view-remedies-btn {
+  flex: 1;
+  min-width: 200px;
+  padding: 15px 25px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: linear-gradient(135deg, #27ae60, #229954);
+  color: white;
+}
+
+.view-remedies-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
+}
+
+.remedies-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.remedies-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: white;
+  margin: 0;
+}
+
 /* Home Remedies Section */
 .home-remedies-section {
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);

@@ -197,17 +197,19 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                   <div className="home-remedies-section">
                     <div className="remedies-header">
                       <span className="remedy-icon">🏠</span>
-                      <h3>Recommended Home Remedies</h3>
+                      <h3>Home Remedies Can Help</h3>
                     </div>
-                    <div className="remedies-list">
-                      {analysis.homeRemedies.split('\n').map((remedy, index) => (
-                        remedy.trim() && (
-                          <div key={index} className="remedy-item">
-                            <span className="remedy-bullet">✓</span>
-                            <p>{remedy.trim()}</p>
-                          </div>
-                        )
-                      ))}
+                    <div className="remedies-info">
+                      <p className="remedies-description">
+                        Your symptoms appear to be mild and can be treated with home remedies. 
+                        Click below to explore our comprehensive home remedies section for natural 
+                        treatments and wellness tips.
+                      </p>
+                    </div>
+                    <div className="action-buttons-group">
+                      <button className="view-remedies-btn" onClick={() => navigate('/user/dashboard/ai-recommanded')}>
+                        🌿 View Home Remedies
+                      </button>
                     </div>
                   </div>
                 )}
