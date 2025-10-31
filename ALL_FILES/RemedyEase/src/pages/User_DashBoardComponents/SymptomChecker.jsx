@@ -188,7 +188,7 @@ export default function SymptomChecker() {
     recog.lang = selectedLanguage;
     recog.interimResults = true; // Enable interim results for real-time feedback
     recog.maxAlternatives = 1;
-    recog.continuous = true; // Keep listening continuously for faster input
+    recog.continuous = false; // Don't auto-restart to prevent glitching
 
     recog.onresult = (event) => {
       let interim = '';
@@ -238,18 +238,10 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
-      // Auto-restart if still in recording mode for continuous listening
-      if (isRecording && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          // Already started
-        }
-      } else {
-        setIsRecording(false);
-        setRecognizeMode(null);
-        setInterimTranscript('');
-      }
+      // Simply clear the recording state when recognition ends
+      setIsRecording(false);
+      setRecognizeMode(null);
+      setInterimTranscript('');
     };
 
     recognitionRef.current = recog;
@@ -257,28 +249,31 @@ export default function SymptomChecker() {
     return () => {
       try { 
         if (recog) {
-          recog.continuous = false;
           recog.stop(); 
         }
       } catch (e) {}
       recognitionRef.current = null;
     };
-  }, [recognizeMode, selectedLanguage, isRecording]);
+  }, [selectedLanguage]);
 
   const startRecording = (mode) => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current || isRecording) return;
+    
     setRecognizeMode(mode);
-    setIsRecording(true);
     setInterimTranscript('');
+    setIsRecording(true);
+    
     try {
       recognitionRef.current.start();
     } catch (e) {
-      console.log('Recognition already started or error:', e);
+      console.log('Recognition start error:', e);
+      setIsRecording(false);
+      setRecognizeMode(null);
     }
   };
 
   const stopRecording = () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current || !isRecording) return;
     
     // Save any remaining interim transcript before stopping
     if (interimTranscript.trim()) {
