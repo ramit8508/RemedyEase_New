@@ -19,6 +19,7 @@ export default function SymptomChecker() {
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isOptionalQuestion, setIsOptionalQuestion] = useState(false);
+  const [micStatus, setMicStatus] = useState(''); // Track mic status for debugging
   const navigate = useNavigate();
 
   // Supported languages
@@ -365,34 +366,86 @@ export default function SymptomChecker() {
     recog.maxAlternatives = 3; // Get multiple alternatives for better accuracy
     recog.continuous = true; // Keep listening continuously
     
-    // These settings help with noise handling
+    // CRITICAL: Add these settings for better voice detection
     if ('webkitSpeechRecognition' in window) {
-      // Chrome-specific optimizations
+      // Chrome-specific optimizations for better voice detection
       recog.continuous = true;
       recog.interimResults = true;
     }
 
+    recog.onstart = () => {
+      console.log('🎤 Recognition started! Start speaking...');
+      console.log('Language:', selectedLanguage);
+      console.log('Please speak clearly into your microphone');
+      setMicStatus('🎤 Listening... Speak now!');
+    };
+
+    recog.onaudiostart = () => {
+      console.log('🔊 Audio capturing started - microphone is active');
+      setMicStatus('🔊 Microphone active - speak clearly');
+    };
+
+    recog.onaudioend = () => {
+      console.log('🔇 Audio capturing ended');
+      setMicStatus('');
+    };
+
+    recog.onsoundstart = () => {
+      console.log('🎵 Sound detected!');
+      setMicStatus('🎵 Sound detected! Keep talking...');
+    };
+
+    recog.onsoundend = () => {
+      console.log('🔕 Sound ended');
+      setMicStatus('🔕 Waiting for sound...');
+    };
+
+    recog.onspeechstart = () => {
+      console.log(' Speech detected! Keep talking...');
+      setMicStatus('🗣️ Speech detected! Keep talking...');
+    };
+
+    recog.onspeechend = () => {
+      console.log(' Speech ended');
+      setMicStatus('🤐 Processing speech...');
+    };
+
     recog.onresult = (event) => {
       const mode = currentModeRef.current;
-      if (!mode) return;
+      if (!mode) {
+        console.log('⚠️ No mode set, skipping result');
+        return;
+      }
+
+      console.log('📝 Speech result event receisved, processing', event.results.length, 'results');
 
       let interimText = '';
       let finalText = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        const confidence = event.results[i][0].confidence;
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        const confidence = result[0].confidence;
         
-        if (event.results[i].isFinal) {
-          console.log('Final speech (confidence:', confidence, '):', transcript);
+        console.log(`Result ${i}:`, {
+          isFinal: result.isFinal,
+          transcript: transcript,
+          confidence: confidence,
+          alternatives: result.length
+        });
+        
+        if (result.isFinal) {
+          console.log('✅ Final speech (confidence:', confidence, '):', transcript);
           finalText += transcript;
         } else {
+          console.log('⏳ Interim speech:', transcript);
           interimText += transcript;
         }
       }
 
-      // Update interim display for visual feedback
+      // Update interim display for visual feedback - ALWAYS show what's being heard
       if (interimText) {
+        console.log('👁️ Showing interim:', interimText);
         setInterimTranscript(interimText);
       }
 
@@ -405,13 +458,13 @@ export default function SymptomChecker() {
           if (mode === 'symptoms') {
             setSymptoms(prev => {
               const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
-              console.log('Updated symptoms:', newText);
+              console.log('✅ Updated symptoms:', newText);
               return newText.trim();
             });
           } else if (mode === 'answer') {
             setAnswerInput(prev => {
               const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
-              console.log('Updated answer:', newText);
+              console.log('✅ Updated answer:', newText);
               return newText.trim();
             });
           }
@@ -668,29 +721,12 @@ export default function SymptomChecker() {
           <textarea
             className="symptom-textarea"
             placeholder={getTranslation('placeholder')}
-            value={symptoms}
+            value={symptoms + (isRecording && recognizeMode === 'symptoms' && interimTranscript ? ' ' + interimTranscript : '')}
             onChange={(e) => setSymptoms(e.target.value)}
             disabled={loading}
             rows={6}
           />
-          {isRecording && recognizeMode === 'symptoms' && interimTranscript && (
-            <div style={{
-              position: 'absolute',
-              bottom: '8px',
-              right: '8px',
-              background: 'rgba(102, 126, 234, 0.1)',
-              border: '1px solid rgba(102, 126, 234, 0.3)',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '0.9em',
-              color: '#667eea',
-              fontStyle: 'italic',
-              maxWidth: '200px',
-              pointerEvents: 'none'
-            }}>
-              🎤 "{interimTranscript}"...
-            </div>
-          )}
+          {/* Removed floating badge - now showing directly in textarea */}
         </div>
         <div className="symptom-actions-row">
           <button
@@ -702,7 +738,7 @@ export default function SymptomChecker() {
           </button>
 
           {recognitionSupported ? (
-            <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', flex: 1 }}>
               <button
                 className={`voice-btn ${isRecording && recognizeMode === 'symptoms' ? 'recording' : ''}`}
                 onClick={() => {
@@ -713,6 +749,7 @@ export default function SymptomChecker() {
                   }
                 }}
                 disabled={loading}
+                style={{ minWidth: '200px' }}
               >
                 {isRecording && recognizeMode === 'symptoms' ? getTranslation('stopRecording') : getTranslation('voiceBtn')}
               </button>
@@ -723,9 +760,14 @@ export default function SymptomChecker() {
                   <span style={{display: 'block', fontSize: '0.85em', marginTop: '4px', opacity: '0.9'}}>
                     {getTranslation('speakTip')}
                   </span>
+                  {micStatus && (
+                    <span style={{display: 'block', fontSize: '0.85em', marginTop: '4px', fontWeight: '600', color: '#4CAF50'}}>
+                      {micStatus}
+                    </span>
+                  )}
                 </span>
               )}
-            </>
+            </div>
           ) : (
             <div className="unsupported-voice-notice">
               <span style={{display: 'block', marginBottom: '5px'}}>{getTranslation('voiceNotAvailable')}</span>
@@ -748,8 +790,35 @@ export default function SymptomChecker() {
             fontSize: '0.9em',
             border: '1px solid #667eea33'
           }}>
-            <div style={{fontWeight: '600', marginBottom: '6px', color: '#667eea'}}>
-              {getTranslation('tipsTitle')}
+            <div style={{fontWeight: '600', marginBottom: '6px', color: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <span>{getTranslation('tipsTitle')}</span>
+              {!isRecording && (
+                <button
+                  onClick={() => {
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                      navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(stream => {
+                          alert('✅ Microphone is working! You can now use voice input.');
+                          stream.getTracks().forEach(track => track.stop());
+                        })
+                        .catch(err => {
+                          alert('❌ Microphone test failed!\n\nError: ' + err.message + '\n\nPlease:\n1. Check if microphone is connected\n2. Allow microphone permissions\n3. Close other apps using microphone');
+                        });
+                    }
+                  }}
+                  style={{
+                    padding: '4px 12px',
+                    background: '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.85em'
+                  }}
+                >
+                  🎤 Test Microphone
+                </button>
+              )}
             </div>
             <ul style={{margin: '0', paddingLeft: '20px', lineHeight: '1.6'}}>
               <li>{getTranslation('tip1')}</li>
@@ -757,6 +826,8 @@ export default function SymptomChecker() {
               <li>{getTranslation('tip3')}</li>
               <li>{getTranslation('tip4')}</li>
               <li>{getTranslation('tip5')}</li>
+              <li><strong>💡 Speak loudly and clearly - the mic needs to hear you!</strong></li>
+              <li><strong>⚠️ If no sound detected: Check mic volume/permissions in system settings</strong></li>
             </ul>
           </div>
         )}
@@ -786,35 +857,14 @@ export default function SymptomChecker() {
               <div className="answer-input-row" style={{ position: 'relative' }}>
                 <input
                   type="text"
-                  value={answerInput}
+                  value={answerInput + (isRecording && recognizeMode === 'answer' && interimTranscript ? ' ' + interimTranscript : '')}
                   placeholder={isOptionalQuestion ? getTranslation('typeOptional') : getTranslation('typeAnswer')}
                   onChange={(e) => setAnswerInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
                   disabled={loading}
                   className="answer-input-field"
                 />
-                {isRecording && recognizeMode === 'answer' && interimTranscript && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    right: '100px',
-                    transform: 'translateY(-50%)',
-                    background: 'rgba(102, 126, 234, 0.1)',
-                    border: '1px solid rgba(102, 126, 234, 0.3)',
-                    borderRadius: '6px',
-                    padding: '4px 8px',
-                    fontSize: '0.85em',
-                    color: '#667eea',
-                    fontStyle: 'italic',
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '150px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    🎤 "{interimTranscript}"
-                  </div>
-                )}
+                {/* Removed floating badge - now showing directly in input */}
                 {recognitionSupported && (
                   <button
                     onClick={() => {
