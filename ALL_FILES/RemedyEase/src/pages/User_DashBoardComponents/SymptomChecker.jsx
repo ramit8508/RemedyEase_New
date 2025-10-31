@@ -201,8 +201,15 @@ export default function SymptomChecker() {
     const recog = new SpeechRecognition();
     recog.lang = selectedLanguage;
     recog.interimResults = true; // Enable interim results for real-time feedback
-    recog.maxAlternatives = 1;
+    recog.maxAlternatives = 3; // Get multiple alternatives for better accuracy
     recog.continuous = true; // Keep listening continuously
+    
+    // These settings help with noise handling
+    if ('webkitSpeechRecognition' in window) {
+      // Chrome-specific optimizations
+      recog.continuous = true;
+      recog.interimResults = true;
+    }
 
     recog.onresult = (event) => {
       let interim = '';
@@ -210,6 +217,13 @@ export default function SymptomChecker() {
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
+        const confidence = event.results[i][0].confidence;
+        
+        // Log confidence for debugging
+        if (event.results[i].isFinal) {
+          console.log('Speech confidence:', confidence);
+        }
+        
         if (event.results[i].isFinal) {
           final += transcript;
         } else {
@@ -267,8 +281,19 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
-      // Don't clear anything here - let user control via stop button
-      // This prevents text from disappearing when recognition auto-ends
+      // Auto-restart if still in recording mode (handles interruptions)
+      if (isRecording && recognizeMode) {
+        console.log('Recognition ended, restarting...');
+        try {
+          setTimeout(() => {
+            if (recognitionRef.current && isRecording) {
+              recognitionRef.current.start();
+            }
+          }, 100);
+        } catch (e) {
+          console.log('Failed to restart recognition:', e);
+        }
+      }
     };
 
     recognitionRef.current = recog;
@@ -466,6 +491,9 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                 <span className="recording-indicator">
                   <span className="recording-pulse"></span>
                   🔴 Listening in {languages.find(l => l.code === selectedLanguage)?.label}...
+                  <span style={{display: 'block', fontSize: '0.85em', marginTop: '4px', opacity: '0.9'}}>
+                    💡 Tip: Speak clearly, reduce background noise
+                  </span>
                 </span>
               )}
             </>
@@ -480,6 +508,29 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
             </div>
           )}
         </div>
+
+        {/* Voice Recording Tips */}
+        {recognitionSupported && (
+          <div style={{
+            marginTop: '12px', 
+            padding: '12px', 
+            background: 'linear-gradient(135deg, #667eea22 0%, #764ba222 100%)',
+            borderRadius: '8px',
+            fontSize: '0.9em',
+            border: '1px solid #667eea33'
+          }}>
+            <div style={{fontWeight: '600', marginBottom: '6px', color: '#667eea'}}>
+              🎯 For Best Voice Recognition Results:
+            </div>
+            <ul style={{margin: '0', paddingLeft: '20px', lineHeight: '1.6'}}>
+              <li>Use a quiet environment or close to microphone</li>
+              <li>Speak clearly and at a moderate pace</li>
+              <li>Use Chrome or Edge browser (best support)</li>
+              <li>Ensure stable internet connection</li>
+              <li>Grant microphone permissions when prompted</li>
+            </ul>
+          </div>
+        )}
 
         {/* Show follow-up question area when present */}
         {currentQuestion && (
