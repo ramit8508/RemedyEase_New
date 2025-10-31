@@ -238,10 +238,9 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
-      // Simply clear the recording state when recognition ends
-      setIsRecording(false);
-      setRecognizeMode(null);
+      // Only clear interim transcript, keep the final text that was already added
       setInterimTranscript('');
+      // Don't clear isRecording here - let stopRecording handle it
     };
 
     recognitionRef.current = recog;
@@ -275,30 +274,34 @@ export default function SymptomChecker() {
   const stopRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
     
-    // Save any remaining interim transcript before stopping
-    if (interimTranscript.trim()) {
-      if (recognizeMode === 'symptoms') {
-        setSymptoms(prev => {
-          const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
-          return newText.trim();
-        });
-      } else if (recognizeMode === 'answer') {
-        setAnswerInput(prev => {
-          const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
-          return newText.trim();
-        });
-      }
-    }
-    
-    setInterimTranscript('');
-    setIsRecording(false);
-    setRecognizeMode(null);
-    
+    // First, stop the recognition
     try { 
       recognitionRef.current.stop(); 
     } catch (e) {
       console.log('Recognition stop error:', e);
     }
+    
+    // Then save any remaining interim transcript before clearing states
+    setTimeout(() => {
+      if (interimTranscript.trim()) {
+        if (recognizeMode === 'symptoms') {
+          setSymptoms(prev => {
+            const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
+            return newText.trim();
+          });
+        } else if (recognizeMode === 'answer') {
+          setAnswerInput(prev => {
+            const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
+            return newText.trim();
+          });
+        }
+      }
+      
+      // Clear states after saving
+      setInterimTranscript('');
+      setIsRecording(false);
+      setRecognizeMode(null);
+    }, 100); // Small delay to ensure final results are captured
   };
 
   const handleBookAppointment = () => {
