@@ -11,6 +11,7 @@ export default function SymptomChecker() {
   const [recognitionSupported, setRecognitionSupported] = useState(false);
   const recognitionRef = useRef(null);
   const [recognizeMode, setRecognizeMode] = useState(null); // 'symptoms' or 'answer'
+  const currentModeRef = useRef(null); // Track current mode to prevent state issues
   const [conversation, setConversation] = useState([]); // {question, answer}[]
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answerInput, setAnswerInput] = useState("");
@@ -33,6 +34,154 @@ export default function SymptomChecker() {
     { code: 'ja-JP', name: '🇯🇵 日本語 (Japanese)', label: 'Japanese' },
     { code: 'ar-SA', name: '🇸🇦 العربية (Arabic)', label: 'Arabic' },
   ];
+
+  // Translations for UI
+  const translations = {
+    'en-US': {
+      surveyTitle: '📋 Fill the Survey to Get Cared',
+      subtitle: '🤖 AI-Powered Health Assistant',
+      title: 'Smart Symptom Checker',
+      description: 'Describe your symptoms and get instant AI analysis. We\'ll determine if you need to see a doctor or if home remedies can help you feel better.',
+      languageLabel: '🌐 Select Language:',
+      placeholder: 'Describe your symptoms in detail...\n\nFor example: \'I have a fever of 101°F, sore throat, body aches, and feeling very weak since yesterday\'',
+      analyzeBtn: '🔍 Analyze Symptoms',
+      analyzing: 'Analyzing...',
+      voiceBtn: '🎙️ Use Voice Input',
+      stopRecording: '⏹️ Stop Recording',
+      listening: 'Listening in',
+      speakTip: '💡 Tip: Speak clearly, reduce background noise',
+      voiceNotAvailable: '🎤 Voice input not available',
+      httpsRequired: 'Requires HTTPS connection',
+      browserNotSupported: 'Not supported in this browser. Try Chrome or Edge.',
+      tipsTitle: '🎯 For Best Voice Recognition Results:',
+      tip1: 'Use a quiet environment or close to microphone',
+      tip2: 'Speak clearly and at a moderate pace',
+      tip3: 'Use Chrome or Edge browser (best support)',
+      tip4: 'Ensure stable internet connection',
+      tip5: 'Grant microphone permissions when prompted',
+      questionOf: 'Question',
+      of: 'of',
+      optional: 'Optional',
+      complete: 'Complete',
+      typeAnswer: 'Type your answer here or use voice...',
+      typeOptional: 'Optional - Type anything else you\'d like to share...',
+      submit: '✓ Submit',
+      skip: '⏭️ Skip',
+      previousAnswers: '💬 Previous answers recorded:',
+      analyzing: 'Analyzing your health...',
+      saveAnalysis: '💾 Save Analysis',
+      newAnalysis: '🔄 New Analysis',
+      bookAppointment: '📅 Book Appointment Now',
+      viewDoctors: '👥 View Available Doctors',
+      viewRemedies: '🌿 View Home Remedies',
+      readyTitle: 'Ready to Help',
+      readyDesc: 'Describe your symptoms above to get started with AI-powered health analysis',
+      card1Title: 'Accurate Analysis',
+      card1Desc: 'AI-powered symptom evaluation with medical database',
+      card2Title: 'Instant Results',
+      card2Desc: 'Get immediate recommendations for your health concerns',
+      card3Title: 'Private & Secure',
+      card3Desc: 'Your health information is kept confidential',
+    },
+    'hi-IN': {
+      surveyTitle: '📋 देखभाल पाने के लिए सर्वेक्षण भरें',
+      subtitle: '🤖 AI-संचालित स्वास्थ्य सहायक',
+      title: 'स्मार्ट लक्षण जांचकर्ता',
+      description: 'अपने लक्षणों का वर्णन करें और तुरंत AI विश्लेषण प्राप्त करें। हम निर्धारित करेंगे कि आपको डॉक्टर को दिखाने की आवश्यकता है या घरेलू उपचार मदद कर सकते हैं।',
+      languageLabel: '🌐 भाषा चुनें:',
+      placeholder: 'अपने लक्षणों का विस्तार से वर्णन करें...\n\nउदाहरण के लिए: \'मुझे 101°F बुखार है, गले में खराश, शरीर में दर्द, और कल से बहुत कमजोर महसूस कर रहा हूं\'',
+      analyzeBtn: '🔍 लक्षणों का विश्लेषण करें',
+      analyzing: 'विश्लेषण हो रहा है...',
+      voiceBtn: '🎙️ वॉइस इनपुट का उपयोग करें',
+      stopRecording: '⏹️ रिकॉर्डिंग बंद करें',
+      listening: 'सुन रहा है',
+      speakTip: '💡 टिप: स्पष्ट बोलें, पृष्ठभूमि शोर कम करें',
+      voiceNotAvailable: '🎤 वॉइस इनपुट उपलब्ध नहीं है',
+      httpsRequired: 'HTTPS कनेक्शन की आवश्यकता है',
+      browserNotSupported: 'इस ब्राउज़र में समर्थित नहीं है। Chrome या Edge आज़माएं।',
+      tipsTitle: '🎯 सर्वोत्तम वॉइस पहचान परिणामों के लिए:',
+      tip1: 'शांत वातावरण का उपयोग करें या माइक्रोफोन के पास रहें',
+      tip2: 'स्पष्ट और मध्यम गति से बोलें',
+      tip3: 'Chrome या Edge ब्राउज़र का उपयोग करें (सर्वोत्तम समर्थन)',
+      tip4: 'स्थिर इंटरनेट कनेक्शन सुनिश्चित करें',
+      tip5: 'संकेत मिलने पर माइक्रोफोन अनुमतियां दें',
+      questionOf: 'प्रश्न',
+      of: 'का',
+      optional: 'वैकल्पिक',
+      complete: 'पूर्ण',
+      typeAnswer: 'अपना उत्तर यहां टाइप करें या वॉइस का उपयोग करें...',
+      typeOptional: 'वैकल्पिक - आप जो कुछ भी साझा करना चाहते हैं वह टाइप करें...',
+      submit: '✓ जमा करें',
+      skip: '⏭️ छोड़ें',
+      previousAnswers: '💬 पिछले उत्तर रिकॉर्ड किए गए:',
+      analyzing: 'आपके स्वास्थ्य का विश्लेषण कर रहे हैं...',
+      saveAnalysis: '💾 विश्लेषण सहेजें',
+      newAnalysis: '🔄 नया विश्लेषण',
+      bookAppointment: '📅 अभी अपॉइंटमेंट बुक करें',
+      viewDoctors: '👥 उपलब्ध डॉक्टर देखें',
+      viewRemedies: '🌿 घरेलू उपचार देखें',
+      readyTitle: 'मदद के लिए तैयार',
+      readyDesc: 'AI-संचालित स्वास्थ्य विश्लेषण शुरू करने के लिए ऊपर अपने लक्षणों का वर्णन करें',
+      card1Title: 'सटीक विश्लेषण',
+      card1Desc: 'चिकित्सा डेटाबेस के साथ AI-संचालित लक्षण मूल्यांकन',
+      card2Title: 'तत्काल परिणाम',
+      card2Desc: 'अपनी स्वास्थ्य चिंताओं के लिए तत्काल सिफारिशें प्राप्त करें',
+      card3Title: 'निजी और सुरक्षित',
+      card3Desc: 'आपकी स्वास्थ्य जानकारी गोपनीय रखी जाती है',
+    },
+    'es-ES': {
+      surveyTitle: '📋 Complete la encuesta para recibir atención',
+      subtitle: '🤖 Asistente de salud impulsado por IA',
+      title: 'Verificador inteligente de síntomas',
+      description: 'Describa sus síntomas y obtenga un análisis instantáneo de IA. Determinaremos si necesita ver a un médico o si los remedios caseros pueden ayudarlo a sentirse mejor.',
+      languageLabel: '🌐 Seleccionar idioma:',
+      placeholder: 'Describa sus síntomas en detalle...\n\nPor ejemplo: \'Tengo fiebre de 101°F, dolor de garganta, dolores corporales y me siento muy débil desde ayer\'',
+      analyzeBtn: '🔍 Analizar síntomas',
+      analyzing: 'Analizando...',
+      voiceBtn: '🎙️ Usar entrada de voz',
+      stopRecording: '⏹️ Detener grabación',
+      listening: 'Escuchando en',
+      speakTip: '💡 Consejo: Hable claramente, reduzca el ruido de fondo',
+      voiceNotAvailable: '🎤 Entrada de voz no disponible',
+      httpsRequired: 'Requiere conexión HTTPS',
+      browserNotSupported: 'No compatible con este navegador. Pruebe Chrome o Edge.',
+      tipsTitle: '🎯 Para mejores resultados de reconocimiento de voz:',
+      tip1: 'Use un ambiente tranquilo o cerca del micrófono',
+      tip2: 'Hable claramente y a un ritmo moderado',
+      tip3: 'Use el navegador Chrome o Edge (mejor soporte)',
+      tip4: 'Asegure una conexión a Internet estable',
+      tip5: 'Otorgue permisos de micrófono cuando se solicite',
+      questionOf: 'Pregunta',
+      of: 'de',
+      optional: 'Opcional',
+      complete: 'Completo',
+      typeAnswer: 'Escriba su respuesta aquí o use voz...',
+      typeOptional: 'Opcional - Escriba cualquier otra cosa que desee compartir...',
+      submit: '✓ Enviar',
+      skip: '⏭️ Omitir',
+      previousAnswers: '💬 Respuestas anteriores registradas:',
+      analyzing: 'Analizando su salud...',
+      saveAnalysis: '💾 Guardar análisis',
+      newAnalysis: '🔄 Nuevo análisis',
+      bookAppointment: '📅 Reservar cita ahora',
+      viewDoctors: '👥 Ver médicos disponibles',
+      viewRemedies: '🌿 Ver remedios caseros',
+      readyTitle: 'Listo para ayudar',
+      readyDesc: 'Describa sus síntomas arriba para comenzar con el análisis de salud impulsado por IA',
+      card1Title: 'Análisis preciso',
+      card1Desc: 'Evaluación de síntomas impulsada por IA con base de datos médica',
+      card2Title: 'Resultados instantáneos',
+      card2Desc: 'Obtenga recomendaciones inmediatas para sus preocupaciones de salud',
+      card3Title: 'Privado y seguro',
+      card3Desc: 'Su información de salud se mantiene confidencial',
+    },
+  };
+
+  // Get translation based on selected language
+  const getTranslation = (key) => {
+    const langCode = selectedLanguage.split('-')[0] + '-' + selectedLanguage.split('-')[1];
+    return translations[langCode]?.[key] || translations['en-US'][key];
+  };
 
   const loadingSteps = [
     "Analyzing your symptoms...",
@@ -68,7 +217,11 @@ export default function SymptomChecker() {
       const res = await fetch("/api/v1/ai/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, conversation: [] }),
+        body: JSON.stringify({ 
+          symptoms, 
+          conversation: [],
+          language: selectedLanguage 
+        }),
       });
 
       const data = await res.json();
@@ -116,7 +269,11 @@ export default function SymptomChecker() {
       const res = await fetch("/api/v1/ai/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, conversation: newConv }),
+        body: JSON.stringify({ 
+          symptoms, 
+          conversation: newConv,
+          language: selectedLanguage 
+        }),
       });
 
       const data = await res.json();
@@ -158,7 +315,11 @@ export default function SymptomChecker() {
       const res = await fetch("/api/v1/ai/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, conversation: newConv }),
+        body: JSON.stringify({ 
+          symptoms, 
+          conversation: newConv,
+          language: selectedLanguage 
+        }),
       });
 
       const data = await res.json();
@@ -240,12 +401,15 @@ export default function SymptomChecker() {
       if (final) {
         const trimmedFinal = final.trim();
         if (trimmedFinal) {
-          if (recognizeMode === 'symptoms') {
+          const mode = currentModeRef.current; // Use ref to get accurate mode
+          console.log('Saving final transcript:', trimmedFinal, 'to mode:', mode);
+          
+          if (mode === 'symptoms') {
             setSymptoms(prev => {
               const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
               return newText.trim();
             });
-          } else if (recognizeMode === 'answer') {
+          } else if (mode === 'answer') {
             setAnswerInput(prev => {
               const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
               return newText.trim();
@@ -281,12 +445,34 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
+      console.log('Recognition ended');
+      
+      // Save any remaining interim transcript before restarting
+      const currentInterim = interimTranscript.trim();
+      const mode = currentModeRef.current; // Use ref for accurate mode
+      
+      if (currentInterim && mode) {
+        console.log('Saving remaining interim on end:', currentInterim, 'to mode:', mode);
+        if (mode === 'symptoms') {
+          setSymptoms(prev => {
+            const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+            return newText.trim();
+          });
+        } else if (mode === 'answer') {
+          setAnswerInput(prev => {
+            const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+            return newText.trim();
+          });
+        }
+        setInterimTranscript('');
+      }
+      
       // Auto-restart if still in recording mode (handles interruptions)
-      if (isRecording && recognizeMode) {
-        console.log('Recognition ended, restarting...');
+      if (isRecording && mode) {
+        console.log('Restarting recognition...');
         try {
           setTimeout(() => {
-            if (recognitionRef.current && isRecording) {
+            if (recognitionRef.current && isRecording && currentModeRef.current) {
               recognitionRef.current.start();
             }
           }, 100);
@@ -305,17 +491,21 @@ export default function SymptomChecker() {
         }
       } catch (e) {}
       recognitionRef.current = null;
+      currentModeRef.current = null;
     };
   }, [selectedLanguage, recognizeMode]);
 
   const startRecording = (mode) => {
     if (!recognitionRef.current || isRecording) return;
     
+    console.log('Starting recording in mode:', mode);
+    
     // Request microphone permission explicitly
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => {
           setRecognizeMode(mode);
+          currentModeRef.current = mode; // Set ref immediately
           setInterimTranscript('');
           setIsRecording(true);
           
@@ -326,6 +516,7 @@ export default function SymptomChecker() {
             console.log('Recognition start error:', e);
             setIsRecording(false);
             setRecognizeMode(null);
+            currentModeRef.current = null;
             if (e.name === 'InvalidStateError') {
               // Recognition already started, stop and restart
               recognitionRef.current.stop();
@@ -346,6 +537,7 @@ export default function SymptomChecker() {
     } else {
       // Fallback for browsers without getUserMedia
       setRecognizeMode(mode);
+      currentModeRef.current = mode;
       setInterimTranscript('');
       setIsRecording(true);
       
@@ -356,22 +548,28 @@ export default function SymptomChecker() {
         console.log('Recognition start error:', e);
         setIsRecording(false);
         setRecognizeMode(null);
+        currentModeRef.current = null;
       }
     }
   };
 
   const stopRecording = () => {
-    if (!recognitionRef.current || !isRecording) return;
+    if (!recognitionRef.current) return;
+    
+    console.log('Stopping recording manually...');
+    
+    const mode = currentModeRef.current;
     
     // Save any remaining interim transcript FIRST
     const currentInterim = interimTranscript.trim();
-    if (currentInterim) {
-      if (recognizeMode === 'symptoms') {
+    if (currentInterim && mode) {
+      console.log('Saving interim on manual stop:', currentInterim, 'to mode:', mode);
+      if (mode === 'symptoms') {
         setSymptoms(prev => {
           const newText = prev ? prev + ' ' + currentInterim : currentInterim;
           return newText.trim();
         });
-      } else if (recognizeMode === 'answer') {
+      } else if (mode === 'answer') {
         setAnswerInput(prev => {
           const newText = prev ? prev + ' ' + currentInterim : currentInterim;
           return newText.trim();
@@ -382,16 +580,21 @@ export default function SymptomChecker() {
     // Clear interim transcript
     setInterimTranscript('');
     
-    // Stop recognition
-    try { 
-      recognitionRef.current.stop(); 
-    } catch (e) {
-      console.log('Recognition stop error:', e);
-    }
-    
-    // Update states
+    // Update the states to prevent auto-restart
     setIsRecording(false);
     setRecognizeMode(null);
+    currentModeRef.current = null;
+    
+    // Stop recognition after a small delay to ensure state is updated
+    setTimeout(() => {
+      try { 
+        if (recognitionRef.current) {
+          recognitionRef.current.stop(); 
+        }
+      } catch (e) {
+        console.log('Recognition stop error:', e);
+      }
+    }, 50);
   };
 
   const handleBookAppointment = () => {
@@ -422,19 +625,18 @@ export default function SymptomChecker() {
   return (
     <div className="symptom-checker-container">
       <div className="symptom-checker-header">
-        <div className="survey-title">📋 Fill the Survey to Get Cared</div>
-        <h2 className="checker-subtitle">🤖 AI-Powered Health Assistant</h2>
-        <h1 className="checker-title">Smart Symptom Checker</h1>
+        <div className="survey-title">{getTranslation('surveyTitle')}</div>
+        <h2 className="checker-subtitle">{getTranslation('subtitle')}</h2>
+        <h1 className="checker-title">{getTranslation('title')}</h1>
         <p className="checker-description">
-          Describe your symptoms and get instant AI analysis. We'll determine if you need 
-          to see a doctor or if home remedies can help you feel better.
+          {getTranslation('description')}
         </p>
         
         {/* Language Selector */}
         {recognitionSupported && (
           <div className="language-selector-wrapper">
             <label className="language-label">
-              🌐 Select Language:
+              {getTranslation('languageLabel')}
             </label>
             <select
               value={selectedLanguage}
@@ -455,9 +657,7 @@ export default function SymptomChecker() {
       <div className="symptom-input-section">
         <textarea
           className="symptom-textarea"
-          placeholder="Describe your symptoms in detail... 
-          
-For example: 'I have a fever of 101°F, sore throat, body aches, and feeling very weak since yesterday'"
+          placeholder={getTranslation('placeholder')}
           value={symptoms + (isRecording && recognizeMode === 'symptoms' && interimTranscript ? ' ' + interimTranscript : '')}
           onChange={(e) => setSymptoms(e.target.value)}
           disabled={loading}
@@ -469,7 +669,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
             onClick={handleAnalyze}
             disabled={loading || !symptoms.trim()}
           >
-            {loading ? "Analyzing..." : "🔍 Analyze Symptoms"}
+            {loading ? getTranslation('analyzing') : getTranslation('analyzeBtn')}
           </button>
 
           {recognitionSupported ? (
@@ -485,25 +685,25 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                 }}
                 disabled={loading}
               >
-                {isRecording && recognizeMode === 'symptoms' ? '⏹️ Stop Recording' : '🎙️ Use Voice Input'}
+                {isRecording && recognizeMode === 'symptoms' ? getTranslation('stopRecording') : getTranslation('voiceBtn')}
               </button>
               {isRecording && recognizeMode === 'symptoms' && (
                 <span className="recording-indicator">
                   <span className="recording-pulse"></span>
-                  🔴 Listening in {languages.find(l => l.code === selectedLanguage)?.label}...
+                  🔴 {getTranslation('listening')} {languages.find(l => l.code === selectedLanguage)?.label}...
                   <span style={{display: 'block', fontSize: '0.85em', marginTop: '4px', opacity: '0.9'}}>
-                    💡 Tip: Speak clearly, reduce background noise
+                    {getTranslation('speakTip')}
                   </span>
                 </span>
               )}
             </>
           ) : (
             <div className="unsupported-voice-notice">
-              <span style={{display: 'block', marginBottom: '5px'}}>🎤 Voice input not available</span>
+              <span style={{display: 'block', marginBottom: '5px'}}>{getTranslation('voiceNotAvailable')}</span>
               <span style={{fontSize: '0.85em', opacity: '0.8'}}>
                 {window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' 
-                  ? 'Requires HTTPS connection' 
-                  : 'Not supported in this browser. Try Chrome or Edge.'}
+                  ? getTranslation('httpsRequired')
+                  : getTranslation('browserNotSupported')}
               </span>
             </div>
           )}
@@ -520,14 +720,14 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
             border: '1px solid #667eea33'
           }}>
             <div style={{fontWeight: '600', marginBottom: '6px', color: '#667eea'}}>
-              🎯 For Best Voice Recognition Results:
+              {getTranslation('tipsTitle')}
             </div>
             <ul style={{margin: '0', paddingLeft: '20px', lineHeight: '1.6'}}>
-              <li>Use a quiet environment or close to microphone</li>
-              <li>Speak clearly and at a moderate pace</li>
-              <li>Use Chrome or Edge browser (best support)</li>
-              <li>Ensure stable internet connection</li>
-              <li>Grant microphone permissions when prompted</li>
+              <li>{getTranslation('tip1')}</li>
+              <li>{getTranslation('tip2')}</li>
+              <li>{getTranslation('tip3')}</li>
+              <li>{getTranslation('tip4')}</li>
+              <li>{getTranslation('tip5')}</li>
             </ul>
           </div>
         )}
@@ -537,11 +737,11 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
           <div className="follow-up-question">
             <div className="question-progress-header">
               <div className="question-number">
-                Question {questionProgress.current} of {questionProgress.total}
-                {isOptionalQuestion && <span className="optional-badge">Optional</span>}
+                {getTranslation('questionOf')} {questionProgress.current} {getTranslation('of')} {questionProgress.total}
+                {isOptionalQuestion && <span className="optional-badge">{getTranslation('optional')}</span>}
               </div>
               <div className="progress-badge">
-                {Math.round((questionProgress.current / questionProgress.total) * 100)}% Complete
+                {Math.round((questionProgress.current / questionProgress.total) * 100)}% {getTranslation('complete')}
               </div>
             </div>
             
@@ -558,7 +758,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                 <input
                   type="text"
                   value={answerInput + (isRecording && recognizeMode === 'answer' && interimTranscript ? ' ' + interimTranscript : '')}
-                  placeholder={isOptionalQuestion ? "Optional - Type anything else you'd like to share..." : "Type your answer here or use voice..."}
+                  placeholder={isOptionalQuestion ? getTranslation('typeOptional') : getTranslation('typeAnswer')}
                   onChange={(e) => setAnswerInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
                   disabled={loading}
@@ -576,7 +776,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                     disabled={loading}
                     className={`answer-voice-btn ${isRecording && recognizeMode === 'answer' ? 'recording' : ''}`}
                   >
-                    {isRecording && recognizeMode === 'answer' ? '⏹️ Stop' : '🎙️ Voice'}
+                    {isRecording && recognizeMode === 'answer' ? '⏹️' : '🎙️'}
                   </button>
                 )}
                 {isOptionalQuestion ? (
@@ -586,14 +786,14 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                       disabled={loading || !answerInput.trim()}
                       className="answer-submit-btn"
                     >
-                      {loading ? '⏳' : '✓ Submit'}
+                      {loading ? '⏳' : getTranslation('submit')}
                     </button>
                     <button 
                       onClick={skipQuestion} 
                       disabled={loading}
                       className="skip-btn"
                     >
-                      ⏭️ Skip
+                      {getTranslation('skip')}
                     </button>
                   </>
                 ) : (
@@ -602,7 +802,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                     disabled={loading || !answerInput.trim()}
                     className="answer-submit-btn"
                   >
-                    {loading ? '⏳' : '✓ Submit'}
+                    {loading ? '⏳' : getTranslation('submit')}
                   </button>
                 )}
               </div>
@@ -610,13 +810,13 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
               {isRecording && recognizeMode === 'answer' && (
                 <div className="answer-recording-indicator">
                   <span className="answer-recording-pulse"></span>
-                  Recording... Speak clearly into your microphone
+                  {getTranslation('listening')}... {getTranslation('speakTip')}
                 </div>
               )}
 
               {conversation.length > 0 && (
                 <div className="conversation-counter">
-                  💬 Previous answers recorded: {conversation.length}
+                  {getTranslation('previousAnswers')} {conversation.length}
                 </div>
               )}
             </div>
@@ -632,7 +832,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
               <div className="spinner-ring"></div>
               <div className="spinner-ring"></div>
             </div>
-            <p className="loading-text">Analyzing your health...</p>
+            <p className="loading-text">{getTranslation('analyzing')}</p>
             <div className="loading-steps">
               {loadingSteps.map((step, index) => (
                 <div 
@@ -685,10 +885,10 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                     </div>
                     <div className="action-buttons-group">
                       <button className="book-now-btn" onClick={handleBookAppointment}>
-                        📅 Book Appointment Now
+                        {getTranslation('bookAppointment')}
                       </button>
                       <button className="view-doctors-btn" onClick={handleViewDoctors}>
-                        👥 View Available Doctors
+                        {getTranslation('viewDoctors')}
                       </button>
                     </div>
                   </div>
@@ -709,7 +909,7 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                     </div>
                     <div className="action-buttons-group">
                       <button className="view-remedies-btn" onClick={() => navigate('/user/dashboard/ai-recommanded')}>
-                        🌿 View Home Remedies
+                        {getTranslation('viewRemedies')}
                       </button>
                     </div>
                   </div>
@@ -729,13 +929,13 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
 
                 <div className="action-buttons">
                   <button className="save-analysis-btn" onClick={saveAnalysis}>
-                    💾 Save Analysis
+                    {getTranslation('saveAnalysis')}
                   </button>
                   <button className="new-analysis-btn" onClick={() => {
                     setSymptoms("");
                     setAnalysis(null);
                   }}>
-                    🔄 New Analysis
+                    {getTranslation('newAnalysis')}
                   </button>
                 </div>
               </div>
@@ -744,8 +944,8 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
         ) : (
           <div className="empty-state">
             <div className="empty-icon">🩺</div>
-            <h3>Ready to Help</h3>
-            <p>Describe your symptoms above to get started with AI-powered health analysis</p>
+            <h3>{getTranslation('readyTitle')}</h3>
+            <p>{getTranslation('readyDesc')}</p>
           </div>
         )}
       </div>
@@ -753,18 +953,18 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
       <div className="info-cards">
         <div className="info-card">
           <div className="card-icon">🎯</div>
-          <h4>Accurate Analysis</h4>
-          <p>AI-powered symptom evaluation with medical database</p>
+          <h4>{getTranslation('card1Title')}</h4>
+          <p>{getTranslation('card1Desc')}</p>
         </div>
         <div className="info-card">
           <div className="card-icon">⚡</div>
-          <h4>Instant Results</h4>
-          <p>Get immediate recommendations for your health concerns</p>
+          <h4>{getTranslation('card2Title')}</h4>
+          <p>{getTranslation('card2Desc')}</p>
         </div>
         <div className="info-card">
           <div className="card-icon">🔒</div>
-          <h4>Private & Secure</h4>
-          <p>Your health information is kept confidential</p>
+          <h4>{getTranslation('card3Title')}</h4>
+          <p>{getTranslation('card3Desc')}</p>
         </div>
       </div>
     </div>
