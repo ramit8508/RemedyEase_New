@@ -137,16 +137,23 @@
   font-weight: 600;
   cursor: pointer;
   font-size: 16px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .answer-voice-btn:hover {
   background: white;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+}
+
+.answer-voice-btn:active:not(:disabled) {
+  transform: translateY(0px);
 }
 
 .answer-voice-btn.recording {
@@ -231,7 +238,7 @@
   height: 8px;
   background: #e74c3c;
   border-radius: 50%;
-  animation: pulse 1.5s infinite;
+  animation: pulse-dot 1.5s infinite;
 }
 
 /* Conversation counter */
@@ -817,11 +824,14 @@
   font-weight: 600;
   cursor: pointer;
   font-size: 15px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .voice-btn:hover:not(:disabled) {
@@ -829,6 +839,10 @@
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+}
+
+.voice-btn:active:not(:disabled) {
+  transform: translateY(0px);
 }
 
 .voice-btn:disabled {
@@ -840,7 +854,7 @@
   background: #e74c3c;
   color: white;
   border-color: #e74c3c;
-  animation: pulse 1.5s infinite;
+  animation: pulse-button 1.5s infinite;
 }
 
 .recording-indicator {
@@ -857,7 +871,29 @@
   height: 8px;
   background: #e74c3c;
   border-radius: 50%;
-  animation: pulse 1.5s infinite;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-button {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(231, 76, 60, 0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.5;
+  }
 }
 
 /* Voice controls wrapper */

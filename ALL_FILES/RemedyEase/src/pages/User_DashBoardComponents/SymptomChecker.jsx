@@ -269,10 +269,11 @@ export default function SymptomChecker() {
     if (!recognitionRef.current) return;
     setRecognizeMode(mode);
     setIsRecording(true);
+    setInterimTranscript('');
     try {
       recognitionRef.current.start();
     } catch (e) {
-      // some browsers throw if start called twice
+      console.log('Recognition already started or error:', e);
     }
   };
 
@@ -294,13 +295,15 @@ export default function SymptomChecker() {
       }
     }
     
-    try { 
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.stop(); 
-    } catch (e) {}
+    setInterimTranscript('');
     setIsRecording(false);
     setRecognizeMode(null);
-    setInterimTranscript('');
+    
+    try { 
+      recognitionRef.current.stop(); 
+    } catch (e) {
+      console.log('Recognition stop error:', e);
+    }
   };
 
   const handleBookAppointment = () => {
@@ -385,7 +388,13 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
             <>
               <button
                 className={`voice-btn ${isRecording && recognizeMode === 'symptoms' ? 'recording' : ''}`}
-                onClick={() => isRecording && recognizeMode === 'symptoms' ? stopRecording() : startRecording('symptoms')}
+                onClick={() => {
+                  if (isRecording && recognizeMode === 'symptoms') {
+                    stopRecording();
+                  } else if (!isRecording) {
+                    startRecording('symptoms');
+                  }
+                }}
                 disabled={loading}
               >
                 {isRecording && recognizeMode === 'symptoms' ? '⏹️ Stop Recording' : '🎙️ Use Voice Input'}
@@ -436,7 +445,13 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
                 />
                 {recognitionSupported && (
                   <button
-                    onClick={() => isRecording && recognizeMode === 'answer' ? stopRecording() : startRecording('answer')}
+                    onClick={() => {
+                      if (isRecording && recognizeMode === 'answer') {
+                        stopRecording();
+                      } else if (!isRecording) {
+                        startRecording('answer');
+                      }
+                    }}
                     disabled={loading}
                     className={`answer-voice-btn ${isRecording && recognizeMode === 'answer' ? 'recording' : ''}`}
                   >
