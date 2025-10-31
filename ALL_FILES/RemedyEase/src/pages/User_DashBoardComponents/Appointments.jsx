@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+// Use the correct backend URL in production
+const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../Css_for_all/Appointments.css";
 import LiveChat from "../../components/LiveChat";
@@ -31,7 +33,7 @@ export default function Appointments() {
   const startLiveChat = async (appt) => {
     try {
       // Notify doctor that patient is starting live chat
-      await fetch(`/api/v1/live/notify-doctor`, {
+  await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -52,7 +54,7 @@ export default function Appointments() {
 
   const startVideoCall = async (appt) => {
     try {
-      await fetch(`/api/v1/live/status/${appt._id}`, {
+  await fetch(`${apiBase}/api/v1/live/status/${appt._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,7 +65,7 @@ export default function Appointments() {
       });
 
       // Notify doctor that patient is starting video call
-      await fetch(`/api/v1/live/notify-doctor`, {
+  await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -93,7 +95,7 @@ export default function Appointments() {
   const fetchHistoryAndDoctors = () => {
     if (user?.email) {
       setLoadingHistory(true);
-      fetch(`/api/v1/appointments/user/${user.email}`)
+  fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -105,7 +107,7 @@ export default function Appointments() {
     }
     if (!doctorFromState) {
       setLoadingDoctors(true);
-      fetch("/api/v1/doctors/all")
+  fetch(`${apiBase}/api/v1/doctors/all`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -128,7 +130,7 @@ export default function Appointments() {
     // Set up polling to check for appointment updates every 10 seconds
     const pollingInterval = setInterval(() => {
       // Silently fetch updates without showing loading state
-      fetch(`/api/v1/appointments/user/${user.email}`)
+  fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -191,7 +193,7 @@ export default function Appointments() {
       return;
     }
     try {
-      const res = await fetch("/api/v1/appointments/book", {
+  const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

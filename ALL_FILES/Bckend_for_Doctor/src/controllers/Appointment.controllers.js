@@ -7,7 +7,9 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 // Book appointment (user)
 export const bookAppointment = asyncHandler(async (req, res) => {
   const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms } = req.body;
+  console.log('[BOOK] Incoming booking:', { doctorEmail, doctorName, date, time, userEmail, userName, symptoms });
   if (!doctorEmail || !doctorName || !date || !time || !userEmail || !userName) {
+    console.error('[BOOK] Missing required fields:', req.body);
     throw new ApiError(400, "All fields are required");
   }
   const appointment = await Appointment.create({
@@ -20,6 +22,7 @@ export const bookAppointment = asyncHandler(async (req, res) => {
     symptoms,
     status: "pending"
   });
+  console.log('[BOOK] Appointment created:', appointment);
   return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
 });
 
@@ -60,14 +63,12 @@ export const confirmAppointment = asyncHandler(async (req, res) => {
 // Get appointments for user by email
 export const getUserAppointments = asyncHandler(async (req, res) => {
   const { userEmail } = req.params;
-  console.log("Fetching appointments for user:", userEmail);
-  
+  console.log('[FETCH] Fetching appointments for user:', userEmail);
   const appointments = await Appointment.find({ userEmail }).sort({
     date: -1,
     time: -1,
   });
-  
-  console.log("Found appointments:", appointments);
+  console.log('[FETCH] Found appointments:', appointments);
   return res.status(200).json(new ApiResponse(200, appointments, "User appointments fetched"));
 });
 
