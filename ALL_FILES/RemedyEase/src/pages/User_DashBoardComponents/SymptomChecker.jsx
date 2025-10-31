@@ -177,8 +177,22 @@ export default function SymptomChecker() {
 
   // Speech recognition setup
   useEffect(() => {
+    // Check for HTTPS in production
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname === '';
+    
+    const isSecure = window.location.protocol === 'https:' || isLocalhost;
+    
+    if (!isSecure) {
+      console.warn('⚠️ Microphone requires HTTPS connection');
+      setRecognitionSupported(false);
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
+      console.warn('⚠️ Speech Recognition not supported in this browser');
       setRecognitionSupported(false);
       return;
     }
@@ -230,14 +244,25 @@ export default function SymptomChecker() {
     };
 
     recog.onerror = (e) => {
-      console.error('Speech recognition error', e);
-      if (e.error === 'not-allowed') {
-        alert('Microphone access denied. Please allow microphone permissions in browser settings.');
+      console.error('Speech recognition error:', e.error, e.message);
+      
+      if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+        alert('🎤 Microphone access denied.\n\nPlease:\n1. Click the 🔒 lock icon in your browser address bar\n2. Allow microphone permissions\n3. Refresh the page and try again');
+        setIsRecording(false);
+        setRecognizeMode(null);
+        setInterimTranscript('');
+      } else if (e.error === 'no-speech') {
+        console.log('No speech detected, continuing to listen...');
+        // Don't stop recording, just continue listening
+      } else if (e.error === 'network') {
+        alert('Network error. Please check your internet connection.');
         setIsRecording(false);
         setRecognizeMode(null);
         setInterimTranscript('');
       } else if (e.error === 'aborted') {
         // Ignore aborted errors - normal when stopping
+      } else {
+        console.log('Speech recognition error:', e.error);
       }
     };
 
@@ -261,16 +286,52 @@ export default function SymptomChecker() {
   const startRecording = (mode) => {
     if (!recognitionRef.current || isRecording) return;
     
-    setRecognizeMode(mode);
-    setInterimTranscript('');
-    setIsRecording(true);
-    
-    try {
-      recognitionRef.current.start();
-    } catch (e) {
-      console.log('Recognition start error:', e);
-      setIsRecording(false);
-      setRecognizeMode(null);
+    // Request microphone permission explicitly
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          setRecognizeMode(mode);
+          setInterimTranscript('');
+          setIsRecording(true);
+          
+          try {
+            recognitionRef.current.lang = selectedLanguage; // Update language before starting
+            recognitionRef.current.start();
+          } catch (e) {
+            console.log('Recognition start error:', e);
+            setIsRecording(false);
+            setRecognizeMode(null);
+            if (e.name === 'InvalidStateError') {
+              // Recognition already started, stop and restart
+              recognitionRef.current.stop();
+              setTimeout(() => {
+                try {
+                  recognitionRef.current.start();
+                } catch (err) {
+                  console.error('Failed to restart recognition:', err);
+                }
+              }, 100);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Microphone permission error:', err);
+          alert('🎤 Unable to access microphone.\n\nPlease:\n1. Check browser permissions\n2. Ensure you\'re using HTTPS\n3. Allow microphone access when prompted');
+        });
+    } else {
+      // Fallback for browsers without getUserMedia
+      setRecognizeMode(mode);
+      setInterimTranscript('');
+      setIsRecording(true);
+      
+      try {
+        recognitionRef.current.lang = selectedLanguage;
+        recognitionRef.current.start();
+      } catch (e) {
+        console.log('Recognition start error:', e);
+        setIsRecording(false);
+        setRecognizeMode(null);
+      }
     }
   };
 
@@ -409,7 +470,14 @@ For example: 'I have a fever of 101°F, sore throat, body aches, and feeling ver
               )}
             </>
           ) : (
-            <span className="unsupported-voice-notice">Voice input not supported in this browser</span>
+            <div className="unsupported-voice-notice">
+              <span style={{display: 'block', marginBottom: '5px'}}>🎤 Voice input not available</span>
+              <span style={{fontSize: '0.85em', opacity: '0.8'}}>
+                {window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' 
+                  ? 'Requires HTTPS connection' 
+                  : 'Not supported in this browser. Try Chrome or Edge.'}
+              </span>
+            </div>
           )}
         </div>
 
