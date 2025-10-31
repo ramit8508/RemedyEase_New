@@ -329,23 +329,97 @@
 
 .book-now-btn {
   background: white;
-  color: #667eea;
+  color: #6b46c1; /* purple accent */
+  box-shadow: 0 6px 18px rgba(107, 70, 193, 0.12);
+  border-radius: 12px;
 }
 
 .book-now-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 30px rgba(107, 70, 193, 0.18);
 }
 
 .view-doctors-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent;
   color: white;
-  border: 2px solid white;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
 }
 
 .view-doctors-btn:hover {
-  background: white;
-  color: #667eea;
+  background: rgba(255,255,255,0.06);
+}
+
+/* --- New styling for recommendation card to match website design --- */
+.doctor-recommendation {
+  margin-top: 20px;
+  padding: 22px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6b5bd6 0%, #8b63d9 100%);
+  color: white;
+  box-shadow: 0 12px 40px rgba(75, 45, 135, 0.15);
+}
+
+.doctor-recommendation .recommendation-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+}
+
+.doctor-recommendation .recommendation-header .doctor-icon {
+  font-size: 28px;
+}
+
+.doctor-recommendation .specialist-info {
+  margin-top: 14px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.doctor-recommendation .specialist-type {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.doctor-recommendation .specialist-reason {
+  color: rgba(255,255,255,0.9);
+}
+
+.doctor-recommendation .action-buttons-group {
+  margin-top: 18px;
+  display: flex;
+  gap: 14px;
+}
+
+.doctor-recommendation .book-now-btn {
+  background: #ffffff;
+  color: #6b46c1;
+  padding: 16px 28px;
+  border-radius: 12px;
+  min-width: 220px;
+}
+
+.doctor-recommendation .view-doctors-btn {
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255,255,255,0.22);
+  padding: 14px 26px;
+  min-width: 220px;
+}
+
+@media (max-width: 860px) {
+  .doctor-recommendation .action-buttons-group {
+    flex-direction: column;
+  }
+  .doctor-recommendation .book-now-btn,
+  .doctor-recommendation .view-doctors-btn {
+    min-width: auto;
+    width: 100%;
+  }
 }
 
 .view-remedies-btn {
