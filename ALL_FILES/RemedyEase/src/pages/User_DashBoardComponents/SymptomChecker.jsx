@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../Css_for_all/SymptomChecker.css";
 
@@ -7,7 +7,32 @@ export default function SymptomChecker() {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionSupported, setRecognitionSupported] = useState(false);
+  const recognitionRef = useRef(null);
+  const [recognizeMode, setRecognizeMode] = useState(null); // 'symptoms' or 'answer'
+  const [conversation, setConversation] = useState([]); // {question, answer}[]
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [answerInput, setAnswerInput] = useState("");
+  const [questionProgress, setQuestionProgress] = useState({ current: 0, total: 8 });
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [isOptionalQuestion, setIsOptionalQuestion] = useState(false);
   const navigate = useNavigate();
+
+  // Supported languages
+  const languages = [
+    { code: 'en-US', name: '🇺🇸 English (US)', label: 'English' },
+    { code: 'en-GB', name: '🇬🇧 English (UK)', label: 'English UK' },
+    { code: 'hi-IN', name: '🇮🇳 हिन्दी (Hindi)', label: 'Hindi' },
+    { code: 'es-ES', name: '🇪🇸 Español (Spanish)', label: 'Spanish' },
+    { code: 'fr-FR', name: '🇫🇷 Français (French)', label: 'French' },
+    { code: 'de-DE', name: '🇩🇪 Deutsch (German)', label: 'German' },
+    { code: 'pt-BR', name: '🇧🇷 Português (Portuguese)', label: 'Portuguese' },
+    { code: 'zh-CN', name: '🇨🇳 中文 (Chinese)', label: 'Chinese' },
+    { code: 'ja-JP', name: '🇯🇵 日本語 (Japanese)', label: 'Japanese' },
+    { code: 'ar-SA', name: '🇸🇦 العربية (Arabic)', label: 'Arabic' },
+  ];
 
   const loadingSteps = [
     "Analyzing your symptoms...",
@@ -22,9 +47,12 @@ export default function SymptomChecker() {
       return;
     }
 
+    // start interactive flow
     setLoading(true);
     setAnalysis(null);
     setLoadingStep(0);
+    setConversation([]);
+    setCurrentQuestion(null);
 
     const stepInterval = setInterval(() => {
       setLoadingStep(prev => {
@@ -37,34 +65,242 @@ export default function SymptomChecker() {
     }, 800);
 
     try {
-      const res = await fetch("/api/v1/ai/symptom-analysis", {
+      const res = await fetch("/api/v1/ai/interactive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms }),
+        body: JSON.stringify({ symptoms, conversation: [] }),
       });
 
       const data = await res.json();
       clearInterval(stepInterval);
 
-      setTimeout(() => {
-        if (res.ok) {
-          setAnalysis(data);
+      if (res.ok) {
+        if (data.finished) {
+          setAnalysis(data.analysis || {});
+          setLoading(false);
         } else {
-          setAnalysis({
-            error: true,
-            message: data.message || "Failed to analyze symptoms"
+          setCurrentQuestion(data.nextQuestion || "Can you tell me more about the symptom duration?");
+          setQuestionProgress({
+            current: data.questionNumber || 1,
+            total: data.totalQuestions || 8
           });
+          setIsOptionalQuestion(data.isOptional || false);
+          setLoading(false);
         }
+      } else {
+        setAnalysis({ error: true, message: data.message || "Failed to analyze symptoms" });
         setLoading(false);
-      }, 500);
+      }
     } catch (err) {
       clearInterval(stepInterval);
-      setAnalysis({
-        error: true,
-        message: "Cannot connect to server. Please try again."
-      });
+      setAnalysis({ error: true, message: "Cannot connect to server. Please try again." });
       setLoading(false);
     }
+  };
+
+  const submitAnswer = async () => {
+    if (!currentQuestion) return;
+    if (!answerInput.trim() && !isOptionalQuestion) {
+      alert("Please answer the question");
+      return;
+    }
+
+    const newConv = [...conversation, { question: currentQuestion, answer: answerInput || "No additional information" }];
+    setConversation(newConv);
+    setAnswerInput("");
+    setCurrentQuestion(null);
+    setIsOptionalQuestion(false);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/v1/ai/interactive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms, conversation: newConv }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        if (data.finished) {
+          setAnalysis(data.analysis || {});
+          setLoading(false);
+        } else {
+          setCurrentQuestion(data.nextQuestion || null);
+          setQuestionProgress({
+            current: data.questionNumber || newConv.length + 1,
+            total: data.totalQuestions || 8
+          });
+          setIsOptionalQuestion(data.isOptional || false);
+          setLoading(false);
+        }
+      } else {
+        setAnalysis({ error: true, message: data.message || "Failed to continue interactive flow" });
+        setLoading(false);
+      }
+    } catch (err) {
+      setAnalysis({ error: true, message: "Cannot connect to server. Please try again." });
+      setLoading(false);
+    }
+  };
+
+  // Skip function for optional question
+  const skipQuestion = async () => {
+    if (!isOptionalQuestion) return;
+    
+    const newConv = [...conversation, { question: currentQuestion, answer: "Skipped - no additional information" }];
+    setConversation(newConv);
+    setAnswerInput("");
+    setCurrentQuestion(null);
+    setIsOptionalQuestion(false);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/v1/ai/interactive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symptoms, conversation: newConv }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setAnalysis(data.analysis || {});
+        setLoading(false);
+      } else {
+        setAnalysis({ error: true, message: data.message || "Failed to complete analysis" });
+        setLoading(false);
+      }
+    } catch (err) {
+      setAnalysis({ error: true, message: "Cannot connect to server. Please try again." });
+      setLoading(false);
+    }
+  };
+
+  // Speech recognition setup
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setRecognitionSupported(false);
+      return;
+    }
+
+    setRecognitionSupported(true);
+    const recog = new SpeechRecognition();
+    recog.lang = selectedLanguage;
+    recog.interimResults = true; // Enable interim results for real-time feedback
+    recog.maxAlternatives = 1;
+    recog.continuous = true; // Keep listening continuously for faster input
+
+    recog.onresult = (event) => {
+      let interim = '';
+      let final = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+
+      // Show interim results in real-time
+      if (interim) {
+        setInterimTranscript(interim);
+      }
+
+      // Add final transcript to the appropriate field
+      if (final) {
+        if (recognizeMode === 'symptoms') {
+          setSymptoms(prev => {
+            const newText = prev ? prev + ' ' + final : final;
+            return newText.trim();
+          });
+        } else if (recognizeMode === 'answer') {
+          setAnswerInput(prev => {
+            const newText = prev ? prev + ' ' + final : final;
+            return newText.trim();
+          });
+        }
+        setInterimTranscript('');
+      }
+    };
+
+    recog.onerror = (e) => {
+      console.error('Speech recognition error', e);
+      if (e.error !== 'no-speech' && e.error !== 'aborted') {
+        setIsRecording(false);
+        setRecognizeMode(null);
+        setInterimTranscript('');
+        if (e.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone permissions in browser settings.');
+        }
+      }
+    };
+
+    recog.onend = () => {
+      // Auto-restart if still in recording mode for continuous listening
+      if (isRecording && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          // Already started
+        }
+      } else {
+        setIsRecording(false);
+        setRecognizeMode(null);
+        setInterimTranscript('');
+      }
+    };
+
+    recognitionRef.current = recog;
+
+    return () => {
+      try { 
+        if (recog) {
+          recog.continuous = false;
+          recog.stop(); 
+        }
+      } catch (e) {}
+      recognitionRef.current = null;
+    };
+  }, [recognizeMode, selectedLanguage, isRecording]);
+
+  const startRecording = (mode) => {
+    if (!recognitionRef.current) return;
+    setRecognizeMode(mode);
+    setIsRecording(true);
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      // some browsers throw if start called twice
+    }
+  };
+
+  const stopRecording = () => {
+    if (!recognitionRef.current) return;
+    
+    // Save any remaining interim transcript before stopping
+    if (interimTranscript.trim()) {
+      if (recognizeMode === 'symptoms') {
+        setSymptoms(prev => {
+          const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
+          return newText.trim();
+        });
+      } else if (recognizeMode === 'answer') {
+        setAnswerInput(prev => {
+          const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
+          return newText.trim();
+        });
+      }
+    }
+    
+    try { 
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.stop(); 
+    } catch (e) {}
+    setIsRecording(false);
+    setRecognizeMode(null);
+    setInterimTranscript('');
   };
 
   const handleBookAppointment = () => {
@@ -95,12 +331,34 @@ export default function SymptomChecker() {
   return (
     <div className="symptom-checker-container">
       <div className="symptom-checker-header">
+        <div className="survey-title">📋 Fill the Survey to Get Cared</div>
         <h2 className="checker-subtitle">🤖 AI-Powered Health Assistant</h2>
         <h1 className="checker-title">Smart Symptom Checker</h1>
         <p className="checker-description">
           Describe your symptoms and get instant AI analysis. We'll determine if you need 
           to see a doctor or if home remedies can help you feel better.
         </p>
+        
+        {/* Language Selector */}
+        {recognitionSupported && (
+          <div className="language-selector-wrapper">
+            <label className="language-label">
+              🌐 Select Language:
+            </label>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              disabled={isRecording}
+              className="language-select"
+            >
+              {languages.map(lang => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="symptom-input-section">
@@ -109,18 +367,125 @@ export default function SymptomChecker() {
           placeholder="Describe your symptoms in detail... 
           
 For example: 'I have a fever of 101°F, sore throat, body aches, and feeling very weak since yesterday'"
-          value={symptoms}
+          value={symptoms + (isRecording && recognizeMode === 'symptoms' && interimTranscript ? ' ' + interimTranscript : '')}
           onChange={(e) => setSymptoms(e.target.value)}
           disabled={loading}
           rows={6}
         />
-        <button
-          className="analyze-btn"
-          onClick={handleAnalyze}
-          disabled={loading || !symptoms.trim()}
-        >
-          {loading ? "Analyzing..." : "🔍 Analyze Symptoms"}
-        </button>
+        <div className="symptom-actions-row">
+          <button
+            className="analyze-btn"
+            onClick={handleAnalyze}
+            disabled={loading || !symptoms.trim()}
+          >
+            {loading ? "Analyzing..." : "🔍 Analyze Symptoms"}
+          </button>
+
+          {recognitionSupported ? (
+            <>
+              <button
+                className={`voice-btn ${isRecording && recognizeMode === 'symptoms' ? 'recording' : ''}`}
+                onClick={() => isRecording && recognizeMode === 'symptoms' ? stopRecording() : startRecording('symptoms')}
+                disabled={loading}
+              >
+                {isRecording && recognizeMode === 'symptoms' ? '⏹️ Stop Recording' : '🎙️ Use Voice Input'}
+              </button>
+              {isRecording && recognizeMode === 'symptoms' && (
+                <span className="recording-indicator">
+                  <span className="recording-pulse"></span>
+                  🔴 Listening in {languages.find(l => l.code === selectedLanguage)?.label}...
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="unsupported-voice-notice">Voice input not supported in this browser</span>
+          )}
+        </div>
+
+        {/* Show follow-up question area when present */}
+        {currentQuestion && (
+          <div className="follow-up-question">
+            <div className="question-progress-header">
+              <div className="question-number">
+                Question {questionProgress.current} of {questionProgress.total}
+                {isOptionalQuestion && <span className="optional-badge">Optional</span>}
+              </div>
+              <div className="progress-badge">
+                {Math.round((questionProgress.current / questionProgress.total) * 100)}% Complete
+              </div>
+            </div>
+            
+            <div className="progress-bar-container">
+              <div className="progress-bar-fill" style={{width: `${(questionProgress.current / questionProgress.total) * 100}%`}}></div>
+            </div>
+
+            <div className="question-text">
+              {isOptionalQuestion ? '💬' : '🩺'} {currentQuestion}
+            </div>
+            
+            <div className="answer-input-wrapper">
+              <div className="answer-input-row">
+                <input
+                  type="text"
+                  value={answerInput + (isRecording && recognizeMode === 'answer' && interimTranscript ? ' ' + interimTranscript : '')}
+                  placeholder={isOptionalQuestion ? "Optional - Type anything else you'd like to share..." : "Type your answer here or use voice..."}
+                  onChange={(e) => setAnswerInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
+                  disabled={loading}
+                  className="answer-input-field"
+                />
+                {recognitionSupported && (
+                  <button
+                    onClick={() => isRecording && recognizeMode === 'answer' ? stopRecording() : startRecording('answer')}
+                    disabled={loading}
+                    className={`answer-voice-btn ${isRecording && recognizeMode === 'answer' ? 'recording' : ''}`}
+                  >
+                    {isRecording && recognizeMode === 'answer' ? '⏹️ Stop' : '🎙️ Voice'}
+                  </button>
+                )}
+                {isOptionalQuestion ? (
+                  <>
+                    <button 
+                      onClick={submitAnswer} 
+                      disabled={loading || !answerInput.trim()}
+                      className="answer-submit-btn"
+                    >
+                      {loading ? '⏳' : '✓ Submit'}
+                    </button>
+                    <button 
+                      onClick={skipQuestion} 
+                      disabled={loading}
+                      className="skip-btn"
+                    >
+                      ⏭️ Skip
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={submitAnswer} 
+                    disabled={loading || !answerInput.trim()}
+                    className="answer-submit-btn"
+                  >
+                    {loading ? '⏳' : '✓ Submit'}
+                  </button>
+                )}
+              </div>
+              
+              {isRecording && recognizeMode === 'answer' && (
+                <div className="answer-recording-indicator">
+                  <span className="answer-recording-pulse"></span>
+                  Recording... Speak clearly into your microphone
+                </div>
+              )}
+
+              {conversation.length > 0 && (
+                <div className="conversation-counter">
+                  💬 Previous answers recorded: {conversation.length}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="analysis-output-container">
