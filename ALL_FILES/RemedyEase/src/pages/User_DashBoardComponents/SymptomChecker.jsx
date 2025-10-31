@@ -373,50 +373,50 @@ export default function SymptomChecker() {
     }
 
     recog.onresult = (event) => {
-      let interim = '';
-      let final = '';
+      const mode = currentModeRef.current;
+      if (!mode) return;
+
+      let interimText = '';
+      let finalText = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         const confidence = event.results[i][0].confidence;
         
-        // Log confidence for debugging
         if (event.results[i].isFinal) {
-          console.log('Speech confidence:', confidence);
-        }
-        
-        if (event.results[i].isFinal) {
-          final += transcript;
+          console.log('Final speech (confidence:', confidence, '):', transcript);
+          finalText += transcript;
         } else {
-          interim += transcript;
+          interimText += transcript;
         }
       }
 
-      // Show interim results in real-time
-      if (interim) {
-        setInterimTranscript(interim);
+      // Update interim display for visual feedback
+      if (interimText) {
+        setInterimTranscript(interimText);
       }
 
-      // Add final transcript to the appropriate field immediately
-      if (final) {
-        const trimmedFinal = final.trim();
+      // Immediately save final transcript to the field
+      if (finalText) {
+        const trimmedFinal = finalText.trim();
         if (trimmedFinal) {
-          const mode = currentModeRef.current; // Use ref to get accurate mode
-          console.log('Saving final transcript:', trimmedFinal, 'to mode:', mode);
+          console.log('💾 Saving final text to', mode, ':', trimmedFinal);
           
           if (mode === 'symptoms') {
             setSymptoms(prev => {
-              const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
+              const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
+              console.log('Updated symptoms:', newText);
               return newText.trim();
             });
           } else if (mode === 'answer') {
             setAnswerInput(prev => {
-              const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
+              const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
+              console.log('Updated answer:', newText);
               return newText.trim();
             });
           }
         }
-        // Clear interim after saving final
+        // Clear interim after final is saved
         setInterimTranscript('');
       }
     };
@@ -445,40 +445,47 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
-      console.log('Recognition ended');
+      console.log('🔴 Recognition ended, isRecording:', isRecording, 'mode:', currentModeRef.current);
       
-      // Save any remaining interim transcript before restarting
-      const currentInterim = interimTranscript.trim();
-      const mode = currentModeRef.current; // Use ref for accurate mode
+      // CRITICAL: Save any remaining interim text before doing anything else
+      const remainingInterim = interimTranscript.trim();
+      const mode = currentModeRef.current;
       
-      if (currentInterim && mode) {
-        console.log('Saving remaining interim on end:', currentInterim, 'to mode:', mode);
+      if (remainingInterim && mode) {
+        console.log('💾 Saving remaining interim on end:', remainingInterim);
+        
         if (mode === 'symptoms') {
           setSymptoms(prev => {
-            const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+            const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
             return newText.trim();
           });
         } else if (mode === 'answer') {
           setAnswerInput(prev => {
-            const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+            const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
             return newText.trim();
           });
         }
-        setInterimTranscript('');
       }
       
-      // Auto-restart if still in recording mode (handles interruptions)
+      // Clear interim display
+      setInterimTranscript('');
+      
+      // Auto-restart if still in recording mode
       if (isRecording && mode) {
-        console.log('Restarting recognition...');
-        try {
-          setTimeout(() => {
-            if (recognitionRef.current && isRecording && currentModeRef.current) {
+        console.log('🔄 Auto-restarting recognition...');
+        setTimeout(() => {
+          if (recognitionRef.current && isRecording && currentModeRef.current) {
+            try {
               recognitionRef.current.start();
+              console.log('✅ Recognition restarted');
+            } catch (e) {
+              console.log('⚠️ Could not restart:', e.message);
+              // If it fails to restart, it's probably already running or stopped by user
             }
-          }, 100);
-        } catch (e) {
-          console.log('Failed to restart recognition:', e);
-        }
+          }
+        }, 100);
+      } else {
+        console.log('⏹️ Not restarting - recording stopped');
       }
     };
 
@@ -556,43 +563,45 @@ export default function SymptomChecker() {
   const stopRecording = () => {
     if (!recognitionRef.current) return;
     
-    console.log('Stopping recording manually...');
+    console.log('🛑 Manually stopping recording...');
     
     const mode = currentModeRef.current;
+    const remainingInterim = interimTranscript.trim();
     
-    // Save any remaining interim transcript FIRST
-    const currentInterim = interimTranscript.trim();
-    if (currentInterim && mode) {
-      console.log('Saving interim on manual stop:', currentInterim, 'to mode:', mode);
+    // CRITICAL: Save any remaining interim text FIRST before changing any state
+    if (remainingInterim && mode) {
+      console.log('💾 Saving interim on manual stop:', remainingInterim);
+      
       if (mode === 'symptoms') {
         setSymptoms(prev => {
-          const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+          const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
           return newText.trim();
         });
       } else if (mode === 'answer') {
         setAnswerInput(prev => {
-          const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+          const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
           return newText.trim();
         });
       }
     }
     
-    // Clear interim transcript
+    // Clear interim display
     setInterimTranscript('');
     
-    // Update the states to prevent auto-restart
+    // THEN update states to stop recording (order matters!)
     setIsRecording(false);
     setRecognizeMode(null);
     currentModeRef.current = null;
     
-    // Stop recognition after a small delay to ensure state is updated
+    // Finally stop the recognition
     setTimeout(() => {
       try { 
         if (recognitionRef.current) {
-          recognitionRef.current.stop(); 
+          recognitionRef.current.stop();
+          console.log('✅ Recognition stopped successfully');
         }
       } catch (e) {
-        console.log('Recognition stop error:', e);
+        console.log('⚠️ Recognition stop error:', e.message);
       }
     }, 50);
   };
@@ -655,14 +664,34 @@ export default function SymptomChecker() {
       </div>
 
       <div className="symptom-input-section">
-        <textarea
-          className="symptom-textarea"
-          placeholder={getTranslation('placeholder')}
-          value={symptoms + (isRecording && recognizeMode === 'symptoms' && interimTranscript ? ' ' + interimTranscript : '')}
-          onChange={(e) => setSymptoms(e.target.value)}
-          disabled={loading}
-          rows={6}
-        />
+        <div style={{ position: 'relative' }}>
+          <textarea
+            className="symptom-textarea"
+            placeholder={getTranslation('placeholder')}
+            value={symptoms}
+            onChange={(e) => setSymptoms(e.target.value)}
+            disabled={loading}
+            rows={6}
+          />
+          {isRecording && recognizeMode === 'symptoms' && interimTranscript && (
+            <div style={{
+              position: 'absolute',
+              bottom: '8px',
+              right: '8px',
+              background: 'rgba(102, 126, 234, 0.1)',
+              border: '1px solid rgba(102, 126, 234, 0.3)',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '0.9em',
+              color: '#667eea',
+              fontStyle: 'italic',
+              maxWidth: '200px',
+              pointerEvents: 'none'
+            }}>
+              🎤 "{interimTranscript}"...
+            </div>
+          )}
+        </div>
         <div className="symptom-actions-row">
           <button
             className="analyze-btn"
@@ -754,16 +783,38 @@ export default function SymptomChecker() {
             </div>
             
             <div className="answer-input-wrapper">
-              <div className="answer-input-row">
+              <div className="answer-input-row" style={{ position: 'relative' }}>
                 <input
                   type="text"
-                  value={answerInput + (isRecording && recognizeMode === 'answer' && interimTranscript ? ' ' + interimTranscript : '')}
+                  value={answerInput}
                   placeholder={isOptionalQuestion ? getTranslation('typeOptional') : getTranslation('typeAnswer')}
                   onChange={(e) => setAnswerInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
                   disabled={loading}
                   className="answer-input-field"
                 />
+                {isRecording && recognizeMode === 'answer' && interimTranscript && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '100px',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    border: '1px solid rgba(102, 126, 234, 0.3)',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontSize: '0.85em',
+                    color: '#667eea',
+                    fontStyle: 'italic',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '150px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    🎤 "{interimTranscript}"
+                  </div>
+                )}
                 {recognitionSupported && (
                   <button
                     onClick={() => {
