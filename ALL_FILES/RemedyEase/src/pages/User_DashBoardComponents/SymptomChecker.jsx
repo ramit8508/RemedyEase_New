@@ -188,7 +188,7 @@ export default function SymptomChecker() {
     recog.lang = selectedLanguage;
     recog.interimResults = true; // Enable interim results for real-time feedback
     recog.maxAlternatives = 1;
-    recog.continuous = false; // Don't auto-restart to prevent glitching
+    recog.continuous = true; // Keep listening continuously
 
     recog.onresult = (event) => {
       let interim = '';
@@ -208,39 +208,42 @@ export default function SymptomChecker() {
         setInterimTranscript(interim);
       }
 
-      // Add final transcript to the appropriate field
+      // Add final transcript to the appropriate field immediately
       if (final) {
-        if (recognizeMode === 'symptoms') {
-          setSymptoms(prev => {
-            const newText = prev ? prev + ' ' + final : final;
-            return newText.trim();
-          });
-        } else if (recognizeMode === 'answer') {
-          setAnswerInput(prev => {
-            const newText = prev ? prev + ' ' + final : final;
-            return newText.trim();
-          });
+        const trimmedFinal = final.trim();
+        if (trimmedFinal) {
+          if (recognizeMode === 'symptoms') {
+            setSymptoms(prev => {
+              const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
+              return newText.trim();
+            });
+          } else if (recognizeMode === 'answer') {
+            setAnswerInput(prev => {
+              const newText = prev ? prev + ' ' + trimmedFinal : trimmedFinal;
+              return newText.trim();
+            });
+          }
         }
+        // Clear interim after saving final
         setInterimTranscript('');
       }
     };
 
     recog.onerror = (e) => {
       console.error('Speech recognition error', e);
-      if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      if (e.error === 'not-allowed') {
+        alert('Microphone access denied. Please allow microphone permissions in browser settings.');
         setIsRecording(false);
         setRecognizeMode(null);
         setInterimTranscript('');
-        if (e.error === 'not-allowed') {
-          alert('Microphone access denied. Please allow microphone permissions in browser settings.');
-        }
+      } else if (e.error === 'aborted') {
+        // Ignore aborted errors - normal when stopping
       }
     };
 
     recog.onend = () => {
-      // Only clear interim transcript, keep the final text that was already added
-      setInterimTranscript('');
-      // Don't clear isRecording here - let stopRecording handle it
+      // Don't clear anything here - let user control via stop button
+      // This prevents text from disappearing when recognition auto-ends
     };
 
     recognitionRef.current = recog;
@@ -253,7 +256,7 @@ export default function SymptomChecker() {
       } catch (e) {}
       recognitionRef.current = null;
     };
-  }, [selectedLanguage]);
+  }, [selectedLanguage, recognizeMode]);
 
   const startRecording = (mode) => {
     if (!recognitionRef.current || isRecording) return;
@@ -274,34 +277,35 @@ export default function SymptomChecker() {
   const stopRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
     
-    // First, stop the recognition
+    // Save any remaining interim transcript FIRST
+    const currentInterim = interimTranscript.trim();
+    if (currentInterim) {
+      if (recognizeMode === 'symptoms') {
+        setSymptoms(prev => {
+          const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+          return newText.trim();
+        });
+      } else if (recognizeMode === 'answer') {
+        setAnswerInput(prev => {
+          const newText = prev ? prev + ' ' + currentInterim : currentInterim;
+          return newText.trim();
+        });
+      }
+    }
+    
+    // Clear interim transcript
+    setInterimTranscript('');
+    
+    // Stop recognition
     try { 
       recognitionRef.current.stop(); 
     } catch (e) {
       console.log('Recognition stop error:', e);
     }
     
-    // Then save any remaining interim transcript before clearing states
-    setTimeout(() => {
-      if (interimTranscript.trim()) {
-        if (recognizeMode === 'symptoms') {
-          setSymptoms(prev => {
-            const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
-            return newText.trim();
-          });
-        } else if (recognizeMode === 'answer') {
-          setAnswerInput(prev => {
-            const newText = prev ? prev + ' ' + interimTranscript : interimTranscript;
-            return newText.trim();
-          });
-        }
-      }
-      
-      // Clear states after saving
-      setInterimTranscript('');
-      setIsRecording(false);
-      setRecognizeMode(null);
-    }, 100); // Small delay to ensure final results are captured
+    // Update states
+    setIsRecording(false);
+    setRecognizeMode(null);
   };
 
   const handleBookAppointment = () => {
