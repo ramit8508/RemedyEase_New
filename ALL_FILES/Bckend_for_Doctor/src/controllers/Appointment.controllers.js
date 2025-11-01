@@ -16,29 +16,46 @@ export const bookAppointment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  // Check if the timeslot is already booked
+  // Check if the timeslot is already booked (optional feature)
   if (doctorId) {
-    const timeslotDoc = await Timeslot.findOne({ 
-      doctor: doctorId, 
-      date: date 
-    });
+    try {
+      const timeslotDoc = await Timeslot.findOne({ 
+        doctor: doctorId, 
+        date: date 
+      });
 
-    if (timeslotDoc) {
-      const slot = timeslotDoc.slots.find(s => s.time === time);
-      if (slot && slot.booked) {
-        throw new ApiError(400, "This time slot is already booked. Please select another time.");
+      if (timeslotDoc && timeslotDoc.slots && Array.isArray(timeslotDoc.slots)) {
+        const slot = timeslotDoc.slots.find(s => s.time === time);
+        if (slot && slot.booked) {
+          console.log('[BOOK] Slot already booked:', time);
+          throw new ApiError(400, "This time slot is already booked. Please select another time.");
+        }
+        
+        // Mark the slot as booked
+        if (slot) {
+          slot.booked = true;
+          slot.bookedBy = userEmail;
+          await timeslotDoc.save();
+          console.log('[BOOK] Timeslot marked as booked:', time);
+        } else {
+          console.log('[BOOK] Slot not found in timeslots, allowing booking anyway');
+        }
+      } else {
+        console.log('[BOOK] No timeslots found for this date, allowing booking');
       }
-      
-      // Mark the slot as booked
-      if (slot) {
-        slot.booked = true;
-        slot.bookedBy = userEmail; // Store user email for reference
-        await timeslotDoc.save();
-        console.log('[BOOK] Timeslot marked as booked:', time);
+    } catch (error) {
+      // If timeslot check fails, log but continue with booking
+      // This ensures bookings work even without timeslot system
+      if (error instanceof ApiError) {
+        throw error; // Re-throw ApiError (like "already booked")
       }
+      console.error('[BOOK] Timeslot check error (continuing anyway):', error.message);
     }
+  } else {
+    console.log('[BOOK] No doctorId provided, skipping timeslot check');
   }
 
+  // Create the appointment
   const appointment = await Appointment.create({
     doctorEmail,
     doctorName,
@@ -50,7 +67,7 @@ export const bookAppointment = asyncHandler(async (req, res) => {
     status: "pending"
   });
   
-  console.log('[BOOK] Appointment created:', appointment);
+  console.log('[BOOK] Appointment created successfully:', appointment._id);
   return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
 });
 
