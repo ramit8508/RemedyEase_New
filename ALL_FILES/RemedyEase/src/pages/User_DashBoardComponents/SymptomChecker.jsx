@@ -526,44 +526,55 @@ export default function SymptomChecker() {
     };
 
     recog.onerror = (e) => {
-      console.error('Speech recognition error:', e.error, e.message);
+      console.error('❌ Speech recognition error:', e.error, e.message);
       
       if (e.error === 'not-allowed' || e.error === 'permission-denied') {
         alert('🎤 Microphone access denied.\n\nPlease:\n1. Click the 🔒 lock icon in your browser address bar\n2. Allow microphone permissions\n3. Refresh the page and try again');
         setIsRecording(false);
+        isRecordingRef.current = false; // Update ref
         setRecognizeMode(null);
+        currentModeRef.current = null; // Update ref
         setInterimTranscript('');
       } else if (e.error === 'no-speech') {
-        console.log('No speech detected, continuing to listen...');
-        // Don't stop recording, just continue listening
+        console.log('⚠️ No speech detected, but will auto-restart...');
+        // Don't stop recording, let onend handler restart
       } else if (e.error === 'network') {
         alert('Network error. Please check your internet connection.');
         setIsRecording(false);
+        isRecordingRef.current = false; // Update ref
         setRecognizeMode(null);
+        currentModeRef.current = null; // Update ref
         setInterimTranscript('');
       } else if (e.error === 'aborted') {
+        console.log('⚠️ Recognition aborted (normal when manually stopping)');
         // Ignore aborted errors - normal when stopping
       } else {
-        console.log('Speech recognition error:', e.error);
+        console.warn('⚠️ Speech recognition error:', e.error);
+        // Don't stop on other errors, let it restart
       }
     };
 
     recog.onend = () => {
-      console.log('🔴 Recognition ended, isRecording:', isRecordingRef.current, 'mode:', currentModeRef.current);
+      const currentRecording = isRecordingRef.current;
+      const currentMode = currentModeRef.current;
+      
+      console.log('🔴 Recognition ended');
+      console.log('  - isRecordingRef:', currentRecording);
+      console.log('  - currentModeRef:', currentMode);
+      console.log('  - interimTranscript:', interimTranscript);
       
       // CRITICAL: Save any remaining interim text before doing anything else
       const remainingInterim = interimTranscript.trim();
-      const mode = currentModeRef.current;
       
-      if (remainingInterim && mode) {
+      if (remainingInterim && currentMode) {
         console.log('💾 Saving remaining interim on end:', remainingInterim);
         
-        if (mode === 'symptoms') {
+        if (currentMode === 'symptoms') {
           setSymptoms(prev => {
             const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
             return newText.trim();
           });
-        } else if (mode === 'answer') {
+        } else if (currentMode === 'answer') {
           setAnswerInput(prev => {
             const newText = prev ? `${prev} ${remainingInterim}` : remainingInterim;
             return newText.trim();
@@ -575,9 +586,10 @@ export default function SymptomChecker() {
       setInterimTranscript('');
       
       // Auto-restart if still in recording mode - USE REF!
-      if (isRecordingRef.current && mode) {
-        console.log('🔄 Auto-restarting recognition (still recording)...');
+      if (currentRecording && currentMode) {
+        console.log('🔄 Auto-restarting recognition (still recording in mode:', currentMode, ')...');
         setTimeout(() => {
+          // Double-check refs haven't changed
           if (recognitionRef.current && isRecordingRef.current && currentModeRef.current) {
             try {
               recognitionRef.current.start();
@@ -595,10 +607,15 @@ export default function SymptomChecker() {
             }
           } else {
             console.log('⏹️ Recording was stopped during restart delay');
+            console.log('  - recognitionRef:', !!recognitionRef.current);
+            console.log('  - isRecordingRef:', isRecordingRef.current);
+            console.log('  - currentModeRef:', currentModeRef.current);
           }
         }, 300); // Increased delay for better stability
       } else {
-        console.log('⏹️ Not restarting - recording stopped');
+        console.log('⏹️ Not restarting - recording stopped or no mode');
+        console.log('  - currentRecording:', currentRecording);
+        console.log('  - currentMode:', currentMode);
       }
     };
 
