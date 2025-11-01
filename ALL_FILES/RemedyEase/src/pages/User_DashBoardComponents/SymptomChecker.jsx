@@ -10,6 +10,7 @@ export default function SymptomChecker() {
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionSupported, setRecognitionSupported] = useState(false);
   const recognitionRef = useRef(null);
+  const isRecordingRef = useRef(false); // Track recording state for event handlers
   const [recognizeMode, setRecognizeMode] = useState(null); // 'symptoms' or 'answer'
   const currentModeRef = useRef(null); // Track current mode to prevent state issues
   const [conversation, setConversation] = useState([]); // {question, answer}[]
@@ -548,7 +549,7 @@ export default function SymptomChecker() {
     };
 
     recog.onend = () => {
-      console.log('🔴 Recognition ended, isRecording:', isRecording, 'mode:', currentModeRef.current);
+      console.log('🔴 Recognition ended, isRecording:', isRecordingRef.current, 'mode:', currentModeRef.current);
       
       // CRITICAL: Save any remaining interim text before doing anything else
       const remainingInterim = interimTranscript.trim();
@@ -573,20 +574,29 @@ export default function SymptomChecker() {
       // Clear interim display
       setInterimTranscript('');
       
-      // Auto-restart if still in recording mode
-      if (isRecording && mode) {
-        console.log('🔄 Auto-restarting recognition...');
+      // Auto-restart if still in recording mode - USE REF!
+      if (isRecordingRef.current && mode) {
+        console.log('🔄 Auto-restarting recognition (still recording)...');
         setTimeout(() => {
-          if (recognitionRef.current && isRecording && currentModeRef.current) {
+          if (recognitionRef.current && isRecordingRef.current && currentModeRef.current) {
             try {
               recognitionRef.current.start();
-              console.log('✅ Recognition restarted');
+              console.log('✅ Recognition restarted successfully');
             } catch (e) {
-              console.log('⚠️ Could not restart:', e.message);
-              // If it fails to restart, it's probably already running or stopped by user
+              console.warn('⚠️ Could not restart recognition:', e.message);
+              if (e.name !== 'InvalidStateError') {
+                // If it's not just "already started", there's a real problem
+                console.error('❌ Recognition restart failed, stopping recording');
+                setIsRecording(false);
+                isRecordingRef.current = false;
+                setRecognizeMode(null);
+                currentModeRef.current = null;
+              }
             }
+          } else {
+            console.log('⏹️ Recording was stopped during restart delay');
           }
-        }, 100);
+        }, 300); // Increased delay for better stability
       } else {
         console.log('⏹️ Not restarting - recording stopped');
       }
@@ -663,6 +673,7 @@ export default function SymptomChecker() {
           currentModeRef.current = mode; // Set ref immediately
           setInterimTranscript('');
           setIsRecording(true);
+          isRecordingRef.current = true; // CRITICAL: Set ref for event handlers
           
           try {
             recognitionRef.current.lang = selectedLanguage; // Update language before starting
@@ -731,8 +742,10 @@ export default function SymptomChecker() {
     
     // THEN update states to stop recording (order matters!)
     setIsRecording(false);
+    isRecordingRef.current = false; // CRITICAL: Clear ref immediately
     setRecognizeMode(null);
     currentModeRef.current = null;
+    setVolumeLevel(0); // Reset volume indicator
     
     // Finally stop the recognition
     setTimeout(() => {
