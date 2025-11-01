@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../Css_for_all/PrescriptionView.css';
 
+// Get the backend URL from environment variables
+const API_BASE = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
+
 export default function PrescriptionView({ appointmentId }) {
   const navigate = useNavigate();
   const [prescription, setPrescription] = useState(null);
@@ -14,7 +17,7 @@ export default function PrescriptionView({ appointmentId }) {
 
   const fetchPrescription = async () => {
     try {
-      const response = await fetch(`/api/v1/appointments/prescription/${appointmentId}`);
+      const response = await fetch(`${API_BASE}/api/v1/appointments/prescription/${appointmentId}`);
       const data = await response.json();
 
       if (response.ok) {

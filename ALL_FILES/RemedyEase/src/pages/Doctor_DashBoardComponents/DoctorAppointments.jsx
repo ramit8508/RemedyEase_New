@@ -466,8 +466,8 @@ export default function DoctorAppointments() {
           </div>
         )}
       </div>
-      {/* Appointment Time Notification */}
-      {showNotification && notificationData && (
+      {/* Appointment Time Notification - Hidden during active call/chat */}
+      {showNotification && notificationData && !showVideoCall && !showLiveChat && (
         <div className="appointment-notification-popup">
           <div className="notification-header">
             <div className="notification-icon">🔔</div>
@@ -504,8 +504,8 @@ export default function DoctorAppointments() {
         </div>
       )}
 
-      {/* Patient-Initiated Session Notification */}
-      {showPatientNotification && currentPatientNotif && (
+      {/* Patient-Initiated Session Notification - Hidden during active call/chat */}
+      {showPatientNotification && currentPatientNotif && !showVideoCall && !showLiveChat && (
         <div className="patient-waiting-notification-popup">
           <div className="notification-header">
             <div className="notification-icon">👤</div>

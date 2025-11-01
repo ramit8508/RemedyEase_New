@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 // Use the correct backend URL in production
 const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -16,6 +16,9 @@ export default function Appointments() {
   const navigate = useNavigate();
   const doctorFromState = location.state?.doctor;
   const user = JSON.parse(localStorage.getItem("user"));
+  
+  // Ref to track last booking time to prevent polling interference
+  const lastBookingTimeRef = useRef(null);
 
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -118,23 +121,47 @@ export default function Appointments() {
     setSelectedAppointmentForLive(null);
   };
 
-  const fetchHistoryAndDoctors = () => {
+  const fetchHistoryAndDoctors = (silent = false) => {
     if (user?.email) {
-      setLoadingHistory(true);
+      // Skip fetch if we just booked (within last 5 seconds)
+      if (lastBookingTimeRef.current && Date.now() - lastBookingTimeRef.current < 5000) {
+        console.log('[HISTORY] Skipping fetch - recent booking');
+        return;
+      }
+      
+      if (!silent) setLoadingHistory(true);
       console.log('[HISTORY] Fetching appointments for user:', user.email);
+      console.log('[HISTORY] Full user object:', user);
+      console.log('[HISTORY] API URL:', `${apiBase}/api/v1/appointments/user/${user.email}`);
   fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
           console.log('[HISTORY] Response received:', data);
           if (data.success) {
             console.log('[HISTORY] Setting history with', data.data?.length || 0, 'appointments');
-            setHistory(data.data || []);
+            
+            // Don't clear history if backend returns empty but we have appointments in state
+            setHistory(prevHistory => {
+              if (data.data && data.data.length > 0) {
+                return data.data;
+              } else if (prevHistory.length > 0) {
+                console.log('[HISTORY] Backend returned empty, keeping current state');
+                return prevHistory;
+              } else {
+                return [];
+              }
+            });
           } else {
             console.error('[HISTORY] Response not successful:', data);
           }
         })
-        .catch((err) => console.error("[HISTORY] Failed to fetch history:", err))
-        .finally(() => setLoadingHistory(false));
+        .catch((err) => {
+          console.error("[HISTORY] Failed to fetch history:", err);
+          // Don't clear history on error
+        })
+        .finally(() => {
+          if (!silent) setLoadingHistory(false);
+        });
     }
     if (!doctorFromState) {
       setLoadingDoctors(true);
@@ -160,7 +187,14 @@ export default function Appointments() {
 
     // Set up polling to check for appointment updates every 10 seconds
     const pollingInterval = setInterval(() => {
+      // Skip polling if we just booked an appointment (within last 5 seconds)
+      if (lastBookingTimeRef.current && Date.now() - lastBookingTimeRef.current < 5000) {
+        console.log('[POLLING] Skipping poll - recent booking');
+        return;
+      }
+      
       // Silently fetch updates without showing loading state
+      console.log('[POLLING] Checking for appointment updates...');
       fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
@@ -168,6 +202,11 @@ export default function Appointments() {
             const newHistory = data.data || [];
             
             setHistory((prevHistory) => {
+              // If we have no previous history, just use new data
+              if (prevHistory.length === 0) {
+                return newHistory;
+              }
+              
               // Check for newly confirmed appointments
               newHistory.forEach((newAppt) => {
                 const oldAppt = prevHistory.find((h) => h._id === newAppt._id);
@@ -205,7 +244,26 @@ export default function Appointments() {
                 }
               });
               
-              return newHistory;
+              // Only update history if backend data has all our appointments
+              // Check if all prevHistory appointments exist in newHistory
+              const allExistInBackend = prevHistory.every(oldAppt => 
+                newHistory.some(newAppt => newAppt._id === oldAppt._id)
+              );
+              
+              if (allExistInBackend) {
+                console.log('[POLLING] Backend has all appointments, updating history');
+                return newHistory;
+              } else {
+                console.log('[POLLING] Backend missing some appointments, keeping current state');
+                // Merge: keep existing appointments and add any new ones from backend
+                const merged = [...prevHistory];
+                newHistory.forEach(newAppt => {
+                  if (!merged.find(m => m._id === newAppt._id)) {
+                    merged.push(newAppt);
+                  }
+                });
+                return merged;
+              }
             });
           }
         })
@@ -235,24 +293,30 @@ export default function Appointments() {
     }
     
     try {
+      const bookingData = {
+        doctorEmail: selectedDoctor.email,
+        doctorName: selectedDoctor.fullname,
+        doctorId: selectedDoctor._id,
+        userEmail: user.email,
+        userName: user.fullname,
+        date,
+        time,
+        symptoms,
+      };
+      console.log('[BOOKING] Sending booking data:', bookingData);
+      
       const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          doctorEmail: selectedDoctor.email,
-          doctorName: selectedDoctor.fullname,
-          doctorId: selectedDoctor._id,
-          userEmail: user.email,
-          userName: user.fullname,
-          date,
-          time,
-          symptoms,
-        }),
+        body: JSON.stringify(bookingData),
       });
       const data = await res.json();
       console.log('[BOOKING] Response:', data);
       
       if (res.ok && data.success) {
+        // Record booking time to prevent polling interference
+        lastBookingTimeRef.current = Date.now();
+        
         setMessage(
           `✅ Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
         );
@@ -281,11 +345,12 @@ export default function Appointments() {
         setSymptoms("");
         setAvailableTimeslots([]);
         
-        // Refresh from backend to ensure sync
+        // Refresh from backend after protection window expires
         setTimeout(() => {
-          console.log('[BOOKING] Refreshing appointments from backend...');
+          console.log('[BOOKING] Syncing with backend...');
+          lastBookingTimeRef.current = null; // Clear protection
           fetchHistoryAndDoctors(true); // Silent refresh
-        }, 1000); // Increased delay to 1 second
+        }, 5500); // After the 5 second protection window
       } else {
         setMessage(data.message || "Booking failed.");
         setMessageType("error");
@@ -473,7 +538,19 @@ export default function Appointments() {
                     <div className="pending-text">
                       <strong>Waiting for Confirmation</strong>
                       <span>The doctor will review your request shortly.</span>
-                      <span className="auto-update-badge">🔄 Auto-updating...</span>
+                      <button className="auto-update-button" disabled style={{
+                        fontSize: '11px',
+                        padding: '4px 10px',
+                        backgroundColor: '#e3f2fd',
+                        color: '#1976d2',
+                        border: '1px solid #90caf9',
+                        borderRadius: '12px',
+                        cursor: 'default',
+                        fontWeight: '500',
+                        marginTop: '8px'
+                      }}>
+                        ✓ Auto-Update
+                      </button>
                     </div>
                   </div>
                 ) : (

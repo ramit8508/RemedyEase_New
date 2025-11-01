@@ -28,6 +28,12 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   const peerConnectionRef = useRef(null);
   const socketRef = useRef(null);
   const localStreamRef = useRef(null); // Store stream in ref for immediate access
+  // Queue refs to handle out-of-order signaling
+  const pendingRemoteDescRef = useRef(null);
+  const pendingIceCandidatesRef = useRef([]);
+  // Track if we've initiated a call to prevent duplicate offers
+  const hasInitiatedCallRef = useRef(false);
+  const isProcessingOfferRef = useRef(false);
 
   const pcConfig = {
     iceServers: [
@@ -43,14 +49,25 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     // Function to start local media stream
     const startMedia = async () => {
       try {
+        console.log("🎥 Requesting camera and microphone access...");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
+        console.log("✅ Got local stream:", stream.id);
+        console.log("🎥 Local video tracks:", stream.getVideoTracks().length);
+        console.log("🎥 Local audio tracks:", stream.getAudioTracks().length);
+        
         setLocalStream(stream);
         localStreamRef.current = stream; // Store in ref for immediate access
+        
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          console.log("✅ Local video element updated");
+          // Force play for local video
+          localVideoRef.current.play().catch(err => {
+            console.error("Failed to play local video:", err);
+          });
         }
         // After getting media, setup the socket connection
         setupSocket();
@@ -79,6 +96,47 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       });
     }
   }, [remoteStream]);
+
+  // Add event listeners to remote video element to track playback
+  useEffect(() => {
+    const videoEl = remoteVideoRef.current;
+    if (!videoEl) return;
+
+    const handleLoadedMetadata = () => {
+      console.log("🎬 Remote video metadata loaded:", videoEl.videoWidth, "x", videoEl.videoHeight);
+    };
+
+    const handleLoadedData = () => {
+      console.log("🎬 Remote video data loaded");
+    };
+
+    const handlePlaying = () => {
+      console.log("✅ Remote video is now playing!");
+    };
+
+    const handleStalled = () => {
+      console.warn("⚠️ Remote video stalled");
+    };
+
+    const handleError = (e) => {
+      console.error("❌ Remote video error:", e);
+    };
+
+    videoEl.addEventListener('loadedmetadata', handleLoadedMetadata);
+    videoEl.addEventListener('loadeddata', handleLoadedData);
+    videoEl.addEventListener('playing', handlePlaying);
+    videoEl.addEventListener('stalled', handleStalled);
+    videoEl.addEventListener('error', handleError);
+
+    return () => {
+      videoEl.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      videoEl.removeEventListener('loadeddata', handleLoadedData);
+      videoEl.removeEventListener('playing', handlePlaying);
+      videoEl.removeEventListener('stalled', handleStalled);
+      videoEl.removeEventListener('error', handleError);
+    };
+  }, []);
+
 
   const setupSocket = () => {
     // Socket connection setup
@@ -112,18 +170,9 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
             });
             setCallStatus("Waiting for other participant...");
             setIsConnecting(true);
-            // If this client is the patient, attempt to initiate after a short delay
-            // if the other user is already present they will trigger 'user-joined-room'.
-            if (userType === "patient") {
-              // give the server a moment to register both sockets
-              setTimeout(() => {
-                // try to create an offer; if the remote isn't present it will be ignored
-                console.log("Patient making initial call attempt...");
-                initiateCall();
-              }, 2000); // Increased from 1200ms to 2000ms
-            } else {
-              console.log("Doctor connected and waiting...");
-            }
+            
+            // Don't initiate here - wait for user-joined-room event
+            console.log(`${userType} joined room and waiting...`);
           } else {
             console.error("Failed to load appointment for call joining:", data);
             setError("Failed to join call room");
@@ -143,19 +192,16 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
     // When another user joins the appointment room, the server emits 'user-joined-room'
     socket.on("user-joined-room", (payload) => {
-      console.log("👤 User joined room:", payload);
+      console.log("👤 User joined room:", payload, "| I am:", userType);
       setOtherUserOnline(true);
-      setCallStatus("Other participant present");
+      setCallStatus("Other participant joined");
       setIsConnecting(true);
-      // Only patient initiates the call to avoid both sides creating offers simultaneously
-      if (userType === "patient") {
-        setTimeout(() => {
-          console.log("Patient initiating call...");
-          initiateCall();
-        }, 800);
-      } else {
-        console.log("Doctor waiting for patient to initiate...");
-      }
+      
+      // First person to join (or whoever hasn't initiated yet) starts the call
+      setTimeout(() => {
+        console.log(`📞 ${userType} attempting to initiate call...`);
+        initiateCall();
+      }, 1000);
     });
 
     // Handle when a user disconnects or leaves (the server may broadcast statuses)
@@ -171,15 +217,15 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
     // WebRTC signaling (server uses dashed event names)
     socket.on("webrtc-offer", (data) => {
-      console.log("📥 Received offer from remote peer");
+      console.log("📥 Received offer from remote peer | I am:", userType);
       handleOffer(data.offer);
     });
     socket.on("webrtc-answer", (data) => {
-      console.log("📥 Received answer from remote peer");
+      console.log("📥 Received answer from remote peer | I am:", userType);
       handleAnswer(data.answer);
     });
     socket.on("webrtc-ice-candidate", (data) => {
-      console.log("📥 Received ICE candidate from remote peer");
+      console.log("📥 Received ICE candidate from remote peer | I am:", userType);
       handleIceCandidate(data.candidate);
     });
 
@@ -208,19 +254,47 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       console.log("🎥 Received remote track:", event);
       const [stream] = event.streams;
       console.log("🎥 Remote stream received:", stream);
+      console.log("🎥 Stream ID:", stream.id);
       console.log("🎥 Stream has video tracks:", stream.getVideoTracks().length);
       console.log("🎥 Stream has audio tracks:", stream.getAudioTracks().length);
       
+      // Log track details
+      stream.getTracks().forEach(track => {
+        console.log(`🎥 Track: ${track.kind}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`);
+      });
+      
+      // Set remote stream state
       setRemoteStream(stream);
       
-      // Force update the video element
+      // IMMEDIATELY attach to video element (don't wait for React state update)
       if (remoteVideoRef.current) {
+        console.log("🎥 Attaching stream to remote video element immediately");
         remoteVideoRef.current.srcObject = stream;
-        console.log("🎥 Remote video element updated");
-        // Force play in case autoplay didn't work
-        remoteVideoRef.current.play().catch(err => {
-          console.error("Failed to play remote video:", err);
-        });
+        
+        // Ensure video element properties are correct
+        remoteVideoRef.current.muted = false; // Remote video should NOT be muted
+        remoteVideoRef.current.volume = 1.0;
+        
+        // Force a load event
+        remoteVideoRef.current.load();
+        
+        // Try to play with multiple fallbacks
+        remoteVideoRef.current.play()
+          .then(() => {
+            console.log("✅ Remote video playing successfully");
+            console.log("✅ Video dimensions:", remoteVideoRef.current.videoWidth, "x", remoteVideoRef.current.videoHeight);
+          })
+          .catch(err => {
+            console.error("⚠️ Failed to play remote video:", err);
+            // Try again after a short delay
+            setTimeout(() => {
+              remoteVideoRef.current.play()
+                .then(() => console.log("✅ Remote video playing on retry"))
+                .catch(e => console.error("❌ Second play attempt failed:", e));
+            }, 500);
+          });
+      } else {
+        console.warn("⚠️ Remote video ref not available yet");
       }
       
       setIsCallActive(true);
@@ -253,6 +327,49 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
           });
       }
     };
+    // Listen for signaling state changes to flush any queued remote descriptions or ICE
+    peerConnection.onsignalingstatechange = () => {
+      try {
+        const state = peerConnection.signalingState;
+        console.log('🔁 signalingState changed:', state);
+        // If we have a pending remote description (answer) and the connection
+        // is now expecting it, apply it.
+        if (
+          pendingRemoteDescRef.current &&
+          state === 'have-local-offer'
+        ) {
+          const desc = pendingRemoteDescRef.current;
+          pendingRemoteDescRef.current = null;
+          (async () => {
+            try {
+              console.log('[PENDING] Applying queued remote description (answer)');
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
+              // flush any queued ICE candidates
+              if (pendingIceCandidatesRef.current.length) {
+                for (const c of pendingIceCandidatesRef.current) {
+                  try { await peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch (e) { console.warn('Failed to add queued ICE', e); }
+                }
+                pendingIceCandidatesRef.current = [];
+              }
+            } catch (err) {
+              console.error('Failed to apply queued remote description:', err);
+            }
+          })();
+        }
+
+        // If remote description is set and ICE candidates queued, flush them
+        if (peerConnection.remoteDescription && pendingIceCandidatesRef.current.length) {
+          (async () => {
+            for (const c of pendingIceCandidatesRef.current) {
+              try { await peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch (e) { console.warn('Failed to add queued ICE after remote desc', e); }
+            }
+            pendingIceCandidatesRef.current = [];
+          })();
+        }
+      } catch (e) {
+        console.error('Error in onsignalingstatechange handler', e);
+      }
+    };
     peerConnection.oniceconnectionstatechange = () => {
       console.log("🔌 ICE connection state:", peerConnection.iceConnectionState);
       if (peerConnection.iceConnectionState === "failed") {
@@ -278,18 +395,31 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
         setError("Local video stream is not available to initiate the call.");
         return;
     }
+    
+    // Prevent duplicate offer creation
+    if (hasInitiatedCallRef.current) {
+      console.log("⚠️ Call already initiated, skipping duplicate offer");
+      return;
+    }
+    
     try {
+      hasInitiatedCallRef.current = true;
+      console.log(`📞 ${userType} creating offer...`);
+      
       peerConnectionRef.current = createPeerConnection();
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
+      console.log("✅ Local offer created and set, signaling state:", peerConnectionRef.current.signalingState);
+      
       // Send the offer using the server expected event naming and include callRoomId
       const resp = await fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
-      console.log("Sending offer to callRoomId:", callRoomId);
+      console.log("📤 Sending offer to callRoomId:", callRoomId);
       socketRef.current.emit("webrtc-offer", { callRoomId, offer });
     } catch (err) {
       console.error("Failed to initiate call:", err);
+      hasInitiatedCallRef.current = false; // Reset on error
       setError("Failed to initiate call");
     }
   };
@@ -301,39 +431,118 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
         setError("Local video stream is not available to answer the call.");
         return;
     }
+    
+    // Prevent processing multiple offers simultaneously
+    if (isProcessingOfferRef.current) {
+      console.log("⚠️ Already processing an offer, ignoring duplicate");
+      return;
+    }
+    
     try {
-      if (!peerConnectionRef.current) {
+      isProcessingOfferRef.current = true;
+      console.log("📞 Doctor received offer, creating answer...");
+      
+      // Create or reset peer connection
+      if (!peerConnectionRef.current || peerConnectionRef.current.signalingState === "closed") {
+        console.log("📞 Creating new peer connection for offer");
         peerConnectionRef.current = createPeerConnection();
+      } else {
+        const currentState = peerConnectionRef.current.signalingState;
+        console.log("📞 Current state when receiving offer:", currentState);
+        
+        // If we already have a connection in progress, close and recreate
+        if (currentState !== "stable" && currentState !== "closed") {
+          console.warn("⚠️ Recreating peer connection due to state:", currentState);
+          if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+          }
+          peerConnectionRef.current = createPeerConnection();
+        }
       }
+      
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+      console.log("✅ Remote offer set successfully, signaling state:", peerConnectionRef.current.signalingState);
+      
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
+      console.log("✅ Local answer created and set, signaling state:", peerConnectionRef.current.signalingState);
+      
       // reply using server expected event name
       const resp = await fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
-      console.log("Sending answer to callRoomId:", callRoomId);
+      console.log("📤 Sending answer to callRoomId:", callRoomId);
       socketRef.current.emit("webrtc-answer", { callRoomId, answer });
+      
+      isProcessingOfferRef.current = false;
     } catch (err) {
       console.error("Failed to accept call:", err);
-      setError("Failed to accept call");
+      setError("Failed to accept call: " + err.message);
+      isProcessingOfferRef.current = false;
     }
   };
 
   const handleAnswer = async (answer) => {
     try {
+      if (!peerConnectionRef.current) {
+        console.error("❌ No peer connection to set answer on");
+        return;
+      }
+      
+      // Check the signaling state before setting remote description
+      const currentState = peerConnectionRef.current.signalingState;
+      console.log("📞 Current signaling state when receiving answer:", currentState);
+      
+      // If we're in stable state, it means we haven't created an offer or already completed negotiation
+      if (currentState === "stable") {
+        console.warn("⚠️ Received answer but peer is in stable state - likely duplicate or out-of-order message. Ignoring.");
+        return;
+      }
+      
+      // We should only accept an answer if we're in "have-local-offer" state
+      if (currentState !== "have-local-offer") {
+        console.warn("⚠️ Unexpected state for answer:", currentState, "- queuing answer until ready");
+        // Queue the answer and wait for signaling state change
+        pendingRemoteDescRef.current = answer;
+        return;
+      }
+
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log("✅ Remote answer set successfully, signaling state:", peerConnectionRef.current.signalingState);
+      
+      // Flush any queued ICE candidates now that remote description is set
+      if (pendingIceCandidatesRef.current.length) {
+        console.log("🧊 Flushing", pendingIceCandidatesRef.current.length, "queued ICE candidates");
+        for (const c of pendingIceCandidatesRef.current) {
+          try { 
+            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(c)); 
+          } catch (e) { 
+            console.warn('Failed to add queued ICE', e); 
+          }
+        }
+        pendingIceCandidatesRef.current = [];
+      }
     } catch (err) {
-      console.error("Failed to complete call setup:", err);
-      setError("Failed to complete call setup");
+      console.error("❌ Failed to complete call setup:", err);
+      setError("Failed to complete call setup: " + err.message);
     }
   };
 
   const handleIceCandidate = async (candidate) => {
     try {
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      if (!peerConnectionRef.current) {
+        // No PC yet - queue the candidate
+        pendingIceCandidatesRef.current.push(candidate);
+        return;
       }
+
+      // If remoteDescription is not set yet, queue the candidate
+      if (!peerConnectionRef.current.remoteDescription) {
+        pendingIceCandidatesRef.current.push(candidate);
+        return;
+      }
+
+      await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     } catch (err) {
       console.error("Error handling ICE candidate:", err);
     }
@@ -390,6 +599,12 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     setLocalStream(null);
     setRemoteStream(null);
     setIsCallActive(false);
+    
+    // Clear refs
+    hasInitiatedCallRef.current = false;
+    isProcessingOfferRef.current = false;
+    pendingRemoteDescRef.current = null;
+    pendingIceCandidatesRef.current = [];
   };
   
   // *** THIS IS THE CORRECT PLACE FOR THE JSX RETURN ***
@@ -411,10 +626,20 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
 
       <div className="video-container">
         <div className="remote-video-wrapper">
-          {remoteStream ? (
-            <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
-          ) : (
-            <div className="no-remote-video">
+          <video 
+            ref={remoteVideoRef} 
+            autoPlay 
+            playsInline 
+            className="remote-video"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              backgroundColor: '#000'
+            }}
+          />
+          {!isCallActive && (
+            <div className="no-remote-video" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
               <div className="avatar-placeholder">
                 {isConnecting ? (
                   <div className="connecting-animation">
