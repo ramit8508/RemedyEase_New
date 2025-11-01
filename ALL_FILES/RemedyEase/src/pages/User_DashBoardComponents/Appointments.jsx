@@ -250,32 +250,42 @@ export default function Appointments() {
         }),
       });
       const data = await res.json();
-      if (res.ok) {
+      console.log('[BOOKING] Response:', data);
+      
+      if (res.ok && data.success) {
         setMessage(
           `✅ Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
         );
         setMessageType("pending");
+        
+        // Add the new appointment to history immediately for instant feedback
+        if (data.data && data.data._id) {
+          const newAppointment = {
+            _id: data.data._id,
+            doctorName: selectedDoctor.fullname,
+            doctorEmail: selectedDoctor.email,
+            userEmail: user.email,
+            userName: user.fullname,
+            date: data.data.date,
+            time: data.data.time,
+            symptoms: data.data.symptoms,
+            status: data.data.status || "pending"
+          };
+          console.log('[BOOKING] Adding appointment to history:', newAppointment);
+          setHistory(prev => [newAppointment, ...prev]);
+        }
+        
+        // Clear form
         setDate("");
         setTime("");
         setSymptoms("");
-        setAvailableTimeslots([]); // Clear timeslots
+        setAvailableTimeslots([]);
         
-        // Add the new appointment to history immediately for instant feedback
-        const newAppointment = {
-          _id: data.data._id,
-          doctorName: selectedDoctor.fullname,
-          doctorEmail: selectedDoctor.email,
-          date: data.data.date,
-          time: data.data.time,
-          symptoms: data.data.symptoms,
-          status: "pending"
-        };
-        setHistory(prev => [newAppointment, ...prev]);
-        
-        // Then refresh from backend after a short delay to ensure DB write completed
+        // Refresh from backend to ensure sync
         setTimeout(() => {
-          fetchHistoryAndDoctors();
-        }, 500);
+          console.log('[BOOKING] Refreshing appointments from backend...');
+          fetchHistoryAndDoctors(true); // Silent refresh
+        }, 1000); // Increased delay to 1 second
       } else {
         setMessage(data.message || "Booking failed.");
         setMessageType("error");
