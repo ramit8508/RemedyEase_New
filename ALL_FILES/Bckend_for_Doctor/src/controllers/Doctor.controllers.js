@@ -4,6 +4,8 @@ import { Doctor } from "../models/Doctor.models.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+import { Timeslot } from "../models/Timeslot.models.js";
+
 const registerDoctor = asyncHandler(async (req, res) => {
     const { 
         fullname, email, registrationNumber, password, confirmPassword, 
@@ -109,11 +111,40 @@ const getAllDoctors = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, doctors, "All doctors fetched successfully"));
 });
 
+// Set available timeslots for a doctor
+const setDoctorTimeslots = asyncHandler(async (req, res) => {
+    const { doctorId, date, slots } = req.body;
+    if (!doctorId || !date || !Array.isArray(slots)) {
+        throw new ApiError(400, "doctorId, date, and slots are required");
+    }
+    // Upsert timeslots for the doctor and date
+    const timeslotDoc = await Timeslot.findOneAndUpdate(
+        { doctor: doctorId, date },
+        { doctor: doctorId, date, slots },
+        { upsert: true, new: true }
+    );
+    return res.status(200).json(new ApiResponse(200, timeslotDoc, "Timeslots set successfully"));
+});
+
+// Get all timeslots for a doctor (optionally by date)
+const getDoctorTimeslots = asyncHandler(async (req, res) => {
+    const { doctorId, date } = req.query;
+    if (!doctorId) {
+        throw new ApiError(400, "doctorId is required");
+    }
+    let query = { doctor: doctorId };
+    if (date) query.date = date;
+    const timeslots = await Timeslot.find(query);
+    return res.status(200).json(new ApiResponse(200, timeslots, "Timeslots fetched successfully"));
+});
+
 export { 
     registerDoctor, 
     loginDoctor, 
     getDoctorProfile, 
     updateDoctorProfile,
-    getAllDoctors // Add the new function to the list of exports
+    getAllDoctors,
+    setDoctorTimeslots,
+    getDoctorTimeslots
 };
 

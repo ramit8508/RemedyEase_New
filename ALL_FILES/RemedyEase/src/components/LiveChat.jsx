@@ -3,7 +3,8 @@ import io from 'socket.io-client';
 import '../Css_for_all/LiveChat.css';
 
 // Get the backend URL from environment variables
-const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL;
+const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
+const API_BASE = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function LiveChat({ appointmentId, currentUser, userType, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -15,7 +16,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
 
   useEffect(() => {
     // First fetch the appointment to get the real chatRoomId
-    fetch(`/api/v1/appointments/${appointmentId}`)
+    fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
@@ -51,7 +52,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
     });
 
     // Fetch chat history
-    fetch(`/api/v1/live/chat/history/${appointmentId}`)
+    fetch(`${API_BASE}/api/v1/live/chat/history/${appointmentId}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {

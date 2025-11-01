@@ -4,10 +4,21 @@ import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
 import PrescriptionUpload from "../../components/PrescriptionUpload";
 
+const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
+
+// Helper for time formatting
+function pad(num) { return num.toString().padStart(2, '0'); }
+
 export default function DoctorAppointments() {
   const doctor = JSON.parse(localStorage.getItem("doctor"));
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Timeslot management states
+  const [timeslotDate, setTimeslotDate] = useState("");
+  const [customSlots, setCustomSlots] = useState([{ start: "", end: "" }]);
+  const [savingSlots, setSavingSlots] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
 
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
@@ -28,7 +39,7 @@ export default function DoctorAppointments() {
   const fetchAppointments = () => {
     if (doctor?.email) {
       setLoading(true);
-      fetch(`/api/v1/appointments/doctor/${doctor.email}`)
+      fetch(`${apiBase}/api/v1/appointments/doctor/${doctor.email}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -136,7 +147,7 @@ export default function DoctorAppointments() {
 
     const checkPatientNotifications = async () => {
       try {
-        const res = await fetch(`/api/v1/live/notifications/${doctor.email}`);
+        const res = await fetch(`${apiBase}/api/v1/live/notifications/${doctor.email}`);
         const data = await res.json();
         
         if (data.success && data.data.notifications.length > 0) {
@@ -154,7 +165,7 @@ export default function DoctorAppointments() {
           } catch (e) {}
 
           // Mark as read after showing
-          await fetch(`/api/v1/live/notifications/read`, {
+          await fetch(`${apiBase}/api/v1/live/notifications/read`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -182,7 +193,7 @@ export default function DoctorAppointments() {
 
   const handleConfirm = async (appointmentId) => {
     try {
-      const res = await fetch(`/api/v1/appointments/confirm/${appointmentId}`, {
+      const res = await fetch(`${apiBase}/api/v1/appointments/confirm/${appointmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ doctorEmail: doctor.email }),
@@ -217,7 +228,7 @@ export default function DoctorAppointments() {
 
   const startVideoCall = async (appt) => {
     try {
-      await fetch(`/api/v1/live/status/${appt._id}`, {
+      await fetch(`${apiBase}/api/v1/live/status/${appt._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -240,6 +251,43 @@ export default function DoctorAppointments() {
     setSelectedAppointmentForLive(null);
   };
 
+  // Add/remove custom slot fields
+  const addSlotField = () => setCustomSlots([...customSlots, { start: "", end: "" }]);
+  const removeSlotField = (idx) => setCustomSlots(customSlots.filter((_, i) => i !== idx));
+  const updateSlotField = (idx, field, value) => {
+    setCustomSlots(customSlots.map((slot, i) => i === idx ? { ...slot, [field]: value } : slot));
+  };
+
+  // Save timeslots to backend
+  const saveTimeslots = async () => {
+    if (!timeslotDate || customSlots.some(s => !s.start || !s.end)) {
+      setSaveMsg("Please fill all slot fields and select a date.");
+      return;
+    }
+    setSavingSlots(true);
+    setSaveMsg("");
+    try {
+      const slots = customSlots.map(s => ({ time: `${s.start} - ${s.end}`, booked: false }));
+      const res = await fetch(`${apiBase}/api/v1/doctors/timeslots`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorId: doctor._id, date: timeslotDate, slots }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveMsg("✅ Timeslots saved successfully!");
+        setCustomSlots([{ start: "", end: "" }]);
+        setTimeslotDate("");
+      } else {
+        setSaveMsg(data.message || "Failed to save timeslots.");
+      }
+    } catch (e) {
+      console.error("Error saving timeslots:", e);
+      setSaveMsg("Error saving timeslots.");
+    }
+    setSavingSlots(false);
+  };
+
   if (loading) {
     return <div>Loading appointments...</div>;
   }
@@ -248,8 +296,176 @@ export default function DoctorAppointments() {
     return <div>No doctor info found. Please log in as a doctor.</div>;
   }
 
+  console.log('🎯 DoctorAppointments Component Rendered');
+  console.log('📊 Doctor Info:', { email: doctor?.email, name: doctor?.fullname });
+  console.log('⏰ Timeslot States:', { timeslotDate, customSlots, saveMsg });
+
   return (
-    <div className="doctor-appointments-page">
+    <div className="doctor-appointments-page" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Timeslot selection UI - DOCTOR CAN SET AVAILABLE TIME SLOTS HERE */}
+      <div className="timeslot-section" style={{
+        border: '3px solid #4caf50', 
+        padding: '24px', 
+        marginTop: '20px',
+        marginBottom: '30px', 
+        borderRadius: '12px',
+        backgroundColor: '#f1f8f4',
+        boxShadow: '0 6px 16px rgba(76, 175, 80, 0.2)',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-12px',
+          left: '20px',
+          backgroundColor: '#4caf50',
+          color: 'white',
+          padding: '4px 16px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: '1px'
+        }}>
+          NEW FEATURE
+        </div>
+        <h3 style={{
+          color: '#2e7d32', 
+          marginBottom: '20px', 
+          fontSize: '24px',
+          fontWeight: '700',
+          borderBottom: '2px solid #4caf50',
+          paddingBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          🕒 Set Your Available Timeslots
+          <span style={{fontSize: '14px', color: '#666', fontWeight: '400', marginLeft: 'auto'}}>
+            (Patients will see and book these times)
+          </span>
+        </h3>
+        <div style={{marginBottom: '16px'}}>
+          <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>
+            📅 Date: 
+            <input 
+              type="date" 
+              value={timeslotDate} 
+              onChange={e => setTimeslotDate(e.target.value)}
+              style={{
+                marginLeft: '10px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #4caf50',
+                fontSize: '14px'
+              }}
+            />
+          </label>
+        </div>
+        <div style={{marginBottom: '12px'}}>
+          <strong style={{display: 'block', marginBottom: '8px'}}>Time Slots:</strong>
+          {customSlots.map((slot, idx) => (
+            <div key={idx} style={{
+              display: 'flex', 
+              alignItems: 'center', 
+              marginBottom: '10px',
+              padding: '8px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0'
+            }}>
+              <span style={{marginRight: '8px', fontWeight: '600'}}>Slot {idx + 1}:</span>
+              <input 
+                type="time" 
+                value={slot.start} 
+                onChange={e => updateSlotField(idx, 'start', e.target.value)} 
+                style={{
+                  marginRight: '8px',
+                  padding: '6px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc'
+                }} 
+              />
+              <span style={{margin: '0 8px', fontWeight: 'bold'}}>to</span>
+              <input 
+                type="time" 
+                value={slot.end} 
+                onChange={e => updateSlotField(idx, 'end', e.target.value)} 
+                style={{
+                  marginRight: '12px',
+                  padding: '6px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc'
+                }} 
+              />
+              {customSlots.length > 1 && (
+                <button 
+                  onClick={() => removeSlotField(idx)} 
+                  style={{
+                    color: 'white',
+                    backgroundColor: '#f44336',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                  }}
+                >
+                  ❌ Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{display: 'flex', gap: '10px', marginTop: '16px'}}>
+          <button 
+            onClick={addSlotField}
+            style={{
+              backgroundColor: '#2196f3',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            ➕ Add Slot
+          </button>
+          <button 
+            onClick={saveTimeslots} 
+            disabled={savingSlots}
+            style={{
+              backgroundColor: savingSlots ? '#ccc' : '#4caf50',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: savingSlots ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            {savingSlots ? '⏳ Saving...' : '💾 Save Timeslots'}
+          </button>
+        </div>
+        {saveMsg && (
+          <div style={{
+            marginTop: '12px', 
+            padding: '10px', 
+            borderRadius: '6px',
+            backgroundColor: saveMsg.includes('✅') ? '#e8f5e9' : '#ffebee',
+            color: saveMsg.includes('✅') ? '#2e7d32' : '#c62828',
+            fontWeight: '600',
+            border: `1px solid ${saveMsg.includes('✅') ? '#4caf50' : '#f44336'}`
+          }}>
+            {saveMsg}
+          </div>
+        )}
+      </div>
       {/* Appointment Time Notification */}
       {showNotification && notificationData && (
         <div className="appointment-notification-popup">

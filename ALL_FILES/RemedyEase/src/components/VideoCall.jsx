@@ -3,7 +3,8 @@ import { io } from "socket.io-client";
 import "../Css_for_all/VideoCall.css";
 
 // Get the backend URL from environment variables.
-const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL;
+const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
+const API_BASE = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   // Video call state management
@@ -97,7 +98,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       setCallStatus("Connecting to room...");
       // fetch appointment details (chatRoomId / callRoomId) before joining
       // the room so server can add this socket to the correct rooms.
-      fetch(`/api/v1/appointments/${appointmentId}`)
+      fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
@@ -231,7 +232,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       if (event.candidate && socketRef.current) {
         console.log("🧊 Sending ICE candidate");
         // Use server expected event name and include callRoomId
-        fetch(`/api/v1/appointments/${appointmentId}`)
+        fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.success && data.data) {
@@ -282,7 +283,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       const offer = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
       // Send the offer using the server expected event naming and include callRoomId
-      const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
+      const resp = await fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
       console.log("Sending offer to callRoomId:", callRoomId);
@@ -308,7 +309,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
       // reply using server expected event name
-      const resp = await fetch(`/api/v1/appointments/${appointmentId}`);
+      const resp = await fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`);
       const data = await resp.json();
       const callRoomId = data?.data?.callRoomId;
       console.log("Sending answer to callRoomId:", callRoomId);
@@ -358,7 +359,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     if (notifyServer && socketRef.current) {
         // notify server using its event name
         // include callRoomId if available
-        fetch(`/api/v1/appointments/${appointmentId}`)
+        fetch(`${API_BASE}/api/v1/appointments/${appointmentId}`)
           .then((res) => res.json())
           .then((data) => {
             const callRoomId = data?.data?.callRoomId;

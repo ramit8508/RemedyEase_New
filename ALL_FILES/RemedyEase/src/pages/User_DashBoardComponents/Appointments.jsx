@@ -7,6 +7,10 @@ import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
 import PrescriptionView from "../../components/PrescriptionView";
 
+
+// Helper for time formatting
+function pad(num) { return num.toString().padStart(2, '0'); }
+
 export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,14 +30,37 @@ export default function Appointments() {
 
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
-    useState(null);
+  const [selectedAppointmentForLive, setSelectedAppointmentForLive] = useState(null);
   const [justConfirmedIds, setJustConfirmedIds] = useState(new Set());
+
+  // Timeslot states
+  const [availableTimeslots, setAvailableTimeslots] = useState([]);
+  const [timeslotLoading, setTimeslotLoading] = useState(false);
+
+  // Fetch available timeslots for selected doctor and date
+  useEffect(() => {
+    if (!selectedDoctor || !date) {
+      setAvailableTimeslots([]);
+      return;
+    }
+    setTimeslotLoading(true);
+    fetch(`${apiBase}/api/v1/doctors/timeslots?doctorId=${selectedDoctor._id}&date=${date}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data.length > 0) {
+          setAvailableTimeslots(data.data[0].slots || []);
+        } else {
+          setAvailableTimeslots([]);
+        }
+      })
+      .catch(() => setAvailableTimeslots([]))
+      .finally(() => setTimeslotLoading(false));
+  }, [selectedDoctor, date, apiBase]);
 
   const startLiveChat = async (appt) => {
     try {
       // Notify doctor that patient is starting live chat
-  await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
+      await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -47,14 +74,13 @@ export default function Appointments() {
     } catch (error) {
       console.error("Failed to notify doctor:", error);
     }
-    
     setSelectedAppointmentForLive(appt);
     setShowLiveChat(true);
   };
 
   const startVideoCall = async (appt) => {
     try {
-  await fetch(`${apiBase}/api/v1/live/status/${appt._id}`, {
+      await fetch(`${apiBase}/api/v1/live/status/${appt._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,7 +91,7 @@ export default function Appointments() {
       });
 
       // Notify doctor that patient is starting video call
-  await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
+      await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -130,7 +156,7 @@ export default function Appointments() {
     // Set up polling to check for appointment updates every 10 seconds
     const pollingInterval = setInterval(() => {
       // Silently fetch updates without showing loading state
-  fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
+      fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -183,7 +209,7 @@ export default function Appointments() {
 
     // Cleanup interval on unmount
     return () => clearInterval(pollingInterval);
-  }, [user?.email]);
+  }, [user?.email, apiBase]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -192,13 +218,25 @@ export default function Appointments() {
       setMessageType("error");
       return;
     }
+    
+    // Check if selected timeslot is booked
+    if (availableTimeslots.length > 0) {
+      const selectedSlot = availableTimeslots.find(slot => slot.time === time);
+      if (selectedSlot && selectedSlot.booked) {
+        setMessage("⚠️ This time slot is already booked. Please select another time.");
+        setMessageType("error");
+        return;
+      }
+    }
+    
     try {
-  const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
+      const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           doctorEmail: selectedDoctor.email,
           doctorName: selectedDoctor.fullname,
+          doctorId: selectedDoctor._id,
           userEmail: user.email,
           userName: user.fullname,
           date,
@@ -209,18 +247,20 @@ export default function Appointments() {
       const data = await res.json();
       if (res.ok) {
         setMessage(
-          `Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
+          `✅ Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
         );
         setMessageType("pending");
         setDate("");
         setTime("");
         setSymptoms("");
+        setAvailableTimeslots([]); // Clear timeslots
         fetchHistoryAndDoctors(); // Refresh history after booking
       } else {
         setMessage(data.message || "Booking failed.");
         setMessageType("error");
       }
-    } catch {
+    } catch (error) {
+      console.error("Booking error:", error);
       setMessage("Something went wrong.");
       setMessageType("error");
     }
@@ -268,6 +308,29 @@ export default function Appointments() {
         {selectedDoctor ? (
           <>
             <h2>Book Appointment with Dr. {selectedDoctor.fullname}</h2>
+            
+            {/* Timeslot availability indicator */}
+            {date && availableTimeslots.length > 0 && (
+              <div style={{
+                padding: '12px',
+                marginBottom: '16px',
+                borderRadius: '8px',
+                backgroundColor: '#e3f2fd',
+                border: '1px solid #2196f3',
+                fontSize: '14px'
+              }}>
+                <strong>📊 Timeslot Availability:</strong>
+                <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
+                  <span style={{ color: '#4caf50', fontWeight: '600' }}>
+                    ✅ Available: {availableTimeslots.filter(s => !s.booked).length}
+                  </span>
+                  <span style={{ color: '#f44336', fontWeight: '600' }}>
+                    ❌ Booked: {availableTimeslots.filter(s => s.booked).length}
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="appointment-content">
               <label>
                 Date:{" "}
@@ -276,16 +339,56 @@ export default function Appointments() {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
+                  min={new Date().toISOString().split('T')[0]}
                 />
               </label>
               <label>
                 Time:{" "}
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                />
+                {timeslotLoading ? (
+                  <div style={{ padding: "10px", textAlign: "center" }}>
+                    <span>⏳ Loading timeslots...</span>
+                  </div>
+                ) : availableTimeslots.length > 0 ? (
+                  <select 
+                    value={time} 
+                    onChange={(e) => setTime(e.target.value)} 
+                    required
+                    style={{ width: "100%", padding: "10px", borderRadius: "7px", border: "1px solid #b2dfdb" }}
+                  >
+                    <option value="">Select a timeslot...</option>
+                    {availableTimeslots.map((slot, idx) => (
+                      <option 
+                        key={idx} 
+                        value={slot.time} 
+                        disabled={slot.booked}
+                        style={{
+                          color: slot.booked ? '#999' : '#000',
+                          backgroundColor: slot.booked ? '#f5f5f5' : '#fff'
+                        }}
+                      >
+                        {slot.time} {slot.booked ? '❌ (Already Booked)' : '✅ (Available)'}
+                      </option>
+                    ))}
+                  </select>
+                ) : date ? (
+                  <div style={{ padding: "10px", color: "#666" }}>
+                    <span>⚠️ No timeslots available for this date. Please select another date or use custom time:</span>
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      required
+                      style={{ width: "100%", marginTop: "10px" }}
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    required
+                  />
+                )}
               </label>
               <label>
                 Symptoms/Reason for visit:{" "}

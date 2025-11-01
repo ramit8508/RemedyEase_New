@@ -1,5 +1,6 @@
 import { Doctor } from "../models/Doctor.models.js";
 import { Appointment } from "../models/Appointments.models.js";
+import { Timeslot } from "../models/Timeslot.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -116,21 +117,40 @@ export const cancelAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
   const { reason } = req.body;
 
-  const appointment = await Appointment.findByIdAndUpdate(
-    appointmentId,
-    { 
-      status: 'cancelled',
-      consultationNotes: reason || 'Cancelled by admin'
-    },
-    { new: true }
-  );
+  const appointment = await Appointment.findById(appointmentId);
 
   if (!appointment) {
     throw new ApiError(404, "Appointment not found");
   }
 
+  // Release the timeslot if it was booked
+  if (appointment.date && appointment.time) {
+    const doctor = await Doctor.findOne({ email: appointment.doctorEmail });
+    if (doctor) {
+      const timeslotDoc = await Timeslot.findOne({
+        doctor: doctor._id,
+        date: appointment.date
+      });
+
+      if (timeslotDoc) {
+        const slot = timeslotDoc.slots.find(s => s.time === appointment.time);
+        if (slot && slot.booked) {
+          slot.booked = false;
+          slot.bookedBy = null;
+          await timeslotDoc.save();
+          console.log('[CANCEL] Timeslot released:', appointment.time);
+        }
+      }
+    }
+  }
+
+  // Update appointment status
+  appointment.status = 'cancelled';
+  appointment.consultationNotes = reason || 'Cancelled by admin';
+  await appointment.save();
+
   return res.status(200).json(
-    new ApiResponse(200, appointment, "Appointment cancelled successfully")
+    new ApiResponse(200, appointment, "Appointment cancelled successfully and timeslot released")
   );
 });
 

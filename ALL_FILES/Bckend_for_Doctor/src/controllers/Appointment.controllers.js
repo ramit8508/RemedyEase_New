@@ -1,4 +1,6 @@
 import { Appointment } from "../models/Appointments.models.js";
+import { Timeslot } from "../models/Timeslot.models.js";
+import { Doctor } from "../models/Doctor.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -6,12 +8,37 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 // Book appointment (user)
 export const bookAppointment = asyncHandler(async (req, res) => {
-  const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms } = req.body;
-  console.log('[BOOK] Incoming booking:', { doctorEmail, doctorName, date, time, userEmail, userName, symptoms });
+  const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId } = req.body;
+  console.log('[BOOK] Incoming booking:', { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId });
+  
   if (!doctorEmail || !doctorName || !date || !time || !userEmail || !userName) {
     console.error('[BOOK] Missing required fields:', req.body);
     throw new ApiError(400, "All fields are required");
   }
+
+  // Check if the timeslot is already booked
+  if (doctorId) {
+    const timeslotDoc = await Timeslot.findOne({ 
+      doctor: doctorId, 
+      date: date 
+    });
+
+    if (timeslotDoc) {
+      const slot = timeslotDoc.slots.find(s => s.time === time);
+      if (slot && slot.booked) {
+        throw new ApiError(400, "This time slot is already booked. Please select another time.");
+      }
+      
+      // Mark the slot as booked
+      if (slot) {
+        slot.booked = true;
+        slot.bookedBy = userEmail; // Store user email for reference
+        await timeslotDoc.save();
+        console.log('[BOOK] Timeslot marked as booked:', time);
+      }
+    }
+  }
+
   const appointment = await Appointment.create({
     doctorEmail,
     doctorName,
@@ -22,6 +49,7 @@ export const bookAppointment = asyncHandler(async (req, res) => {
     symptoms,
     status: "pending"
   });
+  
   console.log('[BOOK] Appointment created:', appointment);
   return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
 });
