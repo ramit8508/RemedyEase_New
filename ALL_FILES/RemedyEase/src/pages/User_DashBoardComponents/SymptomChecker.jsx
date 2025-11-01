@@ -622,15 +622,16 @@ export default function SymptomChecker() {
     recognitionRef.current = recog;
 
     return () => {
+      console.log('🧹 Cleaning up speech recognition...');
       try { 
         if (recog) {
           recog.stop(); 
         }
       } catch (e) {}
       recognitionRef.current = null;
-      currentModeRef.current = null;
+      // DON'T clear currentModeRef here - it's managed by start/stop functions
     };
-  }, [selectedLanguage, recognizeMode]);
+  }, [selectedLanguage]); // REMOVED recognizeMode from dependencies!
 
   const startRecording = (mode) => {
     if (!recognitionRef.current || isRecording) return;
