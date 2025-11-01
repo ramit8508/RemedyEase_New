@@ -121,14 +121,19 @@ export default function Appointments() {
   const fetchHistoryAndDoctors = () => {
     if (user?.email) {
       setLoadingHistory(true);
+      console.log('[HISTORY] Fetching appointments for user:', user.email);
   fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
         .then((res) => res.json())
         .then((data) => {
+          console.log('[HISTORY] Response received:', data);
           if (data.success) {
+            console.log('[HISTORY] Setting history with', data.data?.length || 0, 'appointments');
             setHistory(data.data || []);
+          } else {
+            console.error('[HISTORY] Response not successful:', data);
           }
         })
-        .catch((err) => console.error("Failed to fetch history:", err))
+        .catch((err) => console.error("[HISTORY] Failed to fetch history:", err))
         .finally(() => setLoadingHistory(false));
     }
     if (!doctorFromState) {
@@ -254,7 +259,23 @@ export default function Appointments() {
         setTime("");
         setSymptoms("");
         setAvailableTimeslots([]); // Clear timeslots
-        fetchHistoryAndDoctors(); // Refresh history after booking
+        
+        // Add the new appointment to history immediately for instant feedback
+        const newAppointment = {
+          _id: data.data._id,
+          doctorName: selectedDoctor.fullname,
+          doctorEmail: selectedDoctor.email,
+          date: data.data.date,
+          time: data.data.time,
+          symptoms: data.data.symptoms,
+          status: "pending"
+        };
+        setHistory(prev => [newAppointment, ...prev]);
+        
+        // Then refresh from backend after a short delay to ensure DB write completed
+        setTimeout(() => {
+          fetchHistoryAndDoctors();
+        }, 500);
       } else {
         setMessage(data.message || "Booking failed.");
         setMessageType("error");
