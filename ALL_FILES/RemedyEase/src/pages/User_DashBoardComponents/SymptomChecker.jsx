@@ -355,11 +355,15 @@ export default function SymptomChecker() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.warn('⚠️ Speech Recognition not supported in this browser');
+      console.error('❌ Speech Recognition API not supported in this browser');
+      console.log('Browser info:', navigator.userAgent);
       setRecognitionSupported(false);
       return;
     }
 
+    console.log('✅ Speech Recognition API is available');
+    console.log('Browser:', navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other');
+    
     setRecognitionSupported(true);
     const recog = new SpeechRecognition();
     recog.lang = selectedLanguage;
@@ -367,61 +371,19 @@ export default function SymptomChecker() {
     recog.maxAlternatives = 5; // Get more alternatives for better accuracy
     recog.continuous = true; // Keep listening continuously
     
+    console.log('🔧 Speech Recognition configured:', {
+      language: selectedLanguage,
+      interimResults: recog.interimResults,
+      continuous: recog.continuous,
+      maxAlternatives: recog.maxAlternatives
+    });
+    
     // CRITICAL: Enhanced settings for better voice detection - ESPECIALLY for low volume
     if ('webkitSpeechRecognition' in window) {
       // Chrome-specific optimizations for better voice detection
       recog.continuous = true; // Don't stop listening
       recog.interimResults = true; // Show results in real-time
     }
-    
-    // Request microphone with specific constraints for better sensitivity
-    navigator.mediaDevices.getUserMedia({ 
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true, // CRITICAL: Amplifies low volume automatically
-        sampleRate: 48000,
-        channelCount: 1
-      } 
-    }).then(stream => {
-      console.log('✅ Microphone stream obtained with optimized settings');
-      // Store the stream for potential processing
-      window.micStream = stream;
-      
-      // Add audio level monitoring for visual feedback
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      analyser.smoothingTimeConstant = 0.3;
-      analyser.fftSize = 512;
-      
-      microphone.connect(analyser);
-      
-      // Monitor audio levels and update UI
-      const checkAudioLevel = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-        const volumePercent = Math.min(100, (average / 128) * 100);
-        setVolumeLevel(volumePercent);
-        
-        if (isRecording) {
-          requestAnimationFrame(checkAudioLevel);
-        }
-      };
-      
-      // Start monitoring when recording
-      if (isRecording) {
-        checkAudioLevel();
-      }
-      
-      // Store for cleanup
-      window.audioContext = audioContext;
-      window.analyserNode = analyser;
-    }).catch(err => {
-      console.warn('⚠️ Could not get optimized audio stream:', err);
-    });
 
     recog.onstart = () => {
       console.log('🎤 Recognition started! Start speaking...');
@@ -646,12 +608,57 @@ export default function SymptomChecker() {
   const startRecording = (mode) => {
     if (!recognitionRef.current || isRecording) return;
     
-    console.log('Starting recording in mode:', mode);
+    console.log('🎤 Starting recording in mode:', mode);
     
-    // Request microphone permission explicitly
+    // Request microphone permission with optimized audio settings
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(() => {
+      navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true, // Amplify low volume
+          sampleRate: 48000
+        } 
+      })
+        .then((stream) => {
+          console.log('✅ Microphone access granted, starting recognition...');
+          
+          // Setup audio level monitoring
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            analyser.smoothingTimeConstant = 0.3;
+            analyser.fftSize = 512;
+            
+            microphone.connect(analyser);
+            
+            // Monitor audio levels continuously
+            const checkAudioLevel = () => {
+              if (!isRecording && !recognitionRef.current) return;
+              
+              analyser.getByteFrequencyData(dataArray);
+              const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+              const volumePercent = Math.min(100, (average / 128) * 100);
+              setVolumeLevel(volumePercent);
+              
+              if (recognitionRef.current) {
+                requestAnimationFrame(checkAudioLevel);
+              }
+            };
+            
+            checkAudioLevel();
+            
+            // Store for cleanup
+            window.audioContext = audioContext;
+            window.micStream = stream;
+          } catch (err) {
+            console.warn('⚠️ Audio context setup failed:', err);
+          }
+          
+          // Now start speech recognition
           setRecognizeMode(mode);
           currentModeRef.current = mode; // Set ref immediately
           setInterimTranscript('');
@@ -659,45 +666,38 @@ export default function SymptomChecker() {
           
           try {
             recognitionRef.current.lang = selectedLanguage; // Update language before starting
+            console.log('🗣️ Starting speech recognition with language:', selectedLanguage);
             recognitionRef.current.start();
+            console.log('✅ Speech recognition started successfully');
           } catch (e) {
-            console.log('Recognition start error:', e);
+            console.error('❌ Recognition start error:', e);
             setIsRecording(false);
             setRecognizeMode(null);
             currentModeRef.current = null;
             if (e.name === 'InvalidStateError') {
               // Recognition already started, stop and restart
+              console.log('⚠️ Recognition already running, restarting...');
               recognitionRef.current.stop();
               setTimeout(() => {
                 try {
                   recognitionRef.current.start();
+                  setIsRecording(true);
+                  currentModeRef.current = mode;
+                  console.log('✅ Recognition restarted');
                 } catch (err) {
-                  console.error('Failed to restart recognition:', err);
+                  console.error('❌ Failed to restart recognition:', err);
                 }
               }, 100);
             }
           }
         })
         .catch((err) => {
-          console.error('Microphone permission error:', err);
-          alert('🎤 Unable to access microphone.\n\nPlease:\n1. Check browser permissions\n2. Ensure you\'re using HTTPS\n3. Allow microphone access when prompted');
+          console.error('❌ Microphone permission error:', err);
+          alert('🎤 Unable to access microphone.\n\nPlease:\n1. Click the 🔒 lock icon in your browser address bar\n2. Set Microphone to "Allow"\n3. Refresh the page and try again');
         });
     } else {
-      // Fallback for browsers without getUserMedia
-      setRecognizeMode(mode);
-      currentModeRef.current = mode;
-      setInterimTranscript('');
-      setIsRecording(true);
-      
-      try {
-        recognitionRef.current.lang = selectedLanguage;
-        recognitionRef.current.start();
-      } catch (e) {
-        console.log('Recognition start error:', e);
-        setIsRecording(false);
-        setRecognizeMode(null);
-        currentModeRef.current = null;
-      }
+      console.error('❌ getUserMedia not supported');
+      alert('🎤 Your browser does not support microphone access.\n\nPlease use Chrome, Edge, or Safari.');
     }
   };
 
