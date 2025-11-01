@@ -20,6 +20,7 @@ export default function SymptomChecker() {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isOptionalQuestion, setIsOptionalQuestion] = useState(false);
   const [micStatus, setMicStatus] = useState(''); // Track mic status for debugging
+  const [volumeLevel, setVolumeLevel] = useState(0); // Visual volume indicator (0-100)
   const navigate = useNavigate();
 
   // Supported languages
@@ -363,15 +364,64 @@ export default function SymptomChecker() {
     const recog = new SpeechRecognition();
     recog.lang = selectedLanguage;
     recog.interimResults = true; // Enable interim results for real-time feedback
-    recog.maxAlternatives = 3; // Get multiple alternatives for better accuracy
+    recog.maxAlternatives = 5; // Get more alternatives for better accuracy
     recog.continuous = true; // Keep listening continuously
     
-    // CRITICAL: Add these settings for better voice detection
+    // CRITICAL: Enhanced settings for better voice detection - ESPECIALLY for low volume
     if ('webkitSpeechRecognition' in window) {
       // Chrome-specific optimizations for better voice detection
-      recog.continuous = true;
-      recog.interimResults = true;
+      recog.continuous = true; // Don't stop listening
+      recog.interimResults = true; // Show results in real-time
     }
+    
+    // Request microphone with specific constraints for better sensitivity
+    navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true, // CRITICAL: Amplifies low volume automatically
+        sampleRate: 48000,
+        channelCount: 1
+      } 
+    }).then(stream => {
+      console.log('✅ Microphone stream obtained with optimized settings');
+      // Store the stream for potential processing
+      window.micStream = stream;
+      
+      // Add audio level monitoring for visual feedback
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      
+      analyser.smoothingTimeConstant = 0.3;
+      analyser.fftSize = 512;
+      
+      microphone.connect(analyser);
+      
+      // Monitor audio levels and update UI
+      const checkAudioLevel = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+        const volumePercent = Math.min(100, (average / 128) * 100);
+        setVolumeLevel(volumePercent);
+        
+        if (isRecording) {
+          requestAnimationFrame(checkAudioLevel);
+        }
+      };
+      
+      // Start monitoring when recording
+      if (isRecording) {
+        checkAudioLevel();
+      }
+      
+      // Store for cleanup
+      window.audioContext = audioContext;
+      window.analyserNode = analyser;
+    }).catch(err => {
+      console.warn('⚠️ Could not get optimized audio stream:', err);
+    });
 
     recog.onstart = () => {
       console.log('🎤 Recognition started! Start speaking...');
@@ -417,10 +467,11 @@ export default function SymptomChecker() {
         return;
       }
 
-      console.log('📝 Speech result event receisved, processing', event.results.length, 'results');
+      console.log('📝 Speech result event received, processing', event.results.length, 'results');
 
       let interimText = '';
       let finalText = '';
+      let allText = ''; // Capture EVERYTHING for immediate display
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -430,9 +481,12 @@ export default function SymptomChecker() {
         console.log(`Result ${i}:`, {
           isFinal: result.isFinal,
           transcript: transcript,
-          confidence: confidence,
+          confidence: confidence || 'N/A (interim)',
           alternatives: result.length
         });
+        
+        // Capture everything - even low confidence results
+        allText += transcript;
         
         if (result.isFinal) {
           console.log('✅ Final speech (confidence:', confidence, '):', transcript);
@@ -443,34 +497,68 @@ export default function SymptomChecker() {
         }
       }
 
-      // Update interim display for visual feedback - ALWAYS show what's being heard
-      if (interimText) {
-        console.log('👁️ Showing interim:', interimText);
-        setInterimTranscript(interimText);
+      // AGGRESSIVE UPDATE: Update the text field immediately with ANY captured text
+      // This ensures even low volume speech appears instantly
+      if (allText.trim()) {
+        console.log('👁️ Immediate display of captured text:', allText);
+        setInterimTranscript(allText.trim());
+        
+        // Also immediately update the input field with interim results for better UX
+        // This makes the text appear instantly as you speak
+        if (mode === 'symptoms') {
+          setSymptoms(prev => {
+            // Smart merge: don't duplicate if text already contains the interim
+            const currentText = prev || '';
+            if (!currentText.includes(allText.trim())) {
+              const newText = currentText ? `${currentText} ${allText.trim()}` : allText.trim();
+              console.log('🔄 Live updating symptoms:', newText);
+              return newText;
+            }
+            return currentText;
+          });
+        } else if (mode === 'answer') {
+          setAnswerInput(prev => {
+            const currentText = prev || '';
+            if (!currentText.includes(allText.trim())) {
+              const newText = currentText ? `${currentText} ${allText.trim()}` : allText.trim();
+              console.log('🔄 Live updating answer:', newText);
+              return newText;
+            }
+            return currentText;
+          });
+        }
       }
 
-      // Immediately save final transcript to the field
-      if (finalText) {
+      // FINAL TEXT: When speech is finalized, ensure it's saved
+      if (finalText.trim()) {
         const trimmedFinal = finalText.trim();
-        if (trimmedFinal) {
-          console.log('💾 Saving final text to', mode, ':', trimmedFinal);
-          
-          if (mode === 'symptoms') {
-            setSymptoms(prev => {
-              const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
-              console.log('✅ Updated symptoms:', newText);
+        console.log('💾 Confirmed final text to', mode, ':', trimmedFinal);
+        
+        if (mode === 'symptoms') {
+          setSymptoms(prev => {
+            const currentText = prev || '';
+            // Only add if not already present (avoid duplicates from live update above)
+            if (!currentText.includes(trimmedFinal)) {
+              const newText = currentText ? `${currentText} ${trimmedFinal}` : trimmedFinal;
+              console.log('✅ Finalized symptoms:', newText);
               return newText.trim();
-            });
-          } else if (mode === 'answer') {
-            setAnswerInput(prev => {
-              const newText = prev ? `${prev} ${trimmedFinal}` : trimmedFinal;
-              console.log('✅ Updated answer:', newText);
+            }
+            return currentText.trim();
+          });
+        } else if (mode === 'answer') {
+          setAnswerInput(prev => {
+            const currentText = prev || '';
+            if (!currentText.includes(trimmedFinal)) {
+              const newText = currentText ? `${currentText} ${trimmedFinal}` : trimmedFinal;
+              console.log('✅ Finalized answer:', newText);
               return newText.trim();
-            });
-          }
+            }
+            return currentText.trim();
+          });
         }
-        // Clear interim after final is saved
-        setInterimTranscript('');
+        
+        // Clear interim display after final is confirmed
+        setTimeout(() => setInterimTranscript(''), 500);
       }
     };
 
@@ -765,6 +853,27 @@ export default function SymptomChecker() {
                       {micStatus}
                     </span>
                   )}
+                  {/* Volume Level Indicator */}
+                  <div style={{display: 'block', marginTop: '8px'}}>
+                    <div style={{
+                      width: '200px',
+                      height: '8px',
+                      backgroundColor: '#ddd',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        width: `${volumeLevel}%`,
+                        height: '100%',
+                        backgroundColor: volumeLevel > 15 ? '#4CAF50' : volumeLevel > 5 ? '#FF9800' : '#f44336',
+                        transition: 'width 0.1s ease, background-color 0.3s ease'
+                      }}></div>
+                    </div>
+                    <span style={{fontSize: '0.75em', opacity: '0.7', marginTop: '2px', display: 'block'}}>
+                      {volumeLevel > 15 ? '✅ Good volume' : volumeLevel > 5 ? '⚠️ Speak louder' : '🔇 Speak up!'}
+                    </span>
+                  </div>
                 </span>
               )}
             </div>
@@ -912,6 +1021,32 @@ export default function SymptomChecker() {
                 <div className="answer-recording-indicator">
                   <span className="answer-recording-pulse"></span>
                   {getTranslation('listening')}... {getTranslation('speakTip')}
+                  {micStatus && (
+                    <span style={{display: 'block', fontSize: '0.85em', marginTop: '4px', fontWeight: '600', color: '#4CAF50'}}>
+                      {micStatus}
+                    </span>
+                  )}
+                  {/* Volume Level Indicator */}
+                  <div style={{display: 'block', marginTop: '8px'}}>
+                    <div style={{
+                      width: '200px',
+                      height: '8px',
+                      backgroundColor: '#ddd',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        width: `${volumeLevel}%`,
+                        height: '100%',
+                        backgroundColor: volumeLevel > 15 ? '#4CAF50' : volumeLevel > 5 ? '#FF9800' : '#f44336',
+                        transition: 'width 0.1s ease, background-color 0.3s ease'
+                      }}></div>
+                    </div>
+                    <span style={{fontSize: '0.75em', opacity: '0.7', marginTop: '2px', display: 'block'}}>
+                      {volumeLevel > 15 ? '✅ Good volume' : volumeLevel > 5 ? '⚠️ Speak louder' : '🔇 Speak up!'}
+                    </span>
+                  </div>
                 </div>
               )}
 
