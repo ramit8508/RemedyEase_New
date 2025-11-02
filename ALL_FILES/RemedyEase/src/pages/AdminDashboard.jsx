@@ -7,6 +7,7 @@ import DoctorsManagement from "../components/DoctorsManagement";
 import AdminAppointments from "../components/AdminAppointments";
 import AdminPrescriptions from "../components/AdminPrescriptions";
 import AdminOverview from "../components/AdminOverview";
+import ChangeAdminPassword from "../components/ChangeAdminPassword";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -15,12 +16,29 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const adminToken = localStorage.getItem("adminToken");
+    const adminEmail = localStorage.getItem("adminEmail");
+    const AUTHORIZED_ADMIN_EMAIL = "ramitgoyal1987@gmail.com";
+    
+    // Security Check 1: Check if token exists
     if (!adminToken) {
+      console.warn("⚠️ No admin token found. Redirecting to login...");
       navigate("/admin/login");
-    } else {
-      // Wake up backends when dashboard loads
-      wakeUpBackends();
+      return;
     }
+    
+    // Security Check 2: Verify the admin email is the authorized one
+    if (!adminEmail || adminEmail.toLowerCase() !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+      console.warn("⚠️ Unauthorized admin access attempt blocked!");
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminEmail");
+      localStorage.removeItem("adminRole");
+      alert("Unauthorized access! Only authorized personnel can access admin panel.");
+      navigate("/admin/login");
+      return;
+    }
+    
+    // All checks passed - wake up backends
+    wakeUpBackends();
   }, [navigate]);
 
   // Wake up both backends on dashboard load
@@ -112,6 +130,10 @@ const AdminDashboard = () => {
             <span className="nav-icon">💊</span>
             Prescriptions
           </Link>
+          <Link to="/admin/dashboard/change-password" className="admin-nav-link" onClick={closeMenu}>
+            <span className="nav-icon">🔐</span>
+            Change Password
+          </Link>
         </nav>
 
         <button className="admin-logout-btn" onClick={handleLogout}>
@@ -133,6 +155,7 @@ const AdminDashboard = () => {
             <Route path="doctors" element={<DoctorsManagement />} />
             <Route path="appointments" element={<AdminAppointments />} />
             <Route path="prescriptions" element={<AdminPrescriptions />} />
+            <Route path="change-password" element={<ChangeAdminPassword />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </div>

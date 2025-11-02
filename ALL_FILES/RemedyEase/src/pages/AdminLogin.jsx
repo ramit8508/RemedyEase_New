@@ -97,10 +97,20 @@ const AdminLogin = () => {
       console.log('Response data:', data);
 
       if (response.ok) {
+        // Double check - verify the authorized admin email
+        const AUTHORIZED_ADMIN_EMAIL = "ramitgoyal1987@gmail.com";
+        if (data.data.admin.email.toLowerCase() !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+          setError("Unauthorized access. Only authorized personnel can access admin panel.");
+          console.warn("⚠️ Unauthorized admin login attempt blocked!");
+          return;
+        }
+        
         // Store admin token in localStorage
         localStorage.setItem("adminToken", data.data.accessToken);
         localStorage.setItem("adminEmail", data.data.admin.email);
         localStorage.setItem("adminRole", "admin");
+        
+        console.log("✅ Admin login successful - redirecting to dashboard");
         
         // Navigate to admin dashboard
         navigate("/admin/dashboard");
