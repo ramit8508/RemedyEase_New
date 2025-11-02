@@ -206,6 +206,60 @@ export default function DoctorAppointments() {
     }
   };
 
+  const handleApprove = async (appointmentId) => {
+    try {
+      console.log("🟢 [APPROVE] Approving appointment:", appointmentId);
+      const res = await fetch(`${apiBase}/api/v1/appointments/approve/${appointmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorEmail: doctor.email }),
+      });
+      
+      if (res.ok) {
+        console.log("✅ [APPROVE] Appointment approved successfully");
+        alert("Appointment approved! Patient will be notified.");
+        fetchAppointments(); // Refresh the list
+      } else {
+        const errorData = await res.json();
+        console.error("❌ [APPROVE] Failed:", errorData);
+        alert(`Failed to approve: ${errorData.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("❌ [APPROVE] Error approving appointment:", error);
+      alert("Failed to approve appointment. Please try again.");
+    }
+  };
+
+  const handleCancel = async (appointmentId) => {
+    const reason = prompt("Please provide a reason for cancellation (optional):");
+    
+    // Allow cancellation even if no reason is provided
+    try {
+      console.log("🔴 [CANCEL] Cancelling appointment:", appointmentId);
+      const res = await fetch(`${apiBase}/api/v1/appointments/cancel/${appointmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          doctorEmail: doctor.email,
+          reason: reason || "No reason provided"
+        }),
+      });
+      
+      if (res.ok) {
+        console.log("✅ [CANCEL] Appointment cancelled successfully");
+        alert("Appointment cancelled. Patient will be notified.");
+        fetchAppointments(); // Refresh the list
+      } else {
+        const errorData = await res.json();
+        console.error("❌ [CANCEL] Failed:", errorData);
+        alert(`Failed to cancel: ${errorData.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("❌ [CANCEL] Error cancelling appointment:", error);
+      alert("Failed to cancel appointment. Please try again.");
+    }
+  };
+
   const handleJoinPatientSession = (notif) => {
     // Find the appointment
     const appt = appointments.find(a => a._id === notif.appointmentId);
@@ -598,30 +652,57 @@ export default function DoctorAppointments() {
                   <strong>Status:</strong>{" "}
                   <span
                     style={{
-                      color: ["confirmed", "approved", "accepted"].includes(
-                        appt.status?.toLowerCase()
-                      )
-                        ? "#4caf50"
-                        : "#ff9800",
+                      color: 
+                        appt.status?.toLowerCase() === "cancelled" ? "#f44336" :
+                        ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase()) ? "#4caf50" : "#ff9800",
                       fontWeight: "bold",
                     }}
                   >
-                    {["confirmed", "approved", "accepted"].includes(
-                      appt.status?.toLowerCase()
-                    )
-                      ? "✅ Confirmed"
-                      : "⏳ Pending"}
+                    {appt.status?.toLowerCase() === "cancelled" 
+                      ? "❌ Cancelled by Doctor" 
+                      : ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())
+                        ? "✅ Approved"
+                        : "⏳ Pending Approval"}
                   </span>
                 </div>
 
+                {appt.status?.toLowerCase() === "cancelled" && appt.consultationNotes && (
+                  <div style={{ 
+                    marginBottom: "10px", 
+                    padding: "8px", 
+                    backgroundColor: "#ffebee", 
+                    borderRadius: "4px",
+                    fontSize: "14px"
+                  }}>
+                    <strong>Cancellation Note:</strong> {appt.consultationNotes}
+                  </div>
+                )}
+
                 {appt.status === "pending" && (
-                  <button
-                    className="book-btn"
-                    style={{ marginTop: 10 }}
-                    onClick={() => handleConfirm(appt._id)}
-                  >
-                    Confirm Appointment
-                  </button>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                    <button
+                      className="book-btn"
+                      style={{ 
+                        flex: 1,
+                        backgroundColor: "#4caf50",
+                        border: "none"
+                      }}
+                      onClick={() => handleApprove(appt._id)}
+                    >
+                      ✅ Approve
+                    </button>
+                    <button
+                      className="book-btn"
+                      style={{ 
+                        flex: 1,
+                        backgroundColor: "#f44336",
+                        border: "none"
+                      }}
+                      onClick={() => handleCancel(appt._id)}
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
                 )}
 
 

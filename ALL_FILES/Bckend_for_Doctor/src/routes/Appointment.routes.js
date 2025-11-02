@@ -1,7 +1,9 @@
 import { 
   bookAppointment, 
   getDoctorAppointments, 
-  confirmAppointment, 
+  confirmAppointment,
+  approveAppointment,
+  cancelAppointment,
   getUserAppointments,
   getDoctorConsultationHistory,
   addTreatmentDetails,
@@ -20,6 +22,8 @@ router.get("/doctor/:doctorEmail", getDoctorAppointments);
 router.get("/user/:userEmail", getUserAppointments);
 router.get("/:appointmentId", getAppointmentById);
 router.put("/confirm/:appointmentId", confirmAppointment);
+router.put("/approve/:appointmentId", approveAppointment);
+router.put("/cancel/:appointmentId", cancelAppointment);
 
 // New history-related routes
 router.get("/doctor/:doctorEmail/history", getDoctorConsultationHistory);

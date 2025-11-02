@@ -557,12 +557,44 @@ export default function Appointments() {
                   <>
                     <div>
                       <strong>Status:</strong>{" "}
-                      <span className="status-confirmed">
+                      <span 
+                        className={
+                          appt.status?.toLowerCase() === "cancelled" 
+                            ? "status-cancelled"
+                            : ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())
+                            ? "status-confirmed"
+                            : "status-pending"
+                        }
+                        style={{
+                          color: appt.status?.toLowerCase() === "cancelled" ? "#f44336" : undefined,
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {appt.status?.toLowerCase() === "cancelled" && "❌ "}
                         {justConfirmedIds.has(appt._id) && "🎉 "}
-                        {appt.status}
+                        {appt.status?.toLowerCase() === "cancelled" 
+                          ? "Cancelled by Doctor" 
+                          : appt.status}
                         {justConfirmedIds.has(appt._id) && " (Just Confirmed!)"}
                       </span>
                     </div>
+
+                    {/* Show cancellation reason if available */}
+                    {appt.status?.toLowerCase() === "cancelled" && appt.consultationNotes && (
+                      <div style={{ 
+                        marginTop: "10px",
+                        padding: "10px",
+                        backgroundColor: "#ffebee",
+                        borderRadius: "6px",
+                        borderLeft: "4px solid #f44336"
+                      }}>
+                        <strong style={{ color: "#d32f2f" }}>Cancellation Reason:</strong>
+                        <p style={{ margin: "5px 0 0 0", color: "#555" }}>
+                          {appt.consultationNotes}
+                        </p>
+                      </div>
+                    )}
+
                     {["confirmed", "approved", "accepted"].includes(
                       appt.status?.toLowerCase()
                     ) && (

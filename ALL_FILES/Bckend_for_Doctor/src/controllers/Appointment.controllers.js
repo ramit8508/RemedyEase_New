@@ -105,6 +105,55 @@ export const confirmAppointment = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment confirmed"));
 });
 
+// Approve appointment (doctor approves the booking)
+export const approveAppointment = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  const { doctorEmail } = req.body;
+  
+  console.log('[APPROVE] Approving appointment:', appointmentId, 'by doctor:', doctorEmail);
+  
+  const appointment = await Appointment.findOne({ _id: appointmentId, doctorEmail });
+  
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found or you don't have permission");
+  }
+  
+  if (appointment.status === "cancelled") {
+    throw new ApiError(400, "Cannot approve a cancelled appointment");
+  }
+  
+  appointment.status = "approved";
+  await appointment.save();
+  
+  console.log('[APPROVE] Appointment approved successfully');
+  return res.status(200).json(new ApiResponse(200, appointment, "Appointment approved successfully"));
+});
+
+// Cancel appointment (doctor cancels the booking)
+export const cancelAppointment = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  const { doctorEmail, reason } = req.body;
+  
+  console.log('[CANCEL] Cancelling appointment:', appointmentId, 'by doctor:', doctorEmail, 'reason:', reason);
+  
+  const appointment = await Appointment.findOne({ _id: appointmentId, doctorEmail });
+  
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found or you don't have permission");
+  }
+  
+  if (appointment.status === "completed") {
+    throw new ApiError(400, "Cannot cancel a completed appointment");
+  }
+  
+  appointment.status = "cancelled";
+  appointment.consultationNotes = reason ? `Cancelled by doctor. Reason: ${reason}` : "Cancelled by doctor";
+  await appointment.save();
+  
+  console.log('[CANCEL] Appointment cancelled successfully');
+  return res.status(200).json(new ApiResponse(200, appointment, "Appointment cancelled successfully"));
+});
+
 // Get appointments for user by email
 export const getUserAppointments = asyncHandler(async (req, res) => {
   const { userEmail } = req.params;

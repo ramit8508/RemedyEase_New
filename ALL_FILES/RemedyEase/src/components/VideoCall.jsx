@@ -21,6 +21,7 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   const [callStatus, setCallStatus] = useState("Initializing...");
   const [error, setError] = useState(null);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [needsManualPlay, setNeedsManualPlay] = useState(false); // For browsers blocking autoplay
 
   // Refs for video elements, WebRTC connection, and socket
   const localVideoRef = useRef(null);
@@ -34,6 +35,8 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   // Track if we've initiated a call to prevent duplicate offers
   const hasInitiatedCallRef = useRef(false);
   const isProcessingOfferRef = useRef(false);
+  const isPlayingRef = useRef(false); // Prevent multiple play attempts
+  const playPromiseRef = useRef(null); // Track current play promise
 
   const pcConfig = {
     iceServers: [
@@ -90,10 +93,49 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
       console.log("🔄 Remote stream state updated, applying to video element");
+      
+      // If already playing or play in progress, skip
+      if (isPlayingRef.current || playPromiseRef.current) {
+        console.log("⏭️ Skipping - video already playing or play in progress");
+        return;
+      }
+      
       remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(err => {
-        console.error("Failed to play remote video in useEffect:", err);
-      });
+      
+      // Force properties
+      remoteVideoRef.current.muted = false;
+      remoteVideoRef.current.volume = 1.0;
+      remoteVideoRef.current.playsInline = true;
+      remoteVideoRef.current.autoplay = true;
+      
+      // Single play attempt with proper cleanup
+      const playVideo = () => {
+        if (isPlayingRef.current) {
+          console.log("⏭️ Already playing, skipping");
+          return;
+        }
+        
+        console.log("▶️ Attempting to play remote video...");
+        playPromiseRef.current = remoteVideoRef.current.play()
+          .then(() => {
+            console.log("✅ Remote video playing successfully");
+            isPlayingRef.current = true;
+            setNeedsManualPlay(false);
+            playPromiseRef.current = null;
+          })
+          .catch(err => {
+            console.error("⚠️ Auto-play failed:", err.name, err.message);
+            playPromiseRef.current = null;
+            
+            // Only show manual button, don't try more auto-play attempts
+            if (err.name === 'NotAllowedError' || err.name === 'NotSupportedError') {
+              console.log("🖱️ User interaction required - showing manual play button");
+              setNeedsManualPlay(true);
+            }
+          });
+      };
+      
+      playVideo();
     }
   }, [remoteStream]);
 
@@ -564,6 +606,59 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
     }
   };
 
+  const manualPlayRemoteVideo = () => {
+    console.log("🎬 Manual play button clicked");
+    console.log("remoteVideoRef.current:", remoteVideoRef.current);
+    console.log("remoteStream:", remoteStream);
+    console.log("isPlayingRef:", isPlayingRef.current);
+    
+    if (remoteVideoRef.current && remoteStream) {
+      console.log("✅ Both video element and stream exist");
+      console.log("Current srcObject:", remoteVideoRef.current.srcObject);
+      console.log("Video paused:", remoteVideoRef.current.paused);
+      console.log("Video dimensions:", remoteVideoRef.current.videoWidth, "x", remoteVideoRef.current.videoHeight);
+      
+      // Wait for any pending play to finish first
+      if (playPromiseRef.current) {
+        console.log("⏳ Waiting for pending play promise...");
+        playPromiseRef.current
+          .catch(() => {}) // Ignore error from pending promise
+          .finally(() => {
+            playPromiseRef.current = null;
+            attemptManualPlay();
+          });
+      } else {
+        attemptManualPlay();
+      }
+    } else {
+      console.error("❌ Missing video element or stream!");
+      console.log("remoteVideoRef.current:", !!remoteVideoRef.current);
+      console.log("remoteStream:", !!remoteStream);
+    }
+    
+    function attemptManualPlay() {
+      // Re-attach stream to be sure
+      remoteVideoRef.current.srcObject = remoteStream;
+      remoteVideoRef.current.muted = false;
+      remoteVideoRef.current.volume = 1.0;
+      
+      console.log("▶️ Starting manual play...");
+      playPromiseRef.current = remoteVideoRef.current.play()
+        .then(() => {
+          console.log("✅ Manual play successful!");
+          console.log("Video is now playing:", !remoteVideoRef.current.paused);
+          isPlayingRef.current = true;
+          setNeedsManualPlay(false);
+          playPromiseRef.current = null;
+        })
+        .catch(err => {
+          console.error("❌ Manual play failed:", err.name, err.message);
+          playPromiseRef.current = null;
+          alert("Unable to play video. Error: " + err.message + "\n\nPlease refresh the page and try again.");
+        });
+    }
+  };
+
   const endCall = (notifyServer = true) => {
     if (notifyServer && socketRef.current) {
         // notify server using its event name
@@ -635,11 +730,21 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              backgroundColor: '#000'
+              backgroundColor: '#000',
+              display: 'block', // Force display
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              zIndex: 1 // Ensure it's above background
             }}
+            onLoadedMetadata={() => console.log("📺 Video metadata loaded, dimensions:", remoteVideoRef.current?.videoWidth, "x", remoteVideoRef.current?.videoHeight)}
+            onLoadedData={() => console.log("📺 Video data loaded")}
+            onPlaying={() => console.log("✅ Video is PLAYING")}
+            onPause={() => console.log("⏸️ Video paused")}
+            onError={(e) => console.error("❌ Video error:", e)}
           />
           {!isCallActive && (
-            <div className="no-remote-video" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="no-remote-video" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2 }}>
               <div className="avatar-placeholder">
                 {isConnecting ? (
                   <div className="connecting-animation">
@@ -652,6 +757,43 @@ const VideoCall = ({ appointmentId, currentUser, userType, onClose }) => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          {/* Manual Play Button - appears if browser blocks autoplay */}
+          {isCallActive && needsManualPlay && remoteStream && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 100,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              padding: '30px',
+              borderRadius: '15px',
+              textAlign: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+            }}>
+              <button
+                onClick={manualPlayRemoteVideo}
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  padding: '20px 40px',
+                  fontSize: '18px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 10px rgba(76, 175, 80, 0.5)'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#45a049'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#4CAF50'}
+              >
+                ▶️ Click to Play Video
+              </button>
+              <p style={{ color: 'white', marginTop: '15px', fontSize: '14px', opacity: 0.9 }}>
+                Your browser requires interaction to play video
+              </p>
             </div>
           )}
         </div>

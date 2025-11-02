@@ -236,6 +236,19 @@
   text-transform: capitalize;
 }
 
+.status-cancelled {
+  color: #f44336;
+  font-weight: bold;
+  text-transform: capitalize;
+  text-decoration: line-through;
+}
+
+.status-pending {
+  color: #ff9800;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
 .pending-confirmation-card {
   margin-top: 15px;
   background-color: #fff3e0;
