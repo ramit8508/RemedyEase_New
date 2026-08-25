@@ -3,12 +3,12 @@
    Premium healthcare design system
    ============================================================ */
 
-/* --- Google Font --- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 /* --- Design Tokens --- */
 :root {
   --lp-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --lp-font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Primary palette */
   --lp-green-700: #15803d;
@@ -81,8 +81,9 @@
 }
 
 .lp-brand-name {
+  font-family: var(--lp-font-heading);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.3px;
   color: #15803d;
 }
@@ -131,6 +132,7 @@
 }
 
 .lp-headline {
+  font-family: var(--lp-font-heading);
   font-size: 40px;
   font-weight: 700;
   letter-spacing: -0.8px;
@@ -207,8 +209,9 @@
 
 /* Card text */
 .lp-card-title {
+  font-family: var(--lp-font-heading);
   font-size: 19px;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 8px;
   color: var(--lp-gray-900);
   letter-spacing: -0.2px;

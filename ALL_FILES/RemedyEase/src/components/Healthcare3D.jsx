@@ -1,142 +1,49 @@
-import React, { useRef, useState, useEffect } from "react";
-import doctorImg from "../images/doctor_3d_hero.jpg";
-import { FiCheck, FiHeart, FiShield, FiActivity, FiUser } from "react-icons/fi";
-import { LuStethoscope } from "react-icons/lu";
+import React from "react";
+import doctorHero from "../images/doctor_3d_hero.jpg";
+import { FiCalendar, FiShield } from "react-icons/fi";
+import "../Css_for_all/UserHome.css";
 
 /* ============================================================
-   Healthcare3D — Premium 3D Doctor Hero Visual
-   Sophisticated 3D Healthcare Illustration with Interactive Parallax
+   Healthcare3D — Static Doctor 3D Hero Model for Patients
+   Exact visual match to Doctor Landing Page hero model
+   Completely static: no hover tilt, no transforms, no mouse tracking
+   Patient USPs: Flexible Consultations, Real-time Chat, AI Health Insights
    ============================================================ */
 
 export default function Healthcare3D() {
-  const containerRef = useRef(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const handler = (e) => setReducedMotion(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  const handleMouseMove = (e) => {
-    if (reducedMotion || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
-    setTilt({ x, y });
-  };
-
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-    setIsHovered(false);
-  };
-
   return (
-    <div
-      ref={containerRef}
-      className="h3d-hero-container"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={handleMouseLeave}
-      aria-label="RemedyEase 3D Healthcare Doctor Illustration"
-    >
-      {/* Background Soft Glow */}
-      <div className="h3d-glow-backdrop" />
+    <div className="uh-hero-visual">
+      <div className="uh-hero-img-wrap">
+        <img
+          src={doctorHero}
+          alt="RemedyEase 3D Doctor"
+          className="uh-hero-img"
+          draggable="false"
+        />
+        <div className="uh-hero-img-overlay" />
+      </div>
 
-      {/* Main 3D Card Stage with Parallax Tilt */}
-      <div
-        className="h3d-stage"
-        style={{
-          transform: `perspective(1000px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg) scale3d(${isHovered ? 1.02 : 1}, ${isHovered ? 1.02 : 1}, 1)`,
-          transition: isHovered ? "transform 0.1s ease-out" : "transform 0.5s ease-out",
-        }}
-      >
-        {/* Doctor 3D Illustration Frame */}
-        <div className="h3d-doctor-frame">
-          <img
-            src={doctorImg}
-            alt="RemedyEase Doctor"
-            className="h3d-doctor-img"
-            loading="eager"
-          />
-          <div className="h3d-doctor-overlay-gradient" />
+      {/* Floating Card Top-Left: Patient Consultations Schedule */}
+      <div className="uh-float-card uh-float-card--appt">
+        <div className="uh-float-head">
+          <FiCalendar size={14} className="uh-float-ico" />
+          <span>Upcoming Consultations</span>
         </div>
+        <ul className="uh-float-list">
+          <li><span className="uh-time">09:30</span> Dr. Sarah — Video Call</li>
+          <li><span className="uh-time">10:15</span> Dr. Ben — Live Chat</li>
+          <li><span className="uh-time">11:00</span> Dr. Emily — Health Review</li>
+        </ul>
+      </div>
 
-        {/* Floating Health Status Badge (Top-Left) */}
-        <div
-          className="h3d-badge-status"
-          style={{
-            transform: `translate3d(${tilt.x * 0.4}px, ${-tilt.y * 0.4}px, 20px)`,
-          }}
-        >
-          <div className="h3d-badge-icon h3d-badge-icon--green">
-            <span className="h3d-pulse-dot" />
-            <LuStethoscope size={14} />
-          </div>
-          <div className="h3d-badge-text">
-            <span className="h3d-badge-title">Verified Specialist</span>
-            <span className="h3d-badge-sub">Available for consult</span>
-          </div>
+      {/* Floating Card Bottom-Right: Verified Doctors Available */}
+      <div className="uh-float-card uh-float-card--patients">
+        <div className="uh-float-head">
+          <FiShield size={14} className="uh-float-ico" />
+          <span>Verified Doctors</span>
         </div>
-
-        {/* Floating Main Title Card (Presented by Doctor) */}
-        <div
-          className="h3d-main-panel"
-          style={{
-            transform: `translate3d(${-tilt.x * 0.5}px, ${tilt.y * 0.5}px, 35px)`,
-          }}
-        >
-          <div className="h3d-panel-header">
-            <span className="h3d-panel-pill">
-              <span className="h3d-panel-pill-dot" />
-              RemedyEase Care
-            </span>
-            <span className="h3d-panel-tag">
-              <FiShield size={12} /> Secure
-            </span>
-          </div>
-
-          <h3 className="h3d-panel-title">
-            Your Healthcare,<br />
-            <span className="h3d-highlight">Made Simpler.</span>
-          </h3>
-
-          <p className="h3d-panel-desc">
-            Connect with doctors, chat in real time, and get personalized health guidance.
-          </p>
-
-          <div className="h3d-panel-tags">
-            <span className="h3d-tag h3d-tag--green">
-              <FiCheck size={12} /> Consultations
-            </span>
-            <span className="h3d-tag h3d-tag--blue">
-              <FiCheck size={12} /> Real-time Chat
-            </span>
-            <span className="h3d-tag h3d-tag--purple">
-              <FiCheck size={12} /> AI Insights
-            </span>
-          </div>
-        </div>
-
-        {/* Small Bottom Live Metric Pill */}
-        <div
-          className="h3d-badge-metric"
-          style={{
-            transform: `translate3d(${tilt.x * 0.3}px, ${-tilt.y * 0.3}px, 25px)`,
-          }}
-        >
-          <div className="h3d-metric-icon">
-            <FiActivity size={14} />
-          </div>
-          <div className="h3d-metric-info">
-            <span className="h3d-metric-val">24/7</span>
-            <span className="h3d-metric-lbl">Care Access</span>
-          </div>
-        </div>
+        <p className="uh-float-big">150+</p>
+        <span className="uh-float-badge-up">Available 24/7</span>
       </div>
     </div>
   );

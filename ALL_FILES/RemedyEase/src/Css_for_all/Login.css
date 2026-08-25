@@ -1,52 +1,60 @@
-/* 1. Import a modern and clean font from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+/* ============================================================
+   Login.css — Modern Authentication Pages
+   Typography: Manrope (headings 600-700), Inter (body 400, UI 500-600)
+   ============================================================ */
 
-/* 2. Style the main container with a subtle gradient background */
 .login-form {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #e6ffe6, #dcf8ff); /* Softer gradient background */
-  font-family: 'Poppins', sans-serif; /* Apply the new font */
+  padding: 24px;
+  background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  color: #1e293b;
 }
 
-/* 3. Make the logo pop with a text shadow */
 .login-logo {
-  font-size: 50px;
-  color: #388e3c; /* A slightly deeper green */
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 38px;
+  color: #15803d;
   font-weight: 800;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.8px;
+  text-decoration: none;
 }
 
 .login-title {
-  font-size: 36px;
-  font-weight: 700; /* Bolder */
-  margin-top: 15px;
-  margin-bottom: 10px;
-  color: #333;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  color: #0f172a;
+  letter-spacing: -0.4px;
 }
 
 .login-header {
-  font-size: 18px;
-  font-weight: 400; /* Lighter weight for subtitle */
-  color: #555;
-  margin-bottom: 30px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #64748b;
+  margin-bottom: 28px;
+  text-align: center;
 }
 
-/* 4. Improve the form card with a softer shadow and rounded corners */
 .login-divider {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  background-color: white;
-  padding: 40px;
-  border-radius: 20px; /* More rounded corners */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Softer, more modern shadow */
-  min-width: 380px;
-  border: 1px solid #ffffff30;
+  gap: 16px;
+  background-color: #ffffff;
+  padding: 36px 32px;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #e2e8f0;
 }
 
 .login-input-group {
@@ -56,84 +64,90 @@
 }
 
 .login-label {
-  font-size: 16px; /* Slightly smaller for a cleaner look */
-  margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  margin-bottom: 6px;
   font-weight: 600;
-  color: #333;
+  color: #334155;
 }
 
-/* 5. Refine input fields for a modern feel */
 .login_input {
   width: 100%;
-  padding: 14px 18px;
-  font-size: 16px;
-  background-color: #f9f9f9; /* Subtle background color */
-  border: 1px solid #ddd;
-  border-radius: 10px; /* Match the card's roundness */
+  padding: 11px 14px;
+  font-size: 14.5px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  color: #0f172a;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
 .login_input:focus {
-  border-color: #4CAF50; /* A vibrant green */
-  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
-  background-color: #fff;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  background-color: #ffffff;
   outline: none;
 }
 
 .login_input::placeholder {
-  color: #aaa;
+  color: #94a3b8;
 }
 
-/* 6. Redesign the button to be more appealing and interactive */
 .login-button {
   width: 100%;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
   color: white;
-  background: linear-gradient(90deg, #4CAF50, #388e3c);
+  background: #16a34a;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
-  margin-top: 15px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 10px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
 }
 
 .login-button:hover {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transform: translateY(-3px); /* Add a 'lift' effect on hover */
+  background: #15803d;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
+  transform: translateY(-1px);
 }
 
-/* 7. Style the sign-up link */
 .signin {
-  font-size: 15px;
-  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
   text-align: center;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .login-signup-link {
-  color: #4CAF50;
+  color: #16a34a;
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.15s;
 }
 
 .login-signup-link:hover {
+  color: #15803d;
   text-decoration: underline;
 }
 
 /* Responsive styles */
 @media (max-width: 480px) {
   .login-divider {
-    min-width: 90vw;
-    padding: 30px 25px;
+    padding: 28px 20px;
   }
   .login-logo {
-    font-size: 40px;
+    font-size: 32px;
   }
   .login-title {
-    font-size: 30px;
+    font-size: 24px;
   }
 }

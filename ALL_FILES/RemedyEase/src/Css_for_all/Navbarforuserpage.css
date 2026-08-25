@@ -3,7 +3,7 @@
    Consistent with RemedyEase design system
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 .un-header {
   position: sticky;
@@ -29,11 +29,12 @@
 
 /* Brand */
 .un-brand {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
   color: #15803d;
   text-decoration: none;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   flex-shrink: 0;
 }
 
@@ -62,6 +63,7 @@
 .un-nav-link--active {
   color: #15803d;
   background: #f0fdf4;
+  font-weight: 600;
 }
 
 /* Actions */

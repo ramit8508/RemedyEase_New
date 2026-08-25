@@ -3,7 +3,7 @@
    Unified with the homepage design system
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 /* --- Page --- */
 .al {
@@ -13,6 +13,7 @@
   display: flex;
   flex-direction: column;
   color: #111827;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -45,8 +46,9 @@
 }
 
 .al-brand-name {
+  font-family: 'Manrope', 'Inter', sans-serif;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.3px;
   color: #15803d;
 }
@@ -120,6 +122,7 @@
 }
 
 .al-title {
+  font-family: 'Manrope', 'Inter', sans-serif;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.3px;
