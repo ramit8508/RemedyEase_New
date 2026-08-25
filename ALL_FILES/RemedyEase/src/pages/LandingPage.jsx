@@ -1,40 +1,74 @@
 import React from "react";
-import Logo from "../images/Logo.png";
 import "../Css_for_all/LandingPage.css";
-import user from "../images/user.png";
-import UserLandingPage from "./UserLandingPage";
 import { Link } from "react-router-dom";
-import doctor from "../images/doctor.jpg";
+import { FiUser, FiShield } from "react-icons/fi";
+import { LuStethoscope } from "react-icons/lu";
+
 function LandingPage() {
   return (
-    <>
-      <div className="landing-page">
-        <img src={Logo} alt="Logo" className="image" />
-        <div className="content">
-          <Link to="/admin/login" className="admin-link-button">
-            <button className="admin-access-button">Admin Access</button>
+    <div className="lp">
+      {/* Header */}
+      <header className="lp-header">
+        <div className="lp-header-inner">
+          <Link to="/" className="lp-brand">
+            <span className="lp-brand-name">RemedyEase</span>
           </Link>
-          <h1 className="head0">Choose Your Role</h1>
-          <h1 className="head1">How would you like to use RemedyEase?</h1>
-          <div className="button-container">
-            <div className="user-section">
-              <img src={user} alt="user" className="User" />
-              <Link to="/user" className="user-link">
-                <button className="user-button">Continue as Patient</button>
-              </Link>
-              <p className="para0">Find doctor and have consultations</p>
-            </div>
-            <div className="user-section">
-              <img src={doctor} alt="user" className="User" />
-              <Link to="/doctor" className="user-link">
-                <button className="doctor-button">Continue as Doctor</button>
-              </Link>
-              <p className="para2">Provides care to the patients</p>
-            </div>
-          </div>
+          <Link to="/admin/login" className="lp-admin-btn">
+            <FiShield size={15} />
+            <span>Admin Access</span>
+          </Link>
         </div>
-      </div>
-    </>
+      </header>
+
+      {/* Main Content */}
+      <main className="lp-main">
+        {/* Hero */}
+        <section className="lp-hero">
+          <h1 className="lp-headline">Healthcare made simpler.</h1>
+          <p className="lp-subtext">Choose how you'd like to continue.</p>
+        </section>
+
+        {/* Role Cards */}
+        <section className="lp-cards">
+          <Link to="/user" className="lp-card">
+            <div className="lp-card-icon lp-card-icon--patient">
+              <FiUser size={28} strokeWidth={1.8} />
+            </div>
+            <h2 className="lp-card-title">Patient</h2>
+            <p className="lp-card-desc">
+              Manage your healthcare, medicines, appointments and more.
+            </p>
+            <span className="lp-card-cta">
+              Continue as Patient
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+          </Link>
+
+          <Link to="/doctor" className="lp-card">
+            <div className="lp-card-icon lp-card-icon--doctor">
+              <LuStethoscope size={28} strokeWidth={1.8} />
+            </div>
+            <h2 className="lp-card-title">Doctor</h2>
+            <p className="lp-card-desc">
+              Manage patients, prescriptions, consultations and treatment.
+            </p>
+            <span className="lp-card-cta">
+              Continue as Doctor
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+          </Link>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="lp-footer">
+        <p>&copy; {new Date().getFullYear()} RemedyEase. All rights reserved.</p>
+      </footer>
+    </div>
   );
 }
 
