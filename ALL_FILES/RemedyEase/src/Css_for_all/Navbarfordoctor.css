@@ -1,23 +1,244 @@
+/* ============================================================
+   Navbarfordoctor.css — Premium Doctor Sticky Navigation
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-@media (max-width: 700px) {
-  .navbarforuserpage {
-    flex-direction: row; /* Always row, even on small screens */
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 4px;
+.doc-nav {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.7);
+  transition: background 0.25s, box-shadow 0.25s, border-color 0.25s;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.doc-nav--scrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border-bottom-color: rgba(209, 213, 219, 0.8);
+}
+
+.doc-nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* ─── Brand ─── */
+.doc-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.doc-nav-brand-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+}
+
+.doc-nav-brand-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ─── Desktop Links ─── */
+.doc-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.doc-nav-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 6px 2px;
+  transition: color 0.15s;
+  position: relative;
+}
+
+.doc-nav-link:hover {
+  color: #111827;
+}
+
+.doc-nav-link--active {
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* ─── Desktop Actions ─── */
+.doc-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.doc-nav-signin {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.doc-nav-signin:hover {
+  color: #111827;
+  background: #f3f4f6;
+}
+
+.doc-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #16a34a;
+  padding: 8px 16px;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.2);
+}
+
+.doc-nav-cta:hover {
+  background: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+  transform: translateY(-1px);
+}
+
+/* ─── Mobile Toggle ─── */
+.doc-nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #374151;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc-nav-toggle:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* ─── Mobile Drawer ─── */
+.doc-nav-drawer {
+  display: none;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 24px 24px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.doc-nav-drawer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-nav-drawer-link {
+  font-size: 15px;
+  font-weight: 550;
+  color: #374151;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.doc-nav-drawer-link:hover {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.doc-nav-drawer-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 8px 0;
+}
+
+.doc-nav-drawer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.doc-nav-drawer-btn-outline {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  padding: 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.doc-nav-drawer-btn-outline:hover {
+  background: #f9fafb;
+}
+
+.doc-nav-drawer-btn-primary {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #16a34a;
+  padding: 11px;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.doc-nav-drawer-btn-primary:hover {
+  background: #15803d;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .doc-nav-links {
+    display: none;
   }
-  .navbarforuserpage h1 {
-    font-size: 18px;
-    margin-bottom: 0;
-    text-align: left;
+
+  .doc-nav-actions {
+    display: none;
   }
-  .user-link {
-    font-size: 14px;
-    padding: 4px 6px;
-    margin: 0;
-    width: auto;
-    min-width: 60px;
-    box-sizing: border-box;
-    text-align: center;
+
+  .doc-nav-toggle {
+    display: flex;
   }
-} 
+
+  .doc-nav-drawer {
+    display: block;
+  }
+}
