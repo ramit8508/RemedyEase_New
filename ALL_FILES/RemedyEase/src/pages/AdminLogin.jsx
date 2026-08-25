@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../Css_for_all/AdminLogin.css";
+import { FiShield, FiArrowLeft, FiInfo, FiCheckCircle, FiAlertCircle, FiLoader } from "react-icons/fi";
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -134,104 +135,133 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="admin-login-container">
-      <div className="admin-login-box">
-        <h1 className="admin-login-title">Admin Login</h1>
-        <p className="admin-login-subtitle">Access the admin dashboard</p>
+    <div className="al">
+      {/* Header */}
+      <header className="al-header">
+        <div className="al-header-inner">
+          <Link to="/" className="al-brand">
+            <span className="al-brand-name">RemedyEase</span>
+          </Link>
+          <button
+            onClick={() => navigate("/")}
+            className="al-back-link"
+            disabled={loading}
+          >
+            <FiArrowLeft size={15} />
+            <span>Back to Home</span>
+          </button>
+        </div>
+      </header>
 
-        <div style={{ 
-          backgroundColor: '#e7f3ff', 
-          color: '#004085', 
-          padding: '10px', 
-          borderRadius: '5px', 
-          marginBottom: '15px',
-          fontSize: '13px',
-          border: '1px solid #b8daff'
-        }}>
-          ℹ️ <strong>Note:</strong> If you haven't used the app recently, click "Wake Up Backend" first and wait 30-60 seconds before logging in.
+      {/* Main Content */}
+      <main className="al-main">
+        <div className="al-card">
+          {/* Card Header */}
+          <div className="al-card-header">
+            <div className="al-icon-wrap">
+              <FiShield size={22} strokeWidth={1.8} />
+            </div>
+            <h1 className="al-title">Admin sign in</h1>
+            <p className="al-subtitle">Access the RemedyEase administration dashboard.</p>
+          </div>
+
+          {/* Info Banner */}
+          <div className="al-info-banner">
+            <FiInfo size={14} className="al-info-banner-icon" />
+            <span>Backend may take 30–60 seconds to wake after inactivity.</span>
+          </div>
+
+          {/* Status Messages */}
+          {error && (
+            <div className="al-alert al-alert--error">
+              <FiAlertCircle size={15} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {backendStatus === "waking" && (
+            <div className="al-alert al-alert--warning">
+              <FiLoader size={15} className="al-spin" />
+              <span>Waking up backend server… This may take 30–60 seconds.</span>
+            </div>
+          )}
+
+          {backendStatus === "online" && (
+            <div className="al-alert al-alert--success">
+              <FiCheckCircle size={15} />
+              <span>Backend is online. You can now sign in.</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="al-form">
+            <div className="al-field">
+              <label htmlFor="email" className="al-label">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                placeholder="Enter admin email"
+                disabled={loading}
+                className="al-input"
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="al-field">
+              <label htmlFor="password" className="al-label">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter password"
+                disabled={loading}
+                className="al-input"
+                autoComplete="current-password"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="al-submit"
+              disabled={loading || wakingUp}
+            >
+              {loading ? (
+                <>
+                  <FiLoader size={16} className="al-spin" />
+                  Signing in…
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+          </form>
+
+          {/* Secondary Actions */}
+          <div className="al-secondary">
+            <p className="al-secondary-label">Backend unavailable?</p>
+            <button
+              onClick={wakeUpBackend}
+              className="al-wake-btn"
+              disabled={loading || wakingUp}
+            >
+              {wakingUp ? "Waking up…" : "Wake Up Backend"}
+            </button>
+          </div>
         </div>
 
-        {error && <div className="admin-error-message">{error}</div>}
-
-        {backendStatus === "waking" && (
-          <div className="admin-info-message" style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffc107' }}>
-            ⏳ Waking up backend server... This may take 30-60 seconds.
-          </div>
-        )}
-
-        {backendStatus === "online" && (
-          <div className="admin-success-message" style={{ backgroundColor: '#d4edda', color: '#155724', border: '1px solid #28a745' }}>
-            ✅ Backend is online! You can now login.
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="admin-login-form">
-          <div className="admin-form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter admin email"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="admin-form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter password"
-              disabled={loading}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="admin-login-button"
-            disabled={loading || wakingUp}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <button 
-          onClick={wakeUpBackend}
-          className="admin-wake-button"
-          disabled={loading || wakingUp}
-          style={{
-            marginTop: '10px',
-            backgroundColor: '#ffc107',
-            color: '#000',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '5px',
-            cursor: wakingUp ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            opacity: wakingUp ? 0.6 : 1,
-            transition: 'all 0.3s ease'
-          }}
-        >
-          {wakingUp ? "⏳ Waking up backend..." : "🚀 Wake Up Backend"}
-        </button>
-
-        <button 
-          onClick={() => navigate("/")} 
-          className="admin-back-button"
-          disabled={loading}
-        >
-          Back to Home
-        </button>
-      </div>
+        {/* Security Note */}
+        <p className="al-security-note">
+          <FiShield size={12} />
+          Authorized access only
+        </p>
+      </main>
     </div>
   );
 };

@@ -29,7 +29,6 @@
 
   /* Surface */
   --lp-bg: #fafcfb;
-  --lp-card-bg: var(--lp-white);
   --lp-card-border: #e8ece9;
   --lp-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
   --lp-card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 32px rgba(0, 0, 0, 0.06);
@@ -81,18 +80,11 @@
   color: var(--lp-gray-900);
 }
 
-.lp-logo {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
 .lp-brand-name {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
-  color: var(--lp-green-700);
+  color: #15803d;
 }
 
 .lp-admin-btn {
@@ -126,7 +118,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 64px 24px 80px;
+  padding: 48px 24px 48px;
   max-width: 1120px;
   margin: 0 auto;
   width: 100%;
@@ -166,7 +158,7 @@
 
 /* --- Card --- */
 .lp-card {
-  background: var(--lp-card-bg);
+  background: var(--lp-white);
   border: 1px solid var(--lp-card-border);
   border-radius: var(--lp-radius-lg);
   padding: 36px 32px 32px;
@@ -302,11 +294,6 @@
 
   .lp-brand-name {
     font-size: 16px;
-  }
-
-  .lp-logo {
-    width: 30px;
-    height: 30px;
   }
 
   .lp-admin-btn {
