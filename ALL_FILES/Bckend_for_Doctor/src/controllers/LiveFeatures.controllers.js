@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ChatMessage } from "../models/ChatMessage.models.js";
 import { Appointment } from "../models/Appointments.models.js";
+import { Doctor } from "../models/Doctor.models.js";
 
 // Send chat message
 export const sendChatMessage = asyncHandler(async (req, res) => {
@@ -219,41 +220,113 @@ export const getAppointmentLiveStatus = asyncHandler(async (req, res) => {
 export const getUserChatConversations = asyncHandler(async (req, res) => {
   const { userEmail } = req.params;
 
-  // Find all appointments for this user that have chat messages
-  const appointments = await Appointment.find({ userEmail }).select(
-    'doctorName doctorEmail userName userEmail date time status chatRoomId _id'
-  );
+  if (!userEmail) {
+    throw new ApiError(400, "User email is required");
+  }
+
+  // Find all appointments for this user
+  const appointments = await Appointment.find({ userEmail })
+    .sort({ createdAt: -1 })
+    .lean();
 
   if (!appointments || appointments.length === 0) {
     return res.status(200).json(new ApiResponse(200, [], "No appointments found"));
   }
 
-  // Get chat messages for each appointment
+  // Extract unique doctor emails to fetch profiles in a single query
+  const doctorEmails = [...new Set(appointments.map(a => a.doctorEmail).filter(Boolean))];
+  const doctors = await Doctor.find({ email: { $in: doctorEmails } })
+    .select('fullname email specialization avatar degree registrationNumber')
+    .lean();
+
+  const doctorMap = new Map();
+  for (const doc of doctors) {
+    doctorMap.set(doc.email.toLowerCase(), doc);
+  }
+
+  // Get chat messages and unread counts for each appointment
   const conversations = [];
   
   for (const appointment of appointments) {
-    const chatMessages = await ChatMessage.find({ 
+    // Find latest message (sorting by createdAt descending)
+    const latestMessages = await ChatMessage.find({ 
       appointmentId: appointment._id 
-    }).sort({ timestamp: -1 }).limit(1); // Get last message
+    }).sort({ createdAt: -1 }).limit(1).lean();
 
-    if (chatMessages.length > 0) {
-      conversations.push({
-        appointmentId: appointment._id,
-        doctorName: appointment.doctorName,
-        doctorEmail: appointment.doctorEmail,
-        appointmentDate: appointment.date,
-        appointmentTime: appointment.time,
-        status: appointment.status,
-        lastMessage: chatMessages[0],
-        messageCount: await ChatMessage.countDocuments({ appointmentId: appointment._id })
-      });
-    }
+    const lastMessage = latestMessages[0] || null;
+
+    // Count unread messages sent by the doctor to the user
+    const unreadCount = await ChatMessage.countDocuments({
+      appointmentId: appointment._id,
+      senderType: 'doctor',
+      isRead: false
+    });
+
+    const totalMessageCount = await ChatMessage.countDocuments({
+      appointmentId: appointment._id
+    });
+
+    const docProfile = doctorMap.get(appointment.doctorEmail?.toLowerCase()) || {};
+
+    conversations.push({
+      appointmentId: appointment._id,
+      chatRoomId: appointment.chatRoomId,
+      callRoomId: appointment.callRoomId,
+      doctorId: docProfile._id || null,
+      doctorName: docProfile.fullname || appointment.doctorName,
+      doctorEmail: appointment.doctorEmail,
+      doctorAvatar: docProfile.avatar || null,
+      doctorSpecialization: docProfile.specialization || "General Physician",
+      doctorDegree: docProfile.degree || "MBBS",
+      doctorOnline: Boolean(appointment.doctorOnline),
+      userOnline: Boolean(appointment.userOnline),
+      appointmentDate: appointment.date,
+      appointmentTime: appointment.time,
+      status: appointment.status,
+      lastMessage: lastMessage ? {
+        message: lastMessage.message,
+        messageType: lastMessage.messageType,
+        fileName: lastMessage.fileName,
+        senderType: lastMessage.senderType,
+        senderName: lastMessage.senderName,
+        createdAt: lastMessage.createdAt || lastMessage.timestamp,
+        isRead: lastMessage.isRead
+      } : null,
+      messageCount: totalMessageCount,
+      unreadCount
+    });
   }
 
-  // Sort by last message timestamp
-  conversations.sort((a, b) => new Date(b.lastMessage.timestamp) - new Date(a.lastMessage.timestamp));
+  // Sort conversations: those with messages first (by latest message date), then by appointment date
+  conversations.sort((a, b) => {
+    const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+    const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+    if (timeA && timeB) return timeB - timeA;
+    if (timeA) return -1;
+    if (timeB) return 1;
+    return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();
+  });
 
-  return res.status(200).json(new ApiResponse(200, conversations, "Chat conversations fetched"));
+  return res.status(200).json(new ApiResponse(200, conversations, "Chat conversations fetched successfully"));
+});
+
+// Mark messages as read
+export const markMessagesAsRead = asyncHandler(async (req, res) => {
+  const { appointmentId } = req.params;
+  const { readerType = 'user' } = req.body;
+
+  if (!appointmentId) {
+    throw new ApiError(400, "Appointment ID is required");
+  }
+
+  const senderTypeToMark = readerType === 'user' ? 'doctor' : 'user';
+
+  await ChatMessage.updateMany(
+    { appointmentId, senderType: senderTypeToMark, isRead: false },
+    { $set: { isRead: true, readAt: new Date() } }
+  );
+
+  return res.status(200).json(new ApiResponse(200, {}, "Messages marked as read"));
 });
 
 // In-memory storage for patient notifications to doctors
