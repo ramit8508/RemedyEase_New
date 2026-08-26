@@ -1,105 +1,947 @@
-.doctor-heading {
-  text-align: center;
-  margin-top: 40px;
-  margin-bottom: 20px;
-}
-.doctor-title {
-  font-size: 40px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-.doctor-description {
-  font-size: 20px;
-  color: #666;
-}
-.doctor-search-section {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 24px;
+/* ============================================================
+   MeetDoctor.css — Patient "Find a Doctor" Marketplace
+   RemedyEase Design System: Manrope headings, Inter body
+   Prefix: md-
+   ============================================================ */
+
+/* ── Container ── */
+.md-container {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111827;
+  background: #fafcfb;
+  min-height: calc(100vh - 64px);
+  -webkit-font-smoothing: antialiased;
 }
 
-.doctor-search-input {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-  width: 220px;
+/* ============================================================
+   HERO HEADER
+   ============================================================ */
+.md-hero {
+  background: linear-gradient(135deg, #f0fdf4 0%, #fafffe 40%, #f8fffe 100%);
+  border-bottom: 1px solid #e8ece9;
+  padding: 48px 24px 36px;
+  text-align: center;
+}
+
+.md-hero-inner {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.md-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.85);
+  border: 1px solid #dcfce7;
+  border-radius: 100px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.md-hero-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  color: #0f172a;
+  margin: 0 0 12px;
+}
+
+.md-hero-desc {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #6b7280;
+  margin: 0 auto 28px;
+  max-width: 600px;
+}
+
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
+.md-search-wrapper {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.md-search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.md-search-input {
+  width: 100%;
+  padding: 15px 44px 15px 50px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #111827;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
 
-.doctor-search-input:focus {
-  border-color: #388e3c;
-  box-shadow: 0 0 4px rgba(56, 142, 60, 0.2);
+.md-search-input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3.5px rgba(22, 163, 74, 0.1), 0 4px 16px rgba(0, 0, 0, 0.04);
 }
-.doctor-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: center;
-}
-.doctor-card {
-  flex: 1 1 300px;
-  max-width: 300px;
-  min-width: 250px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 24px;
-  text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 
+.md-search-input::placeholder {
+  color: #9ca3af;
 }
-.doctor-card-row {
+
+.md-search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
   display: flex;
   align-items: center;
-  gap: 18px;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
-.doctor-avatar {
-  width: 100px;
-  height: 100px;
+.md-search-clear:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+/* ============================================================
+   MAIN CONTENT & FILTERS
+   ============================================================ */
+.md-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+/* ── Filter Controls Bar ── */
+.md-filters-bar {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Specialization Pills Carousel */
+.md-spec-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.md-spec-pills::-webkit-scrollbar {
+  height: 4px;
+}
+
+.md-spec-pills::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.md-spec-pill {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 100px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.md-spec-pill:hover {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.md-spec-pill--active {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+  font-weight: 600;
+}
+
+/* Dropdown Filters Row */
+.md-dropdowns-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.md-dropdowns-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.md-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.md-select {
+  padding: 8px 30px 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+
+.md-select:focus,
+.md-select:hover {
+  border-color: #16a34a;
+}
+
+.md-select-icon {
+  position: absolute;
+  right: 10px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.md-clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #dc2626;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.md-clear-filters-btn:hover {
+  background: #fef2f2;
+}
+
+/* Results Count Bar */
+.md-results-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.md-results-count {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.md-active-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.md-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   DOCTOR CARDS GRID (Uniform Height)
+   ============================================================ */
+.md-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+@media (max-width: 1200px) {
+  .md-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .md-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 580px) {
+  .md-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Doctor Card ── */
+.md-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  position: relative;
+}
+
+.md-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+}
+
+/* Header with Avatar & Status */
+.md-card-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.md-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.md-avatar {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2.5px solid #16a34a;
+  background: #f0fdf4;
+  display: block;
 }
 
-.doctor-info {
-  text-align: left;
+.md-avatar-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+.md-card-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 100px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.md-doctor-name {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 3px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-specialization-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Rating / Reviews */
+.md-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.md-stars {
+  display: inline-flex;
+  align-items: center;
+  color: #f59e0b;
+  gap: 1px;
+}
+
+.md-rating-score {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.md-review-count {
+  color: #9ca3af;
+}
+
+/* Details list */
+.md-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 16px;
   flex: 1;
 }
 
-.doctor-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
+.md-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-detail-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.md-avail-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
   font-weight: 600;
-}
-
-.doctor-info p {
-  margin: 4px 0;
-  font-size: 16px;
-  color: #333;
-}
-
-.doctor-details-below {
-  margin-top: 12px;
-}
-.book-btn {
-  background-color: #388e3c;
-  color: #fff;
-  border: none;
-  padding: 10px 22px;
+  color: #15803d;
+  background: #f0fdf4;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 12px;
-  transition: background 0.2s, transform 0.2s;
-  box-shadow: 0 2px 8px rgba(56, 142, 60, 0.08);
+  width: fit-content;
 }
 
-.book-btn:hover {
-  background-color: #2e7031;
-  transform: translateY(-2px) scale(1.04);
+.md-avail-dot {
+  width: 6px;
+  height: 6px;
+  background: #16a34a;
+  border-radius: 50%;
+}
+
+/* Action Buttons */
+.md-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.md-btn-view {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.md-btn-view:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.md-btn-book {
+  flex: 1.2;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background: #16a34a;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.md-btn-book:hover {
+  background: #15803d;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+/* ============================================================
+   SKELETON LOADERS
+   ============================================================ */
+.md-skeleton-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.md-shimmer {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: md-shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.md-skeleton-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+}
+
+.md-skeleton-line {
+  height: 14px;
+}
+
+.md-skeleton-line--title {
+  height: 18px;
+  width: 70%;
+}
+
+.md-skeleton-line--sub {
+  height: 12px;
+  width: 45%;
+}
+
+.md-skeleton-line--full {
+  width: 100%;
+}
+
+.md-skeleton-line--btn {
+  height: 38px;
+  border-radius: 10px;
+}
+
+@keyframes md-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.md-empty-state {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 56px 24px;
+  text-align: center;
+  max-width: 540px;
+  margin: 40px auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.md-empty-icon {
+  width: 64px;
+  height: 64px;
+  background: #f0fdf4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  margin: 0 auto 18px;
+  font-size: 28px;
+}
+
+.md-empty-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.md-empty-desc {
+  font-size: 14.5px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 22px;
+}
+
+.md-empty-btn {
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background: #16a34a;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.md-empty-btn:hover {
+  background: #15803d;
+}
+
+/* ============================================================
+   MODALS (Doctor Profile & Booking)
+   ============================================================ */
+.md-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: md-fadeIn 0.2s ease-out;
+}
+
+@keyframes md-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.md-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: md-slideUp 0.25s ease-out;
+}
+
+@keyframes md-slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.md-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s, color 0.15s;
+}
+
+.md-modal-close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Modal Content */
+.md-modal-header {
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.md-modal-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #16a34a;
+  background: #f0fdf4;
+  flex-shrink: 0;
+}
+
+.md-modal-body {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.md-modal-section-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px;
+}
+
+.md-modal-bio {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.md-modal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  background: #fafcfb;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.md-modal-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-modal-info-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+}
+
+.md-modal-info-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.md-modal-footer {
+  padding: 18px 28px;
+  background: #fafcfb;
+  border-top: 1px solid #f3f4f6;
+  border-radius: 0 0 20px 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   BOOKING MODAL SPECIFICS
+   ============================================================ */
+.md-booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.md-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.md-form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.md-form-input,
+.md-form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111827;
+  background: #fafcfb;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.md-form-input:focus,
+.md-form-textarea:focus {
+  border-color: #16a34a;
+  background: #ffffff;
+}
+
+.md-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.md-slot-chip {
+  padding: 8px 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.md-slot-chip:hover {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.md-slot-chip--active {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+}
+
+.md-booking-success {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.md-success-icon {
+  width: 60px;
+  height: 60px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .md-hero {
+    padding: 36px 16px 28px;
+  }
+
+  .md-hero-title {
+    font-size: 26px;
+  }
+
+  .md-main {
+    padding: 20px 16px 60px;
+  }
+
+  .md-dropdowns-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .md-dropdowns-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .md-select-wrap {
+    width: 100%;
+  }
+
+  .md-select {
+    width: 100%;
+  }
+
+  .md-modal-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .md-modal-info-grid {
+    grid-template-columns: 1fr;
+  }
 }
