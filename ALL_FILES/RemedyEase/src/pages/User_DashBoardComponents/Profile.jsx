@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FiEdit2, FiCamera, FiPhone, FiUser, FiCalendar, FiMapPin,
   FiDroplet, FiAlertCircle, FiHeart, FiShield, FiCheck,
   FiX, FiSave, FiUsers, FiCpu, FiMessageCircle, FiActivity,
+  FiLogOut,
 } from "react-icons/fi";
 import "../../Css_for_all/UserProfile.css";
 
@@ -43,6 +44,8 @@ function Toast({ type, message, onClose }) {
 
 /* ─── Main Component ─── */
 export default function Profile() {
+  const navigate = useNavigate();
+
   // Get cached user from localStorage immediately
   const cachedUser = useMemo(() => {
     try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
@@ -61,6 +64,15 @@ export default function Profile() {
   const savingRef = useRef(false);
 
   const email = cachedUser?.email || localStorage.getItem("userEmail");
+
+  const handleLogout = useCallback(() => {
+    if (window.confirm("Are you sure you want to log out of RemedyEase?")) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("userEmail");
+      sessionStorage.clear();
+      navigate("/login");
+    }
+  }, [navigate]);
 
   // Fetch profile once on mount (to get latest data)
   useEffect(() => {
@@ -294,11 +306,21 @@ export default function Profile() {
           </div>
 
           <div className="up-header-action">
-            {!editMode && (
-              <button className="up-edit-btn" onClick={enterEdit} type="button">
-                <FiEdit2 size={16} /> Edit Profile
+            <div className="up-header-action-group">
+              {!editMode && (
+                <button className="up-edit-btn" onClick={enterEdit} type="button">
+                  <FiEdit2 size={15} /> Edit Profile
+                </button>
+              )}
+              <button
+                className="up-logout-btn"
+                onClick={handleLogout}
+                type="button"
+                title="Sign out of your account"
+              >
+                <FiLogOut size={15} /> Log Out
               </button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -516,6 +538,17 @@ export default function Profile() {
             <strong>🔒 Your health information is private</strong>
             <p>Your personal and health information is securely stored and only used to provide better healthcare experiences.</p>
           </div>
+        </div>
+
+        {/* ── ACCOUNT & SESSION ── */}
+        <div className="up-account-session">
+          <div className="up-session-text">
+            <h4>Account & Session</h4>
+            <p>Signed in as <strong>{user.email}</strong>. Ready to end your session on this device?</p>
+          </div>
+          <button className="up-logout-btn up-logout-btn--large" onClick={handleLogout} type="button">
+            <FiLogOut size={16} /> Sign Out of RemedyEase
+          </button>
         </div>
       </div>
 

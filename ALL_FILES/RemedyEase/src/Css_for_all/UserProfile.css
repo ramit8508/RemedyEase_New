@@ -125,6 +125,67 @@
   flex-shrink: 0;
 }
 
+.up-header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.up-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #dc2626;
+  background: #ffffff;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.up-logout-btn:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.up-logout-btn--large {
+  padding: 11px 22px;
+  font-size: 14px;
+}
+
+.up-account-session {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  flex-wrap: wrap;
+}
+
+.up-session-text h4 {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 3px;
+}
+
+.up-session-text p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
 .up-edit-btn {
   display: inline-flex;
   align-items: center;
