@@ -1,0 +1,83 @@
+{
+  "hero": {
+    "eyebrow": "AI HEALTH ASSISTANT",
+    "title": "Apne symptoms samjho. Aage kya karna hai jaano.",
+    "description": "Apne words mein batao kaise feel kar rahe ho. RemedyEase aapke symptoms check karega aur batayega ki doctor ke paas jaana chahiye ya nahi.",
+    "trustSecure": "Private & Secure",
+    "trustMultilingual": "Multilingual",
+    "trustFast": "Fast Analysis"
+  },
+  "language": { "label": "Language", "name": "Hinglish" },
+  "input": {
+    "heading": "Aaj kya problem hai?",
+    "placeholder": "Batao kya ho raha hai...",
+    "example": "Example: \"Mujhe kal se fever hai aur throat mein pain ho raha hai.\"",
+    "charCount": "characters",
+    "clear": "Clear",
+    "analyzeBtn": "Symptoms Check Karo",
+    "analyzing": "Check ho raha hai...",
+    "validationMin": "Thoda aur detail mein batao taaki hum help kar sakein.",
+    "validationEmpty": "Please batao kya problem hai."
+  },
+  "voice": {
+    "speakBtn": "Bol ke batao",
+    "stopBtn": "Recording band karo",
+    "listening": "Sun rahe hain... Clearly bolo",
+    "processing": "Samajh rahe hain...",
+    "captured": "Voice capture ho gayi",
+    "unsupported": "Is browser mein voice input available nahi hai. Aap type karke bata sakte ho.",
+    "permissionDenied": "Microphone access deny ho gayi. Please browser settings mein allow karo.",
+    "noSpeech": "Koi voice detect nahi hui. Please dobara try karo.",
+    "networkError": "Network issue hai. Please dobara try karo.",
+    "troubleTitle": "Voice input mein problem?",
+    "tip1": "Browser mein microphone allow karo",
+    "tip2": "Chrome ya Edge use karo",
+    "tip3": "Microphone connection check karo",
+    "tip4": "Clearly aur normal speed mein bolo"
+  },
+  "loading": {
+    "title": "Aapke symptoms check ho rahe hain",
+    "step1": "Description samajh rahe hain...",
+    "step2": "Symptoms match kar rahe hain...",
+    "step3": "Guidance tayyar ho raha hai..."
+  },
+  "ready": { "title": "Help ke liye ready", "description": "Upar apne symptoms batao aur hum aapko guide karenge." },
+  "result": {
+    "summaryTitle": "Analysis Summary",
+    "possibleCauses": "Possible Reasons",
+    "selfCare": "Abhi kya kar sakte ho",
+    "doctorRecommendation": "Recommended Doctor",
+    "warningTitle": "Doctor se kab milein",
+    "urgentTitle": "Urgent — Turant medical help lein",
+    "urgentMessage": "Aapke symptoms ke basis pe, turant doctor se milna chahiye.",
+    "homeRemedies": "Ghar pe treatment ho sakta hai",
+    "homeRemediesDesc": "Symptoms halke hain aur gharelu upchar se theek ho sakte hain.",
+    "disclaimer": "Yeh general guidance hai aur professional doctor ki advice ki jagah nahi hai.",
+    "saveBtn": "Analysis Save Karo",
+    "newBtn": "Naya Analysis",
+    "bookBtn": "Appointment Book Karo",
+    "viewDoctorsBtn": "Doctors Dekho",
+    "viewRemediesBtn": "Home Remedies Dekho",
+    "severeMild": "Halka — Ghar pe care",
+    "severeModerate": "Medium — Doctor se baat karo",
+    "severeSevere": "Serious — Turant doctor ke paas jao"
+  },
+  "question": {
+    "questionOf": "Question", "of": "of", "optional": "Optional", "complete": "complete",
+    "typeAnswer": "Yahan answer type karo...", "typeOptional": "Optional — kuch aur batana ho toh...",
+    "submit": "Submit", "skip": "Skip", "previousAnswers": "Previous answers:"
+  },
+  "survey": { "title": "Survey bharo taaki hum help kar sakein" },
+  "cards": {
+    "card1Title": "Personal Guidance", "card1Desc": "Apne symptoms samjho aur sahi step jaano.",
+    "card2Title": "Fast Analysis", "card2Desc": "Seconds mein AI health guidance.",
+    "card3Title": "Private & Secure", "card3Desc": "Aapki health info safe hai."
+  },
+  "privacy": { "notice": "Aapki health info securely handle hoti hai." },
+  "errors": {
+    "connectionError": "Connection mein problem hai. Thodi der baad try karo.",
+    "serverError": "Kuch gadbad ho gayi. Please dobara try karo.",
+    "timeoutError": "Zyada time lag raha hai. Please dobara try karo.",
+    "rateLimitError": "Bahut zyada requests. Thoda wait karo."
+  }
+}

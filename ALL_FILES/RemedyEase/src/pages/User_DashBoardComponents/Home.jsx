@@ -1,9 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "../../Css_for_all/UserDashHome.css";
-import doctor1 from "../../images/doctor1.jpg";
-import doctor2 from "../../images/doctor2.jpg";
-import doctor3 from "../../images/doctor3.jpg";
+import doctor1 from "../../images/doctor1.png";
+import doctor2 from "../../images/doctor2.png";
+import doctor3 from "../../images/doctor3.png";
 import heroVisual from "../../images/healthcare_dashboard_hero.jpg";
 import {
   FiCpu,

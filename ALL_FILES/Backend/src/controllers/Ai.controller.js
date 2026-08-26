@@ -1,20 +1,81 @@
 import axios from "axios";
 
-export const getAIRecommendation = async (req, res) => {
-  const { symptoms } = req.body;
+/* ─── Helpers ─── */
 
-  if (!symptoms || symptoms.trim().length === 0) {
+// Strip HTML tags and limit length
+function sanitize(text, maxLen = 2000) {
+  if (!text || typeof text !== "string") return "";
+  return text.replace(/<[^>]*>/g, "").trim().slice(0, maxLen);
+}
+
+// Language mapping (expanded with Indian languages)
+const LANGUAGE_NAMES = {
+  "en-US": "English",
+  "en-GB": "English",
+  "hi-IN": "Hindi",
+  "pa-IN": "Punjabi",
+  "bn-IN": "Bengali",
+  "mr-IN": "Marathi",
+  "ta-IN": "Tamil",
+  "te-IN": "Telugu",
+  "gu-IN": "Gujarati",
+  "kn-IN": "Kannada",
+  "ml-IN": "Malayalam",
+  "ur-IN": "Urdu",
+  "es-ES": "Spanish",
+  "fr-FR": "French",
+  "de-DE": "German",
+  "pt-BR": "Portuguese",
+  "zh-CN": "Chinese",
+  "ja-JP": "Japanese",
+  "ar-SA": "Arabic",
+};
+
+// Axios defaults — 30s timeout
+const API_TIMEOUT = 30000;
+
+function getGroqHeaders() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+}
+
+// Simple in-memory duplicate request guard (per IP/symptoms hash)
+const recentRequests = new Map();
+const DEDUP_WINDOW_MS = 2000;
+
+function isDuplicate(key) {
+  const now = Date.now();
+  const last = recentRequests.get(key);
+  if (last && now - last < DEDUP_WINDOW_MS) return true;
+  recentRequests.set(key, now);
+  // Cleanup old entries periodically
+  if (recentRequests.size > 500) {
+    for (const [k, v] of recentRequests) {
+      if (now - v > 10000) recentRequests.delete(k);
+    }
+  }
+  return false;
+}
+
+/* ─── getAIRecommendation (unchanged contract) ─── */
+export const getAIRecommendation = async (req, res) => {
+  const rawSymptoms = req.body?.symptoms;
+  const symptoms = sanitize(rawSymptoms);
+
+  if (!symptoms || symptoms.length === 0) {
     return res.status(400).json({ error: "Symptoms are required." });
   }
 
-  const apiKey = process.env.GROQ_API_KEY; 
-  if (!apiKey) {
-    console.error("ERROR: GROQ_API_KEY is not set in the .env file.");
-    return res.status(500).json({ error: "Server configuration error." });
+  const headers = getGroqHeaders();
+  if (!headers) {
+    return res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 
   try {
-    
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -26,38 +87,35 @@ export const getAIRecommendation = async (req, res) => {
         ],
         model: "llama-3.1-8b-instant",
       },
-      {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers, timeout: API_TIMEOUT }
     );
 
-    // 4. Extract the remedy from the correct location in the response
     const remedy = response.data.choices[0]?.message?.content || "No remedy suggestion found.";
-
-    // 5. Send the successful response back
     res.status(200).json({ recommendation: remedy.trim() });
-
   } catch (error) {
-    // This will now give you a more detailed error message from the API
-    console.error("Groq API Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get AI recommendation." });
+    if (error.code === "ECONNABORTED") {
+      return res.status(408).json({ error: "Request timed out. Please try again." });
+    }
+    if (error.response?.status === 429) {
+      return res.status(429).json({ error: "Too many requests. Please wait a moment." });
+    }
+    console.error("Groq API Error:", error.response?.status || error.message);
+    res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 };
 
+/* ─── analyzeSymptoms (unchanged contract) ─── */
 export const analyzeSymptoms = async (req, res) => {
-  const { symptoms } = req.body;
+  const rawSymptoms = req.body?.symptoms;
+  const symptoms = sanitize(rawSymptoms);
 
-  if (!symptoms || symptoms.trim().length === 0) {
+  if (!symptoms || symptoms.length === 0) {
     return res.status(400).json({ error: "Symptoms are required." });
   }
 
-  const apiKey = process.env.GROQ_API_KEY; 
-  if (!apiKey) {
-    console.error("ERROR: GROQ_API_KEY is not set in the .env file.");
-    return res.status(500).json({ error: "Server configuration error." });
+  const headers = getGroqHeaders();
+  if (!headers) {
+    return res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 
   const prompt = `You are a medical AI assistant. Analyze the following symptoms and provide a structured response in JSON format.
@@ -90,97 +148,83 @@ Respond ONLY with valid JSON, no additional text.`;
         messages: [
           {
             role: "system",
-            content: "You are a medical AI assistant. Always respond with valid JSON format."
+            content: "You are a medical AI assistant. Always respond with valid JSON format.",
           },
-          {
-            role: "user",
-            content: prompt,
-          },
+          { role: "user", content: prompt },
         ],
         model: "llama-3.1-8b-instant",
         temperature: 0.3,
       },
-      {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers, timeout: API_TIMEOUT }
     );
 
     const aiResponse = response.data.choices[0]?.message?.content || "{}";
-    
+
     try {
-      // Try to parse the JSON response
       const analysis = JSON.parse(aiResponse);
-      
-      // Validate the response structure
       if (!analysis.severity || !analysis.summary) {
         throw new Error("Invalid response structure");
       }
-
-      // Send the structured response
       res.status(200).json(analysis);
     } catch (parseError) {
-      console.error("JSON Parse Error:", parseError);
-      // Fallback response if JSON parsing fails
       res.status(200).json({
         severity: "moderate",
-        summary: "Unable to fully analyze symptoms. Please consult with a healthcare professional for proper evaluation.",
+        summary:
+          "Unable to fully analyze symptoms. Please consult with a healthcare professional for proper evaluation.",
         doctorType: "General Physician",
-        reason: "A general physician can evaluate your symptoms and provide appropriate guidance or referral to a specialist if needed."
+        reason:
+          "A general physician can evaluate your symptoms and provide appropriate guidance or referral to a specialist if needed.",
       });
     }
-
   } catch (error) {
-    console.error("Groq API Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to analyze symptoms. Please try again." });
+    if (error.code === "ECONNABORTED") {
+      return res.status(408).json({ error: "Analysis timed out. Please try again." });
+    }
+    if (error.response?.status === 429) {
+      return res.status(429).json({ error: "Too many requests. Please wait a moment." });
+    }
+    console.error("Groq API Error:", error.response?.status || error.message);
+    res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 };
 
-// New interactive flow: ask follow-up questions (up to 3) before producing final analysis
+/* ─── interactiveSymptomFlow (unchanged contract, hardened) ─── */
 export const interactiveSymptomFlow = async (req, res) => {
-  const { symptoms, conversation = [], language = 'en-US' } = req.body;
+  const rawSymptoms = req.body?.symptoms;
+  const symptoms = sanitize(rawSymptoms);
+  const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
+  const language = req.body?.language || "en-US";
 
-  if (!symptoms || symptoms.trim().length === 0) {
+  if (!symptoms || symptoms.length === 0) {
     return res.status(400).json({ error: "Symptoms are required." });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    console.error("ERROR: GROQ_API_KEY is not set in the .env file.");
-    return res.status(500).json({ error: "Server configuration error." });
+  // Duplicate request guard
+  const dedupKey = `${symptoms.slice(0, 100)}-${conversation.length}`;
+  if (isDuplicate(dedupKey)) {
+    return res.status(429).json({ error: "Duplicate request. Please wait a moment." });
   }
 
-  // Language mapping for instructions
-  const languageNames = {
-    'en-US': 'English',
-    'en-GB': 'English',
-    'hi-IN': 'Hindi',
-    'es-ES': 'Spanish',
-    'fr-FR': 'French',
-    'de-DE': 'German',
-    'pt-BR': 'Portuguese',
-    'zh-CN': 'Chinese',
-    'ja-JP': 'Japanese',
-    'ar-SA': 'Arabic'
-  };
+  const headers = getGroqHeaders();
+  if (!headers) {
+    return res.status(503).json({ error: "AI service is temporarily unavailable." });
+  }
 
-  const targetLanguage = languageNames[language] || 'English';
-  const languageInstruction = targetLanguage !== 'English' 
-    ? `\n\nIMPORTANT: Respond in ${targetLanguage} language. All questions must be in ${targetLanguage}.`
-    : '';
+  const targetLanguage = LANGUAGE_NAMES[language] || "English";
+  const languageInstruction =
+    targetLanguage !== "English"
+      ? `\n\nIMPORTANT: Respond in ${targetLanguage} language. All questions must be in ${targetLanguage}.`
+      : "";
 
   try {
     // If we have fewer than 7 follow-up answers, ask the next clarifying question
-    if (!Array.isArray(conversation) || conversation.length < 7) {
-      const prevQA = (conversation || [])
-        .map((qa, idx) => `Q${idx + 1}: ${qa.question} / A${idx + 1}: ${qa.answer}`)
+    if (conversation.length < 7) {
+      const prevQA = conversation
+        .map((qa, idx) => `Q${idx + 1}: ${sanitize(qa.question, 500)} / A${idx + 1}: ${sanitize(qa.answer, 500)}`)
         .join("\n");
 
       const questionNumber = conversation.length + 1;
-      
-      // Define structured question topics to ensure comprehensive assessment
+
       const questionGuidelines = [
         "duration - How long have these symptoms been present?",
         "severity - On a scale of 1-10, how severe is your discomfort?",
@@ -188,10 +232,11 @@ export const interactiveSymptomFlow = async (req, res) => {
         "pain location - Where exactly do you feel the pain or discomfort?",
         "additional symptoms - Are you experiencing any other symptoms like nausea, dizziness, or fatigue?",
         "recent activities - Have you had any recent injuries, travel, or exposure to sick people?",
-        "medical history - Do you have any pre-existing medical conditions or allergies?"
+        "medical history - Do you have any pre-existing medical conditions or allergies?",
       ];
 
-      const currentGuideline = questionGuidelines[conversation.length] || "overall feeling - How are you feeling overall right now?";
+      const currentGuideline =
+        questionGuidelines[conversation.length] || "overall feeling - How are you feeling overall right now?";
 
       const askPrompt = `You are a compassionate medical assistant collecting diagnostic information from a patient.
 
@@ -210,59 +255,82 @@ Return ONLY the question text, no additional commentary.`;
         "https://api.groq.com/openai/v1/chat/completions",
         {
           messages: [
-            { role: "system", content: `You are a compassionate medical assistant. Ask clear, empathetic questions to understand the patient's condition.${languageInstruction}` },
-            { role: "user", content: askPrompt }
+            {
+              role: "system",
+              content: `You are a compassionate medical assistant. Ask clear, empathetic questions to understand the patient's condition.${languageInstruction}`,
+            },
+            { role: "user", content: askPrompt },
           ],
           model: "llama-3.1-8b-instant",
           temperature: 0.3,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers, timeout: API_TIMEOUT }
       );
 
-      const nextQuestion = response.data.choices[0]?.message?.content?.trim() || "Can you tell me more about how you're feeling?";
+      const nextQuestion =
+        response.data.choices[0]?.message?.content?.trim() || "Can you tell me more about how you're feeling?";
 
-      return res.status(200).json({ 
-        nextQuestion, 
+      return res.status(200).json({
+        nextQuestion,
         finished: false,
         questionNumber,
         totalQuestions: 8,
-        isOptional: false
+        isOptional: false,
       });
     }
 
     // After 7 questions, ask an optional summary question
     if (conversation.length === 7) {
       const optionalQuestions = {
-        'English': "Thank you for providing all that information! 😊 Is there anything else you'd like to add or any other detail that might help us understand your situation better? (Feel free to skip this if you've covered everything)",
-        'Hindi': "यह सभी जानकारी देने के लिए धन्यवाद! 😊 क्या आप कुछ और जोड़ना चाहते हैं या कोई अन्य विवरण जो हमें आपकी स्थिति को बेहतर ढंग से समझने में मदद कर सकता है? (यदि आपने सब कुछ कवर कर लिया है तो इसे छोड़ने के लिए स्वतंत्र महसूस करें)",
-        'Spanish': "¡Gracias por proporcionar toda esa información! 😊 ¿Hay algo más que le gustaría agregar o algún otro detalle que pueda ayudarnos a entender mejor su situación? (Siéntase libre de omitir esto si ya ha cubierto todo)",
-        'French': "Merci d'avoir fourni toutes ces informations ! 😊 Y a-t-il autre chose que vous aimeriez ajouter ou tout autre détail qui pourrait nous aider à mieux comprendre votre situation ? (N'hésitez pas à sauter ceci si vous avez tout couvert)",
-        'German': "Vielen Dank für all diese Informationen! 😊 Gibt es noch etwas, das Sie hinzufügen möchten, oder irgendein anderes Detail, das uns helfen könnte, Ihre Situation besser zu verstehen? (Sie können dies gerne überspringen, wenn Sie alles abgedeckt haben)",
-        'Portuguese': "Obrigado por fornecer todas essas informações! 😊 Há mais alguma coisa que você gostaria de adicionar ou qualquer outro detalhe que possa nos ajudar a entender melhor sua situação? (Sinta-se à vontade para pular isso se você já cobriu tudo)",
-        'Chinese': "感谢您提供所有这些信息！😊 您还有什么要补充的吗，或者有任何其他细节可以帮助我们更好地了解您的情况？（如果您已经涵盖了所有内容，请随时跳过）",
-        'Japanese': "すべての情報を提供していただきありがとうございます！😊 他に追加したいことや、状況をより良く理解するのに役立つ詳細はありますか？（すべてカバーしている場合は、これをスキップしてください）",
-        'Arabic': "شكراً لك على تقديم كل هذه المعلومات! 😊 هل هناك أي شيء آخر تريد إضافته أو أي تفاصيل أخرى قد تساعدنا على فهم حالتك بشكل أفضل؟ (لا تتردد في تخطي هذا إذا كنت قد غطيت كل شيء)"
+        English:
+          "Thank you for providing all that information! Is there anything else you'd like to add that might help us understand your situation better?",
+        Hindi:
+          "यह सभी जानकारी देने के लिए धन्यवाद! क्या आप कुछ और जोड़ना चाहते हैं?",
+        Punjabi:
+          "ਇਹ ਸਾਰੀ ਜਾਣਕਾਰੀ ਦੇਣ ਲਈ ਧੰਨਵਾਦ! ਕੀ ਤੁਸੀਂ ਕੁਝ ਹੋਰ ਦੱਸਣਾ ਚਾਹੁੰਦੇ ਹੋ?",
+        Bengali:
+          "এই সমস্ত তথ্য দেওয়ার জন্য ধন্যবাদ! আর কিছু যোগ করতে চান?",
+        Marathi:
+          "ही सर्व माहिती दिल्याबद्दल धन्यवाद! आणखी काही सांगायचे आहे का?",
+        Tamil:
+          "இந்த தகவல்களை வழங்கியதற்கு நன்றி! வேறு ஏதாவது சேர்க்க விரும்புகிறீர்களா?",
+        Telugu:
+          "ఈ సమాచారం అందించినందుకు ధన్యవాదాలు! మరేదైనా జోడించాలనుకుంటున్నారా?",
+        Gujarati:
+          "આ બધી માહિતી આપવા બદલ આભાર! બીજું કંઈ ઉમેરવા માંગો છો?",
+        Kannada:
+          "ಈ ಎಲ್ಲಾ ಮಾಹಿತಿ ನೀಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ಇನ್ನೇನಾದರೂ ಸೇರಿಸಬೇಕೇ?",
+        Malayalam:
+          "ഈ വിവരങ്ങൾ നൽകിയതിന് നന്ദി! മറ്റെന്തെങ്കിലും കൂട്ടിച്ചേർക്കാൻ ആഗ്രഹിക്കുന്നുണ്ടോ?",
+        Urdu:
+          "یہ تمام معلومات فراہم کرنے کا شکریہ! کیا آپ کچھ اور بتانا چاہتے ہیں؟",
+        Spanish:
+          "¡Gracias por toda esa información! ¿Hay algo más que le gustaría agregar?",
+        French:
+          "Merci pour toutes ces informations ! Y a-t-il autre chose que vous aimeriez ajouter ?",
+        German:
+          "Vielen Dank für all diese Informationen! Gibt es noch etwas, das Sie hinzufügen möchten?",
+        Portuguese:
+          "Obrigado por todas essas informações! Há mais alguma coisa que você gostaria de adicionar?",
+        Chinese: "感谢您提供所有这些信息！您还有什么要补充的吗？",
+        Japanese: "すべての情報を提供していただきありがとうございます！他に追加したいことはありますか？",
+        Arabic: "شكراً لتقديم كل هذه المعلومات! هل هناك أي شيء آخر تريد إضافته؟",
       };
-      
-      const optionalQuestion = optionalQuestions[targetLanguage] || optionalQuestions['English'];
-      
-      return res.status(200).json({ 
-        nextQuestion: optionalQuestion, 
+
+      const optionalQuestion = optionalQuestions[targetLanguage] || optionalQuestions["English"];
+
+      return res.status(200).json({
+        nextQuestion: optionalQuestion,
         finished: false,
         questionNumber: 8,
         totalQuestions: 8,
-        isOptional: true
+        isOptional: true,
       });
     }
 
-    // Otherwise, produce final structured analysis by reusing the analyzeSymptoms prompt but include follow-ups
-    const combined = `${symptoms}\n\nFollow-up answers:\n${(conversation || [])
-      .map((qa, i) => `${i + 1}. ${qa.question} -> ${qa.answer}`)
+    // Final analysis — produce structured result
+    const combined = `${symptoms}\n\nFollow-up answers:\n${conversation
+      .map((qa, i) => `${i + 1}. ${sanitize(qa.question, 500)} -> ${sanitize(qa.answer, 500)}`)
       .join("\n")}`;
 
     const prompt = `You are a medical AI assistant. Analyze the following symptoms and follow-up answers and provide a structured response in JSON format.
@@ -285,18 +353,16 @@ Respond ONLY with valid JSON, no additional text.`;
       "https://api.groq.com/openai/v1/chat/completions",
       {
         messages: [
-          { role: "system", content: `You are a medical AI assistant. Always respond with valid JSON format.${languageInstruction}` },
+          {
+            role: "system",
+            content: `You are a medical AI assistant. Always respond with valid JSON format.${languageInstruction}`,
+          },
           { role: "user", content: prompt },
         ],
         model: "llama-3.1-8b-instant",
         temperature: 0.3,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers, timeout: API_TIMEOUT }
     );
 
     const aiResponse = finalResp.data.choices[0]?.message?.content || "{}";
@@ -308,17 +374,26 @@ Respond ONLY with valid JSON, no additional text.`;
       }
       return res.status(200).json({ analysis, finished: true });
     } catch (parseError) {
-      console.error("JSON Parse Error (interactive):", parseError);
-      return res.status(200).json({ analysis: {
-        severity: "moderate",
-        summary: "Unable to fully analyze symptoms after follow-ups. Please consult a healthcare professional.",
-        doctorType: "General Physician",
-        reason: "A general physician can evaluate your symptoms and provide appropriate guidance or referral.",
-      }, finished: true });
+      return res.status(200).json({
+        analysis: {
+          severity: "moderate",
+          summary:
+            "Unable to fully analyze symptoms after follow-ups. Please consult a healthcare professional.",
+          doctorType: "General Physician",
+          reason:
+            "A general physician can evaluate your symptoms and provide appropriate guidance or referral.",
+        },
+        finished: true,
+      });
     }
-
   } catch (error) {
-    console.error("Groq API Error (interactive):", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to run interactive symptom flow. Please try again." });
+    if (error.code === "ECONNABORTED") {
+      return res.status(408).json({ error: "Analysis timed out. Please try again." });
+    }
+    if (error.response?.status === 429) {
+      return res.status(429).json({ error: "Too many requests. Please wait a moment." });
+    }
+    console.error("Groq API Error (interactive):", error.response?.status || error.message);
+    res.status(503).json({ error: "AI service is temporarily unavailable. Please try again." });
   }
 };

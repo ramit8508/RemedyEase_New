@@ -1,0 +1,14 @@
+{
+  "hero":{"eyebrow":"AI صحت معاون","title":"اپنی علامات سمجھیں۔ اگلا قدم جانیں۔","description":"اپنے الفاظ میں بتائیں آپ کیسا محسوس کر رہے ہیں۔","trustSecure":"نجی اور محفوظ","trustMultilingual":"کثیر لسانی","trustFast":"تیز تجزیہ"},
+  "language":{"label":"زبان","name":"اردو"},
+  "input":{"heading":"آج کیا تکلیف ہے؟","placeholder":"بتائیں آپ کیا محسوس کر رہے ہیں...","example":"مثال: \"مجھے کل سے بخار ہے اور گلے میں درد ہو رہا ہے۔\"","charCount":"حروف","clear":"صاف کریں","analyzeBtn":"علامات کا تجزیہ کریں","analyzing":"تجزیہ ہو رہا ہے...","validationMin":"براہ کرم کچھ علامات بتائیں۔","validationEmpty":"براہ کرم بتائیں کیا تکلیف ہے۔"},
+  "voice":{"speakBtn":"بول کر بتائیں","stopBtn":"ریکارڈنگ بند کریں","listening":"سن رہے ہیں... واضح بولیں","processing":"سمجھ رہے ہیں...","captured":"آواز درج ہو گئی","unsupported":"اس براؤزر میں وائس ان پٹ دستیاب نہیں ہے۔","permissionDenied":"مائیکروفون کی اجازت نہیں دی گئی۔","noSpeech":"کوئی آواز نہیں آئی۔","networkError":"نیٹ ورک مسئلہ۔","troubleTitle":"وائس ان پٹ میں مسئلہ؟","tip1":"مائیکروفون کی اجازت دیں","tip2":"Chrome یا Edge استعمال کریں","tip3":"مائیکروفون کنکشن چیک کریں","tip4":"واضح بولیں"},
+  "loading":{"title":"آپ کی علامات کا تجزیہ ہو رہا ہے","step1":"تفصیل سمجھ رہے ہیں...","step2":"علامات جانچ رہے ہیں...","step3":"رہنمائی تیار کر رہے ہیں..."},
+  "ready":{"title":"مدد کے لیے تیار","description":"اوپر اپنی علامات بتائیں۔"},
+  "result":{"summaryTitle":"تجزیہ خلاصہ","possibleCauses":"ممکنہ وجوہات","selfCare":"ابھی کیا کر سکتے ہیں","doctorRecommendation":"تجویز کردہ ڈاکٹر","warningTitle":"ڈاکٹر سے کب ملیں","urgentTitle":"فوری — طبی مدد حاصل کریں","urgentMessage":"فوری طور پر ڈاکٹر سے ملیں۔","homeRemedies":"گھریلو علاج مدد کر سکتا ہے","homeRemediesDesc":"علامات ہلکی ہیں۔","disclaimer":"یہ عام رہنمائی ہے، پیشہ ورانہ مشورہ نہیں۔","saveBtn":"تجزیہ محفوظ کریں","newBtn":"نیا تجزیہ","bookBtn":"اپائنٹمنٹ بک کریں","viewDoctorsBtn":"ڈاکٹر دیکھیں","viewRemediesBtn":"گھریلو علاج دیکھیں","severeMild":"ہلکا — گھریلو دیکھ بھال","severeModerate":"درمیانہ — ڈاکٹر سے مشورہ کریں","severeSevere":"شدید — فوری طور پر ڈاکٹر کے پاس جائیں"},
+  "question":{"questionOf":"سوال","of":"کا","optional":"اختیاری","complete":"مکمل","typeAnswer":"یہاں جواب ٹائپ کریں...","typeOptional":"اختیاری — کچھ اور بتانا ہو تو...","submit":"جمع کریں","skip":"چھوڑیں","previousAnswers":"پچھلے جوابات:"},
+  "survey":{"title":"دیکھ بھال کے لیے سروے بھریں"},
+  "cards":{"card1Title":"ذاتی رہنمائی","card1Desc":"علامات سمجھیں اور صحیح قدم اٹھائیں۔","card2Title":"تیز تجزیہ","card2Desc":"سیکنڈوں میں AI رہنمائی۔","card3Title":"نجی اور محفوظ","card3Desc":"آپ کی معلومات محفوظ ہیں۔"},
+  "privacy":{"notice":"آپ کی صحت کی معلومات محفوظ طریقے سے سنبھالی جاتی ہیں۔"},
+  "errors":{"connectionError":"کنکشن مسئلہ۔","serverError":"کچھ غلط ہو گیا۔","timeoutError":"زیادہ وقت لگ رہا ہے۔","rateLimitError":"بہت زیادہ درخواستیں۔ تھوڑا انتظار کریں۔"}
+}

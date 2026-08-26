@@ -1,0 +1,102 @@
+{
+  "hero": {
+    "eyebrow": "AI HEALTH ASSISTANT",
+    "title": "Understand your symptoms. Know your next step.",
+    "description": "Describe how you're feeling in your own words. RemedyEase analyzes your symptoms and provides helpful guidance on whether you may need professional medical care.",
+    "trustSecure": "Private & Secure",
+    "trustMultilingual": "Multilingual",
+    "trustFast": "Fast Analysis"
+  },
+  "language": {
+    "label": "Language",
+    "name": "English"
+  },
+  "input": {
+    "heading": "What's bothering you today?",
+    "placeholder": "Tell us what you're experiencing...",
+    "example": "Example: \"I've had a fever since yesterday with a sore throat and body aches.\"",
+    "charCount": "characters",
+    "clear": "Clear",
+    "analyzeBtn": "Analyze Symptoms",
+    "analyzing": "Analyzing...",
+    "validationMin": "Please describe at least a few symptoms so we can help.",
+    "validationEmpty": "Please tell us what you're experiencing."
+  },
+  "voice": {
+    "speakBtn": "Speak your symptoms",
+    "stopBtn": "Stop recording",
+    "listening": "Listening... Speak clearly",
+    "processing": "Processing your speech...",
+    "captured": "Voice captured",
+    "unsupported": "Voice input isn't supported in this browser. You can type your symptoms instead.",
+    "permissionDenied": "Microphone access was denied. Please allow microphone access in your browser settings and try again.",
+    "noSpeech": "No speech was detected. Please try again and speak clearly.",
+    "networkError": "There was a network issue with voice recognition. Please try again.",
+    "troubleTitle": "Having trouble with voice input?",
+    "tip1": "Allow microphone access in your browser",
+    "tip2": "Use Chrome or Edge for best support",
+    "tip3": "Check your microphone connection",
+    "tip4": "Speak clearly and at a moderate pace"
+  },
+  "loading": {
+    "title": "Analyzing your symptoms",
+    "step1": "Understanding your description...",
+    "step2": "Checking relevant symptoms...",
+    "step3": "Preparing your guidance..."
+  },
+  "ready": {
+    "title": "Ready to help",
+    "description": "Describe your symptoms above and we'll guide you through the next step."
+  },
+  "result": {
+    "summaryTitle": "Analysis Summary",
+    "possibleCauses": "Possible Considerations",
+    "selfCare": "What You Can Do Now",
+    "doctorRecommendation": "Recommended Medical Specialist",
+    "warningTitle": "When to See a Doctor",
+    "urgentTitle": "Urgent — Seek Medical Care",
+    "urgentMessage": "Based on your symptoms, we recommend seeking immediate professional medical attention. Please visit your nearest healthcare facility or contact emergency services if needed.",
+    "homeRemedies": "Home Remedies Can Help",
+    "homeRemediesDesc": "Your symptoms appear to be mild and can be managed with home remedies. Explore our home remedies section for natural treatments.",
+    "disclaimer": "This information is for general guidance and does not replace professional medical advice. If symptoms persist or worsen, please consult a qualified doctor.",
+    "saveBtn": "Save Analysis",
+    "newBtn": "New Analysis",
+    "bookBtn": "Book Appointment",
+    "viewDoctorsBtn": "View Available Doctors",
+    "viewRemediesBtn": "View Home Remedies",
+    "severeMild": "Mild — Home Care Recommended",
+    "severeModerate": "Moderate — Medical Attention Recommended",
+    "severeSevere": "Urgent — See a Doctor Immediately"
+  },
+  "question": {
+    "questionOf": "Question",
+    "of": "of",
+    "optional": "Optional",
+    "complete": "complete",
+    "typeAnswer": "Type your answer here...",
+    "typeOptional": "Optional — anything else you'd like to share...",
+    "submit": "Submit",
+    "skip": "Skip",
+    "previousAnswers": "Previous answers recorded:"
+  },
+  "survey": {
+    "title": "Fill the Survey to Get Cared"
+  },
+  "cards": {
+    "card1Title": "Personalized Guidance",
+    "card1Desc": "Understand your symptoms and get relevant next-step guidance.",
+    "card2Title": "Fast Analysis",
+    "card2Desc": "Receive AI-powered health guidance in seconds.",
+    "card3Title": "Private & Secure",
+    "card3Desc": "Your health information is handled with care and privacy."
+  },
+  "privacy": {
+    "notice": "Your health information is handled securely."
+  },
+  "errors": {
+    "connectionError": "We're having trouble connecting right now. Please try again in a moment.",
+    "serverError": "Something went wrong on our end. Please try again.",
+    "timeoutError": "The analysis is taking longer than expected. Please try again.",
+    "rateLimitError": "Too many requests. Please wait a moment before trying again."
+  }
+}
