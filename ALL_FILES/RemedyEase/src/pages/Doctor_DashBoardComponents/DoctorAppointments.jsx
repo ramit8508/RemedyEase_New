@@ -10,7 +10,10 @@ const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 function pad(num) { return num.toString().padStart(2, '0'); }
 
 export default function DoctorAppointments() {
-  const doctor = JSON.parse(localStorage.getItem("doctor"));
+  let doctor = null;
+  try {
+    doctor = JSON.parse(localStorage.getItem("doctor"));
+  } catch {}
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
 

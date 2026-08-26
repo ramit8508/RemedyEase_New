@@ -25,7 +25,10 @@ const NAV_ITEMS = [
 
 function UserDashBoardNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const user = JSON.parse(localStorage.getItem("user"));
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user"));
+  } catch {}
   const avatar = user?.avatar;
   const location = useLocation();
 

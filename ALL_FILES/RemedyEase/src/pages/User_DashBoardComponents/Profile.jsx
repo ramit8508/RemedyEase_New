@@ -70,7 +70,7 @@ export default function Profile() {
       localStorage.removeItem("user");
       localStorage.removeItem("userEmail");
       sessionStorage.clear();
-      navigate("/login");
+      navigate("/user/login");
     }
   }, [navigate]);
 

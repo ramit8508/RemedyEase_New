@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import "../../Css_for_all/DoctorHistory.css";
 
 export default function DoctorHistory() {
-  const doctor = JSON.parse(localStorage.getItem("doctor"));
+  let doctor = null;
+  try {
+    doctor = JSON.parse(localStorage.getItem("doctor"));
+  } catch {}
   const [consultationHistory, setConsultationHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedConsultation, setSelectedConsultation] = useState(null);

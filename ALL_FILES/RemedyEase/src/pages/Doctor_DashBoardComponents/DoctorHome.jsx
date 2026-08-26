@@ -12,7 +12,10 @@ export default function DoctorHome() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointmentsByDate, setAppointmentsByDate] = useState({});
 
-  const doctor = JSON.parse(localStorage.getItem("doctor"));
+  let doctor = null;
+  try {
+    doctor = JSON.parse(localStorage.getItem("doctor"));
+  } catch {}
   const doctorEmail = doctor?.email;
 
   const fetchAllAppointments = async () => {

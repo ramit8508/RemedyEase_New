@@ -3,8 +3,14 @@ import { Link } from "react-router-dom";
 import "../Css_for_all/UserDashNav.css";
 
 function DoctorDashBoardNav() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const doctor = JSON.parse(localStorage.getItem("doctor"));
+  let user = null;
+  let doctor = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user"));
+  } catch {}
+  try {
+    doctor = JSON.parse(localStorage.getItem("doctor"));
+  } catch {}
   const avatar = user?.avatar;
   
   const [upcomingCount, setUpcomingCount] = useState(0);

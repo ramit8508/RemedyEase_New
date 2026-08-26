@@ -10,7 +10,10 @@ export default function Chat() {
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [error, setError] = useState('');
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user"));
+  } catch {}
   const userEmail = user?.email;
 
   const fetchChatConversations = async () => {
