@@ -1,0 +1,344 @@
+/* ============================================================
+   REMEDYEASE DOCTOR AI CLINICAL ASSISTANT CSS
+   Clinical Decision-Support Design System
+   ============================================================ */
+
+.dai-container {
+  width: 100%;
+  max-width: 1250px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+}
+
+/* ─── Hero Section ─── */
+.dai-hero-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.dai-hero-content {
+  flex: 1;
+  min-width: 280px;
+}
+
+.dai-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #dcfce7;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.2px;
+}
+
+.dai-hero-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.dai-hero-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+/* ─── Input Form Card ─── */
+.dai-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 26px 30px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.dai-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 14px;
+}
+
+.dai-card-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dai-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dai-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.dai-form-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dai-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #f8fafc;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.45;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.dai-textarea:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.dai-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 18px;
+}
+
+.dai-security-note {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dai-generate-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+}
+
+.dai-generate-btn:hover:not(:disabled) {
+  background: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.dai-generate-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ─── Result Output Card ─── */
+.dai-result-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 26px 30px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.dai-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dai-badges-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dai-badge-ready {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #dcfce7;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dai-badge-confidence {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+/* Formatted Output Styling */
+.dai-output-content {
+  font-size: 13.5px;
+  color: #1e293b;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+
+.dai-output-content strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.dai-disclaimer-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+/* ─── Empty & Loading States ─── */
+.dai-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.dai-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  color: #16a34a;
+  opacity: 0.8;
+}
+
+.dai-empty-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.dai-empty-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dai-loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.dai-loading-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 14px 0 4px;
+}
+
+.dai-loading-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ─── Error Alert ─── */
+.dai-error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: #b91c1c;
+}
+
+/* ─── Responsiveness ─── */
+@media (max-width: 860px) {
+  .dai-input-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dai-hero-card {
+    padding: 20px;
+  }
+
+  .dai-card, .dai-result-card {
+    padding: 18px 20px;
+  }
+}
