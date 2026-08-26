@@ -78,6 +78,16 @@
   align-items: start;
 }
 
+/* Centered layout for login (no left column) */
+.auth-layout--login {
+  grid-template-columns: 1fr;
+  max-width: 500px;
+  min-height: auto;
+  gap: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
 /* ============================================================
    LEFT COLUMN — INTRO
    ============================================================ */
@@ -323,6 +333,15 @@
 /* Password input (with toggle) needs right padding */
 .auth-input--password {
   padding-right: 44px;
+}
+
+/* Textarea variant for bio/description fields */
+.auth-input--textarea {
+  height: auto;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
 /* Password visibility toggle */
