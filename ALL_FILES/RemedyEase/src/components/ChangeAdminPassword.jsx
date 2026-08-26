@@ -1,73 +1,92 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Css_for_all/ChangeAdminPassword.css";
+import {
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiShield,
+} from "react-icons/fi";
+import "../Css_for_all/AdminDashboard.css";
 
-const ChangeAdminPassword = () => {
+export default function ChangeAdminPassword() {
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
     setError("");
     setMessage("");
   };
 
+  // Password Strength Checklist
+  const passwordStrength = useMemo(() => {
+    const pwd = formData.newPassword;
+    return {
+      hasLength: pwd.length >= 8,
+      hasUpper: /[A-Z]/.test(pwd),
+      hasLower: /[a-z]/.test(pwd),
+      hasNumber: /[0-9]/.test(pwd),
+      hasSpecial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd),
+    };
+  }, [formData.newPassword]);
+
+  const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
     setMessage("");
 
-    // Validation
-    if (formData.newPassword.length < 8) {
-      setError("New password must be at least 8 characters long");
-      setLoading(false);
+    if (strengthScore < 4) {
+      setError("Please ensure your new password satisfies the security requirements below.");
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError("New password and confirm password do not match");
-      setLoading(false);
+      setError("New password and confirm password do not match.");
       return;
     }
 
     if (formData.newPassword === formData.currentPassword) {
-      setError("New password must be different from current password");
-      setLoading(false);
+      setError("New password must be different from your current password.");
       return;
     }
 
+    setLoading(true);
+
     try {
       const adminEmail = localStorage.getItem("adminEmail");
-      
-      if (!adminEmail) {
-        setError("Session expired. Please login again.");
+      const token = localStorage.getItem("adminToken");
+
+      if (!adminEmail || !token) {
+        setError("Session expired. Please log in again.");
         setTimeout(() => navigate("/admin/login"), 2000);
-        setLoading(false);
         return;
       }
 
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
-      const apiUrl = backendUrl 
-        ? `${backendUrl}/api/v1/admin/change-password` 
-        : '/api/v1/admin/change-password';
-
-      console.log("🔐 Attempting to change password...");
-
-      const response = await fetch(apiUrl, {
+      const res = await fetch("/api/v1/admin/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           email: adminEmail,
@@ -76,20 +95,16 @@ const ChangeAdminPassword = () => {
         }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
-        setMessage("✅ Password changed successfully! Please login again with your new password.");
-        console.log("✅ Password changed successfully");
-        
-        // Clear form
+      if (res.ok) {
+        setMessage("✓ Password changed successfully! Please log in again with your new credentials.");
         setFormData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
 
-        // Logout and redirect to login after 3 seconds
         setTimeout(() => {
           localStorage.removeItem("adminToken");
           localStorage.removeItem("adminEmail");
@@ -97,95 +112,157 @@ const ChangeAdminPassword = () => {
           navigate("/admin/login");
         }, 3000);
       } else {
-        setError(data.message || "Failed to change password");
-        console.error("❌ Password change failed:", data.message);
+        setError(data.message || "Failed to update password. Verify current password.");
       }
     } catch (err) {
-      console.error("❌ Error changing password:", err);
-      setError("Failed to connect to server. Please try again.");
+      console.error("Password change error:", err);
+      setError("Network error while changing password.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="change-password-container">
-      <div className="change-password-box">
-        <h2 className="change-password-title">🔐 Change Admin Password</h2>
-        <p className="change-password-subtitle">
-          For security, please use a strong password with at least 8 characters
-        </p>
+    <div style={{ maxWidth: "560px", margin: "0 auto", paddingTop: "10px" }}>
+      {/* Header */}
+      <div className="ap-page-header" style={{ justifyContent: "center", textAlign: "center" }}>
+        <div>
+          <h1 className="ap-page-title">Admin Security & Access</h1>
+          <p className="ap-page-subtitle">
+            Update your master administrative credentials and manage account security policies.
+          </p>
+        </div>
+      </div>
 
-        {error && <div className="password-error-message">{error}</div>}
-        {message && <div className="password-success-message">{message}</div>}
+      {message && (
+        <div style={{ background: "#f0fdf4", border: "1px solid #dcfce7", padding: "14px 18px", borderRadius: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", color: "#15803d", fontSize: "13.5px" }}>
+          <FiCheckCircle size={16} /> {message}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="change-password-form">
-          <div className="password-form-group">
-            <label htmlFor="currentPassword">Current Password</label>
-            <input
-              type="password"
-              id="currentPassword"
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleChange}
-              required
-              placeholder="Enter current password"
-              disabled={loading}
-            />
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "14px 18px", borderRadius: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", color: "#b91c1c", fontSize: "13.5px" }}>
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Security Card */}
+      <div className="ap-panel-card" style={{ padding: "28px" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          {/* Current Password */}
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+              Current Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showCurrent ? "text" : "password"}
+                name="currentPassword"
+                required
+                placeholder="Enter current password"
+                value={formData.currentPassword}
+                onChange={handleChange}
+                className="ap-table-search"
+                style={{ paddingRight: "36px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer" }}
+              >
+                {showCurrent ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
           </div>
 
-          <div className="password-form-group">
-            <label htmlFor="newPassword">New Password</label>
-            <input
-              type="password"
-              id="newPassword"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              required
-              placeholder="Enter new password (min 8 characters)"
-              disabled={loading}
-              minLength={8}
-            />
+          {/* New Password */}
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+              New Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showNew ? "text" : "password"}
+                name="newPassword"
+                required
+                placeholder="Enter strong new password"
+                value={formData.newPassword}
+                onChange={handleChange}
+                className="ap-table-search"
+                style={{ paddingRight: "36px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer" }}
+              >
+                {showNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
           </div>
 
-          <div className="password-form-group">
-            <label htmlFor="confirmPassword">Confirm New Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="Re-enter new password"
-              disabled={loading}
-              minLength={8}
-            />
+          {/* Confirm Password */}
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+              Confirm New Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showConfirm ? "text" : "password"}
+                name="confirmPassword"
+                required
+                placeholder="Re-enter new password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="ap-table-search"
+                style={{ paddingRight: "36px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer" }}
+              >
+                {showConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
           </div>
+
+          {/* Password Strength Checklist */}
+          {formData.newPassword && (
+            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "12.5px" }}>
+              <span style={{ fontWeight: "700", color: "#0f172a", display: "block", marginBottom: "8px" }}>
+                Security Requirements:
+              </span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                <span style={{ color: passwordStrength.hasLength ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {passwordStrength.hasLength ? "✓" : "○"} At least 8 characters
+                </span>
+                <span style={{ color: passwordStrength.hasUpper ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {passwordStrength.hasUpper ? "✓" : "○"} Uppercase letter
+                </span>
+                <span style={{ color: passwordStrength.hasLower ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {passwordStrength.hasLower ? "✓" : "○"} Lowercase letter
+                </span>
+                <span style={{ color: passwordStrength.hasNumber ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {passwordStrength.hasNumber ? "✓" : "○"} Number (0-9)
+                </span>
+                <span style={{ color: passwordStrength.hasSpecial ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                  {passwordStrength.hasSpecial ? "✓" : "○"} Special character
+                </span>
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
-            className="password-change-button"
+            className="ap-btn-action ap-btn-action--approve"
             disabled={loading}
+            style={{ padding: "12px", justifyContent: "center", fontSize: "14px", borderRadius: "12px", marginTop: "6px" }}
           >
-            {loading ? "Changing Password..." : "Change Password"}
+            {loading ? "Updating Credentials..." : "Update Administrator Password"}
           </button>
         </form>
-
-        <div className="password-tips">
-          <h4>🛡️ Password Security Tips:</h4>
-          <ul>
-            <li>Use at least 8 characters (longer is better)</li>
-            <li>Mix uppercase and lowercase letters</li>
-            <li>Include numbers and special characters</li>
-            <li>Don't use common words or personal information</li>
-            <li>Don't share your password with anyone</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
-};
-
-export default ChangeAdminPassword;
+}

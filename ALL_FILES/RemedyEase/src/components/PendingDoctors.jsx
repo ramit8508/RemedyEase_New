@@ -1,262 +1,417 @@
-import React, { useEffect, useState } from "react";
-import { toast } from 'react-toastify';
-import "../Css_for_all/PendingDoctors.css";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  FiCheck,
+  FiX,
+  FiEye,
+  FiRefreshCw,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiShield,
+  FiAward,
+} from "react-icons/fi";
+import "../Css_for_all/AdminDashboard.css";
 
-const PendingDoctors = () => {
+export default function PendingDoctors() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [error, setError] = useState("");
+
+  // Modals state
+  const [selectedDoctorDetail, setSelectedDoctorDetail] = useState(null);
+  const [doctorToReject, setDoctorToReject] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [backendReady, setBackendReady] = useState(false);
+  const [successToast, setSuccessToast] = useState("");
 
-  const wakeUpBackend = async (doctorBackendUrl) => {
+  const token = localStorage.getItem("adminToken");
+
+  const fetchPendingDoctors = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      // Wake up the backend by calling the pending doctors endpoint (which definitely exists)
-      fetch(`${doctorBackendUrl}/api/v1/admin/doctors/pending`, {
-        method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem("adminToken")}`,
-        }
-      }).catch(() => {}); // Ignore wake-up errors - just to wake the backend
-    } catch (error) {
-      // Silently fail wake-up
-    }
-  };
-
-  useEffect(() => {
-    // Wake up the backend when page loads
-    const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL;
-    if (doctorBackendUrl) {
-      console.log('🔄 Waking up doctor backend...');
-      toast.info('⏳ Waking up backend server... Please wait 30 seconds before approving.', { 
-        autoClose: 5000,
-        position: 'top-center'
+      const res = await fetch("/api/v1/admin/doctors/pending", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      wakeUpBackend(doctorBackendUrl);
-      
-      // Show ready message after 30 seconds
-      setTimeout(() => {
-        setBackendReady(true);
-        toast.success('✅ Backend is ready! You can now approve doctors.', {
-          autoClose: 3000,
-          position: 'top-center'
-        });
-      }, 30000); // 30 seconds
-    } else {
-      setBackendReady(true); // If no backend URL, assume local/ready
-    }
-    
-    fetchPendingDoctors();
-  }, []);
+      const data = await res.json();
 
-  const fetchPendingDoctors = async () => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
-      
-      const response = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/pending` : '/api/v1/admin/doctors/pending',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const data = await response.json();
-      setDoctors(data.data || []);
-    } catch (error) {
-      console.error("Error fetching pending doctors:", error);
+      if (res.ok && data.success) {
+        setDoctors(Array.isArray(data.data) ? data.data : []);
+      } else {
+        setError(data.message || "Failed to fetch pending doctor applications");
+      }
+    } catch (err) {
+      console.error("Pending doctors fetch error:", err);
+      setError("Unable to connect to doctor service. Please try again.");
     } finally {
       setLoading(false);
     }
+  }, [token]);
+
+  useEffect(() => {
+    fetchPendingDoctors();
+  }, [fetchPendingDoctors]);
+
+  const showToast = (msg) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(""), 3500);
   };
 
-  const handleApprove = async (doctorId) => {
+  // Approve Doctor
+  const handleApprove = async (doctor) => {
     setActionLoading(true);
-    
     try {
-      const token = localStorage.getItem("adminToken");
-      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
-      
-      console.log('Approving doctor...', doctorId);
-      toast.info("Processing approval...", { autoClose: 1000 });
-      
-      const response = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${doctorId}/approval` : `/api/v1/admin/doctors/${doctorId}/approval`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ approvalStatus: "approved" }),
+      const res = await fetch(`/api/v1/admin/doctors/${doctor._id}/approval`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ approvalStatus: "approved" }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setDoctors((prev) => prev.filter((d) => d._id !== doctor._id));
+        if (selectedDoctorDetail?._id === doctor._id) {
+          setSelectedDoctorDetail(null);
         }
-      );
-
-      const result = await response.json();
-      console.log('Approval response:', result);
-
-      if (response.ok) {
-        toast.success(result.message || "Doctor approved successfully! Email notification sent to doctor.");
-        fetchPendingDoctors();
+        showToast(`✓ Dr. ${doctor.fullname} approved successfully!`);
       } else {
-        toast.error(result.message || "Failed to approve doctor. Please try again.");
-        console.error('Approval error:', result);
+        alert(data.message || "Failed to approve doctor");
       }
-    } catch (error) {
-      console.error("Error approving doctor:", error);
-      toast.error("Network error. Please check your connection and try again.");
+    } catch (err) {
+      console.error("Approval error:", err);
+      alert("Network error while approving doctor.");
     } finally {
       setActionLoading(false);
     }
   };
 
+  // Reject Doctor
   const handleReject = async () => {
-    if (!rejectionReason.trim()) {
-      toast.warning("Please provide a reason for rejection");
-      return;
-    }
-
+    if (!doctorToReject) return;
     setActionLoading(true);
+
     try {
-      const token = localStorage.getItem("adminToken");
-      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
-      
-      console.log('Rejecting doctor...', selectedDoctor._id);
-      
-      const response = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/${selectedDoctor._id}/approval` : `/api/v1/admin/doctors/${selectedDoctor._id}/approval`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            approvalStatus: "rejected",
-            rejectionReason: rejectionReason,
-          }),
-        }
-      );
+      const res = await fetch(`/api/v1/admin/doctors/${doctorToReject._id}/approval`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          approvalStatus: "rejected",
+          rejectionReason: rejectionReason || "Application credentials could not be verified",
+        }),
+      });
 
-      const result = await response.json();
-      console.log('Rejection response:', result);
-
-      if (response.ok) {
-        toast.success(result.message || "Doctor rejected successfully! Email notification sent to doctor.");
-        setSelectedDoctor(null);
+      const data = await res.json();
+      if (res.ok) {
+        setDoctors((prev) => prev.filter((d) => d._id !== doctorToReject._id));
+        setDoctorToReject(null);
         setRejectionReason("");
-        fetchPendingDoctors();
+        showToast(`Dr. ${doctorToReject.fullname} application was rejected.`);
       } else {
-        toast.error(result.message || "Failed to reject doctor. Please try again.");
-        console.error('Rejection error:', result);
+        alert(data.message || "Failed to reject doctor");
       }
-    } catch (error) {
-      console.error("Error rejecting doctor:", error);
-      toast.error("Network error. Please check your connection and try again.");
+    } catch (err) {
+      console.error("Rejection error:", err);
+      alert("Network error while rejecting doctor.");
     } finally {
       setActionLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="admin-loading">Loading pending doctors...</div>;
-  }
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "N/A";
+    return d.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  };
 
   return (
-    <div className="pending-doctors">
-      <h1 className="page-title">Pending Doctor Approvals</h1>
-      <p className="page-subtitle">
-        Review and approve doctor registration requests
-      </p>
-
-      {doctors.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">✅</div>
-          <h3>No Pending Approvals</h3>
-          <p>All doctor registrations have been reviewed</p>
-        </div>
-      ) : (
-        <div className="doctors-grid">
-          {doctors.map((doctor) => (
-            <div key={doctor._id} className="doctor-card">
-              <div className="doctor-avatar">
-                <img
-                  src={doctor.avatar || "/default-doctor.png"}
-                  alt={doctor.fullname}
-                  onError={(e) => {
-                    e.target.src = "/default-doctor.png";
-                  }}
-                />
-              </div>
-              <div className="doctor-info">
-                <h3>{doctor.fullname}</h3>
-                <p className="doctor-email">{doctor.email}</p>
-                <p className="doctor-specialization">{doctor.specialization}</p>
-                <div className="doctor-credentials">
-                  <span>
-                    <strong>Reg No:</strong> {doctor.registrationNumber}
-                  </span>
-                  <span>
-                    <strong>Degree:</strong> {doctor.degree}
-                  </span>
-                </div>
-              </div>
-              <div className="doctor-actions">
-                <button
-                  onClick={() => handleApprove(doctor._id)}
-                  className="btn-approve"
-                  disabled={actionLoading || !backendReady}
-                  title={!backendReady ? "Please wait for backend to wake up..." : ""}
-                >
-                  {actionLoading ? "Processing..." : !backendReady ? "⏳ Waking up..." : "✓ Approve"}
-                </button>
-                <button
-                  onClick={() => setSelectedDoctor(doctor)}
-                  className="btn-reject"
-                  disabled={actionLoading || !backendReady}
-                  title={!backendReady ? "Please wait for backend to wake up..." : ""}
-                >
-                  ✗ Reject
-                </button>
-              </div>
-            </div>
-          ))}
+    <div>
+      {/* Toast */}
+      {successToast && (
+        <div style={{ position: "fixed", top: "24px", right: "24px", background: "#16a34a", color: "#ffffff", padding: "12px 20px", borderRadius: "12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1200, fontWeight: "700", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <FiCheckCircle size={16} /> {successToast}
         </div>
       )}
 
-      {selectedDoctor && (
-        <div className="modal-overlay" onClick={() => setSelectedDoctor(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Reject Doctor Application</h2>
-            <p>
-              You are about to reject <strong>{selectedDoctor.fullname}</strong>
-            </p>
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Please provide a reason for rejection..."
-              rows="4"
-              className="rejection-textarea"
-            />
-            <div className="modal-actions">
+      {/* Page Header */}
+      <div className="ap-page-header">
+        <div>
+          <h1 className="ap-page-title">Pending Doctor Approvals</h1>
+          <p className="ap-page-subtitle">
+            Review medical licenses, state council registrations, and qualifications for onboarding.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="ap-btn-action"
+          onClick={() => fetchPendingDoctors()}
+          disabled={loading}
+        >
+          <FiRefreshCw size={13} className={loading ? "hr-spin" : ""} /> Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "14px 18px", borderRadius: "12px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", color: "#b91c1c", fontSize: "13.5px" }}>
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Main Review Card */}
+      <div className="ap-table-card">
+        <div className="ap-toolbar">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a" }}>
+              Pending Applications
+            </span>
+            <span className="ap-badge ap-badge--pending">{doctors.length} Awaiting Review</span>
+          </div>
+        </div>
+
+        <div className="ap-table-responsive">
+          <table className="ap-table">
+            <thead>
+              <tr>
+                <th>Doctor Candidate</th>
+                <th>Email</th>
+                <th>Specialization</th>
+                <th>Registration / License #</th>
+                <th>Submitted</th>
+                <th style={{ textAlign: "right" }}>Review Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "40px" }}>
+                    <div className="hr-spinner" style={{ width: "28px", height: "28px" }} />
+                    <p style={{ fontSize: "13px", color: "#64748b", marginTop: "10px" }}>Fetching applications...</p>
+                  </td>
+                </tr>
+              ) : doctors.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "50px 20px" }}>
+                    <div style={{ fontSize: "36px", marginBottom: "10px" }}>🎉</div>
+                    <strong style={{ fontSize: "15px", color: "#0f172a", display: "block", marginBottom: "4px" }}>
+                      No Pending Applications
+                    </strong>
+                    <p style={{ fontSize: "13.5px", color: "#64748b", margin: 0 }}>
+                      All medical practitioner registrations have been reviewed and processed.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                doctors.map((doc) => (
+                  <tr key={doc._id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {doc.avatar ? (
+                          <img
+                            src={doc.avatar}
+                            alt={doc.fullname}
+                            style={{ width: "36px", height: "36px", borderRadius: "10px", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "10px",
+                              background: "#dcfce7",
+                              color: "#15803d",
+                              fontWeight: "800",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "13px",
+                            }}
+                          >
+                            {doc.fullname?.charAt(0) || "D"}
+                          </div>
+                        )}
+                        <div>
+                          <strong style={{ display: "block" }}>Dr. {doc.fullname}</strong>
+                          <span style={{ fontSize: "11.5px", color: "#64748b" }}>{doc.degree}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{doc.email}</td>
+                    <td>
+                      <span style={{ color: "#16a34a", fontWeight: "600" }}>{doc.specialization}</span>
+                    </td>
+                    <td>
+                      <strong style={{ fontFamily: "monospace", fontSize: "13px" }}>
+                        {doc.registrationNumber || "Not provided"}
+                      </strong>
+                    </td>
+                    <td>{formatDate(doc.createdAt)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "6px" }}>
+                        <button
+                          type="button"
+                          className="ap-btn-action"
+                          onClick={() => setSelectedDoctorDetail(doc)}
+                          title="View application details"
+                        >
+                          <FiEye size={13} /> View
+                        </button>
+                        <button
+                          type="button"
+                          className="ap-btn-action ap-btn-action--approve"
+                          onClick={() => handleApprove(doc)}
+                          disabled={actionLoading}
+                          title="Approve doctor"
+                        >
+                          <FiCheck size={13} /> Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="ap-btn-action ap-btn-action--reject"
+                          onClick={() => setDoctorToReject(doc)}
+                          disabled={actionLoading}
+                          title="Reject doctor"
+                        >
+                          <FiX size={13} /> Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ─── Doctor Details Modal ─── */}
+      {selectedDoctorDetail && (
+        <div className="ap-modal-backdrop" onClick={() => setSelectedDoctorDetail(null)}>
+          <div className="ap-modal-card" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setSelectedDoctorDetail(null)}
+              style={{ position: "absolute", top: "18px", right: "18px", background: "#f1f5f9", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            >
+              <FiX size={16} />
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "18px" }}>
+              {selectedDoctorDetail.avatar ? (
+                <img
+                  src={selectedDoctorDetail.avatar}
+                  alt={selectedDoctorDetail.fullname}
+                  style={{ width: "56px", height: "56px", borderRadius: "16px", objectFit: "cover" }}
+                />
+              ) : (
+                <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "#dcfce7", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "800" }}>
+                  {selectedDoctorDetail.fullname?.charAt(0) || "D"}
+                </div>
+              )}
+              <div>
+                <h3 className="ap-modal-title" style={{ margin: "0 0 2px" }}>
+                  Dr. {selectedDoctorDetail.fullname}
+                </h3>
+                <span style={{ fontSize: "13px", color: "#16a34a", fontWeight: "700" }}>
+                  {selectedDoctorDetail.specialization} • {selectedDoctorDetail.degree}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13.5px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Registration Number:</span>
+                <strong style={{ fontFamily: "monospace" }}>{selectedDoctorDetail.registrationNumber || "N/A"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Email:</span>
+                <strong>{selectedDoctorDetail.email}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Clinic / Hospital:</span>
+                <strong>{selectedDoctorDetail.clinic || "Private Practice"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Experience:</span>
+                <strong>{selectedDoctorDetail.experience || "Not stated"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                <span style={{ color: "#64748b" }}>Submission Date:</span>
+                <strong>{formatDate(selectedDoctorDetail.createdAt)}</strong>
+              </div>
+              {selectedDoctorDetail.bio && (
+                <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                  <span style={{ fontSize: "12px", color: "#64748b", display: "block", marginBottom: "4px" }}>
+                    Doctor Bio:
+                  </span>
+                  <p style={{ margin: 0, color: "#334155" }}>{selectedDoctorDetail.bio}</p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: "24px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
-                onClick={handleReject}
-                className="btn-confirm-reject"
-                disabled={actionLoading}
+                type="button"
+                className="ap-btn-action ap-btn-action--reject"
+                onClick={() => {
+                  setDoctorToReject(selectedDoctorDetail);
+                  setSelectedDoctorDetail(null);
+                }}
               >
-                {actionLoading ? "Rejecting..." : "Confirm Rejection"}
+                <FiX size={13} /> Reject
               </button>
               <button
-                onClick={() => {
-                  setSelectedDoctor(null);
-                  setRejectionReason("");
-                }}
-                className="btn-cancel"
+                type="button"
+                className="ap-btn-action ap-btn-action--approve"
+                onClick={() => handleApprove(selectedDoctorDetail)}
+              >
+                <FiCheck size={13} /> Approve Doctor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Rejection Reason Modal ─── */}
+      {doctorToReject && (
+        <div className="ap-modal-backdrop" onClick={() => setDoctorToReject(null)}>
+          <div className="ap-modal-card" style={{ maxWidth: "460px" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="ap-modal-title">Reject Doctor Registration</h3>
+            <p style={{ fontSize: "13.5px", color: "#64748b", margin: "0 0 16px" }}>
+              Specify the reason for rejecting Dr. {doctorToReject.fullname}'s registration.
+            </p>
+
+            <textarea
+              className="ap-table-search"
+              rows={4}
+              placeholder="e.g. Registration number verification failed with the state medical register..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", resize: "vertical" }}
+            />
+
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "18px" }}>
+              <button
+                type="button"
+                className="ap-btn-action"
+                onClick={() => setDoctorToReject(null)}
                 disabled={actionLoading}
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                className="ap-btn-action ap-btn-action--reject"
+                onClick={handleReject}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Processing..." : "Confirm Rejection"}
               </button>
             </div>
           </div>
@@ -264,6 +419,4 @@ const PendingDoctors = () => {
       )}
     </div>
   );
-};
-
-export default PendingDoctors;
+}

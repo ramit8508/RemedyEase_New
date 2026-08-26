@@ -1,235 +1,329 @@
-import React, { useEffect, useState } from "react";
-import "../Css_for_all/AdminOverview.css";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import {
+  FiUsers,
+  FiUserCheck,
+  FiClock,
+  FiCalendar,
+  FiFileText,
+  FiArrowRight,
+  FiRefreshCw,
+  FiAlertCircle,
+  FiCheckCircle,
+} from "react-icons/fi";
+import "../Css_for_all/AdminDashboard.css";
 
-const AdminOverview = () => {
+export default function AdminOverview() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDoctors: 0,
     pendingDoctors: 0,
     totalAppointments: 0,
-    completedAppointments: 0,
     totalPrescriptions: 0,
   });
+
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [pendingDoctorsList, setPendingDoctorsList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const token = localStorage.getItem("adminToken");
 
-  useEffect(() => {
-    // Auto-retry after 3 seconds if there was an error and retry count < 3
-    if (error && retryCount < 3) {
-      const timer = setTimeout(() => {
-        console.log(`Retrying... (Attempt ${retryCount + 1}/3)`);
-        setError(null);
-        setLoading(true);
-        setRetryCount(prev => prev + 1);
-        fetchStats();
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [error, retryCount]);
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
 
-  const fetchStats = async () => {
+  const fetchOverviewData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      const token = localStorage.getItem("adminToken");
+      // 1. Fetch User stats
+      const userStatsPromise = fetch("/api/v1/admin/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: {} }))
+        .catch(() => ({ data: {} }));
 
-      // Use relative paths for production (proxied by Vercel)
-      const userBackendUrl = import.meta.env.VITE_BACKEND_URL || '';
-      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
+      // 2. Fetch Doctor stats
+      const doctorStatsPromise = fetch("/api/v1/admin/doctors/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: {} }))
+        .catch(() => ({ data: {} }));
 
-      // Fetch user stats
-      const userStatsRes = await fetch(
-        userBackendUrl ? `${userBackendUrl}/api/v1/admin/stats` : '/api/v1/admin/stats',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
-      
-      // Check if response is JSON
-      const contentType = userStatsRes.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        console.error('User backend returned non-JSON response. Backend may be sleeping.');
-        throw new Error('Backend is waking up. Retrying automatically...');
-      }
-      
-      const userStatsData = await userStatsRes.json();
+      // 3. Fetch Appointment stats
+      const apptStatsPromise = fetch("/api/v1/admin/appointments/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: {} }))
+        .catch(() => ({ data: {} }));
 
-      // Fetch doctor stats
-      const doctorStatsRes = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/doctors/stats` : '/api/v1/admin/doctors/stats',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      const doctorContentType = doctorStatsRes.headers.get("content-type");
-      if (!doctorContentType || !doctorContentType.includes("application/json")) {
-        console.error('Doctor backend returned non-JSON response. Backend may be sleeping.');
-        throw new Error('Doctor backend is waking up. Retrying automatically...');
-      }
-      
-      const doctorStatsData = await doctorStatsRes.json();
+      // 4. Fetch Prescription stats
+      const rxStatsPromise = fetch("/api/v1/admin/prescriptions/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: {} }))
+        .catch(() => ({ data: {} }));
 
-      // Fetch appointment stats
-      const appointmentStatsRes = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/appointments/stats` : '/api/v1/admin/appointments/stats',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      const appointmentContentType = appointmentStatsRes.headers.get("content-type");
-      if (!appointmentContentType || !appointmentContentType.includes("application/json")) {
-        console.error('Appointment backend returned non-JSON response. Backend may be sleeping.');
-        throw new Error('Appointment backend is waking up. Retrying automatically...');
-      }
-      
-      const appointmentStatsData = await appointmentStatsRes.json();
+      // 5. Fetch Pending doctors for quick review widget
+      const pendingDocsPromise = fetch("/api/v1/admin/doctors/pending", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: [] }))
+        .catch(() => ({ data: [] }));
 
-      // Fetch prescription stats
-      const prescriptionStatsRes = await fetch(
-        doctorBackendUrl ? `${doctorBackendUrl}/api/v1/admin/prescriptions/stats` : '/api/v1/admin/prescriptions/stats',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      const prescriptionContentType = prescriptionStatsRes.headers.get("content-type");
-      if (!prescriptionContentType || !prescriptionContentType.includes("application/json")) {
-        console.error('Prescription backend returned non-JSON response. Backend may be sleeping.');
-        throw new Error('Prescription backend is waking up. Retrying automatically...');
-      }
-      
-      const prescriptionStatsData = await prescriptionStatsRes.json();
+      // 6. Fetch Appointments for today's summary widget
+      const apptsPromise = fetch("/api/v1/admin/appointments", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : { data: [] }))
+        .catch(() => ({ data: [] }));
+
+      const [userStats, docStats, apptStats, rxStats, pendingDocs, allAppts] =
+        await Promise.all([
+          userStatsPromise,
+          doctorStatsPromise,
+          apptStatsPromise,
+          rxStatsPromise,
+          pendingDocsPromise,
+          apptsPromise,
+        ]);
 
       setStats({
-        totalUsers: userStatsData.data?.totalUsers || 0,
-        totalDoctors: doctorStatsData.data?.total || 0,
-        pendingDoctors: doctorStatsData.data?.pending || 0,
-        totalAppointments: appointmentStatsData.data?.total || 0,
-        completedAppointments: appointmentStatsData.data?.completed || 0,
-        totalPrescriptions: prescriptionStatsData.data?.total || 0,
+        totalUsers: userStats.data?.totalUsers || 0,
+        totalDoctors: docStats.data?.total || 0,
+        pendingDoctors: docStats.data?.pending || 0,
+        totalAppointments: apptStats.data?.total || 0,
+        totalPrescriptions: rxStats.data?.total || 0,
       });
-      
-      setError(null);
-      setRetryCount(0);
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      setError(error.message);
+
+      setPendingDoctorsList(Array.isArray(pendingDocs.data) ? pendingDocs.data.slice(0, 4) : []);
+
+      const apptsList = Array.isArray(allAppts.data) ? allAppts.data : [];
+      // Take first 5 recent appointments
+      setTodayAppointments(apptsList.slice(0, 5));
+    } catch (err) {
+      console.error("Dashboard overview fetch error:", err);
+      setError("Unable to load overview data. Please verify network connection.");
     } finally {
       setLoading(false);
     }
+  }, [token]);
+
+  useEffect(() => {
+    fetchOverviewData();
+  }, [fetchOverviewData]);
+
+  // Date formatting helper
+  const formatAppointmentDate = (dateStr, timeStr) => {
+    if (!dateStr) return "Date unavailable";
+    return `${dateStr} ${timeStr ? `at ${timeStr}` : ""}`;
   };
 
-  if (loading) {
-    return (
-      <div className="admin-loading" style={{ textAlign: 'center', padding: '50px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-        <h2>Loading dashboard...</h2>
-        {retryCount > 0 && <p>Retry attempt {retryCount}/3</p>}
-        <p style={{ color: '#666', fontSize: '14px' }}>Backends are waking up, please wait...</p>
-      </div>
-    );
-  }
+  return (
+    <div>
+      {/* Page Header */}
+      <div className="ap-page-header">
+        <div>
+          <h1 className="ap-page-title">{getGreeting()}, Admin 👋</h1>
+          <p className="ap-page-subtitle">
+            Here's an overview of clinical operations, patient consultations, and doctor verifications today.
+          </p>
+        </div>
 
-  if (error && retryCount >= 3) {
-    return (
-      <div className="admin-error" style={{ textAlign: 'center', padding: '50px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-        <h2>Unable to load dashboard</h2>
-        <p style={{ color: '#d32f2f', marginBottom: '20px' }}>{error}</p>
-        <button 
-          onClick={() => {
-            setRetryCount(0);
-            setError(null);
-            setLoading(true);
-            fetchStats();
-          }}
-          style={{
-            backgroundColor: '#388e3c',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
+        <button
+          type="button"
+          className="ap-btn-action"
+          onClick={() => fetchOverviewData()}
+          disabled={loading}
         >
-          Try Again
+          <FiRefreshCw size={13} className={loading ? "hr-spin" : ""} /> Refresh
         </button>
       </div>
-    );
-  }
 
-  return (
-    <div className="admin-overview">
-      <h1 className="admin-overview-title">Dashboard Overview</h1>
-      <p className="admin-overview-subtitle">Monitor your platform statistics</p>
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "14px 18px", borderRadius: "12px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", color: "#b91c1c", fontSize: "13.5px" }}>
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
 
-      <div className="stats-grid">
-        <div className="stat-card stat-users">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <h3>{stats.totalUsers}</h3>
-            <p>Total Users</p>
+      {/* KPI Cards Grid */}
+      <div className="ap-kpi-grid">
+        <div className="ap-kpi-card">
+          <div className="ap-kpi-icon-wrap ap-kpi-icon--users">
+            <FiUsers />
+          </div>
+          <div className="ap-kpi-data">
+            <div className="ap-kpi-value">{loading ? "..." : stats.totalUsers}</div>
+            <div className="ap-kpi-label">Registered Patients</div>
           </div>
         </div>
 
-        <div className="stat-card stat-doctors">
-          <div className="stat-icon">👨‍⚕️</div>
-          <div className="stat-content">
-            <h3>{stats.totalDoctors}</h3>
-            <p>Total Doctors</p>
+        <div className="ap-kpi-card">
+          <div className="ap-kpi-icon-wrap ap-kpi-icon--doctors">
+            <FiUserCheck />
+          </div>
+          <div className="ap-kpi-data">
+            <div className="ap-kpi-value">{loading ? "..." : stats.totalDoctors}</div>
+            <div className="ap-kpi-label">Verified Doctors</div>
           </div>
         </div>
 
-        <div className="stat-card stat-pending">
-          <div className="stat-icon">⏳</div>
-          <div className="stat-content">
-            <h3>{stats.pendingDoctors}</h3>
-            <p>Pending Approvals</p>
+        <div className="ap-kpi-card">
+          <div className="ap-kpi-icon-wrap ap-kpi-icon--pending">
+            <FiClock />
+          </div>
+          <div className="ap-kpi-data">
+            <div className="ap-kpi-value">{loading ? "..." : stats.pendingDoctors}</div>
+            <div className="ap-kpi-label">Pending Approvals</div>
           </div>
         </div>
 
-        <div className="stat-card stat-appointments">
-          <div className="stat-icon">📅</div>
-          <div className="stat-content">
-            <h3>{stats.totalAppointments}</h3>
-            <p>Total Appointments</p>
+        <div className="ap-kpi-card">
+          <div className="ap-kpi-icon-wrap ap-kpi-icon--appts">
+            <FiCalendar />
+          </div>
+          <div className="ap-kpi-data">
+            <div className="ap-kpi-value">{loading ? "..." : stats.totalAppointments}</div>
+            <div className="ap-kpi-label">Total Appointments</div>
           </div>
         </div>
 
-        <div className="stat-card stat-completed">
-          <div className="stat-icon">✅</div>
-          <div className="stat-content">
-            <h3>{stats.completedAppointments}</h3>
-            <p>Completed</p>
+        <div className="ap-kpi-card">
+          <div className="ap-kpi-icon-wrap ap-kpi-icon--rx">
+            <FiFileText />
+          </div>
+          <div className="ap-kpi-data">
+            <div className="ap-kpi-value">{loading ? "..." : stats.totalPrescriptions}</div>
+            <div className="ap-kpi-label">Prescriptions</div>
           </div>
         </div>
+      </div>
 
-        <div className="stat-card stat-prescriptions">
-          <div className="stat-icon">💊</div>
-          <div className="stat-content">
-            <h3>{stats.totalPrescriptions}</h3>
-            <p>Prescriptions</p>
+      {/* Two-Column Operational Section */}
+      <div className="ap-dashboard-grid">
+        {/* Left: Recent Consultations */}
+        <div className="ap-panel-card">
+          <div className="ap-panel-header">
+            <h3>Recent Scheduled Consultations</h3>
+            <Link to="/admin/dashboard/appointments" className="ap-panel-link">
+              View All <FiArrowRight size={13} />
+            </Link>
           </div>
+
+          {loading ? (
+            <p style={{ color: "#64748b", fontSize: "13px" }}>Loading recent appointments...</p>
+          ) : todayAppointments.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: "13.5px" }}>No recent appointments found.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {todayAppointments.map((apt) => (
+                <div
+                  key={apt._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    background: "#f8fafc",
+                    borderRadius: "12px",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div>
+                    <strong style={{ fontSize: "13.5px", color: "#0f172a", display: "block" }}>
+                      {apt.userName || apt.userEmail || "Patient"}
+                    </strong>
+                    <span style={{ fontSize: "12px", color: "#64748b" }}>
+                      with Dr. {apt.doctorName || apt.doctorEmail} • {formatAppointmentDate(apt.date, apt.time)}
+                    </span>
+                  </div>
+                  <span className={`ap-badge ap-badge--${apt.status || "pending"}`}>
+                    {apt.status || "pending"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Pending Doctor Approvals */}
+        <div className="ap-panel-card">
+          <div className="ap-panel-header">
+            <h3>Doctors Awaiting Verification</h3>
+            <Link to="/admin/dashboard/pending-doctors" className="ap-panel-link">
+              Review All ({stats.pendingDoctors}) <FiArrowRight size={13} />
+            </Link>
+          </div>
+
+          {loading ? (
+            <p style={{ color: "#64748b", fontSize: "13px" }}>Loading pending approvals...</p>
+          ) : pendingDoctorsList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: "#16a34a" }}>
+              <FiCheckCircle size={28} />
+              <p style={{ fontSize: "13.5px", marginTop: "8px", fontWeight: "600" }}>
+                All doctor applications have been processed!
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {pendingDoctorsList.map((doc) => (
+                <div
+                  key={doc._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    background: "#fffbeb",
+                    borderRadius: "12px",
+                    border: "1px solid #fde68a",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "#dcfce7",
+                        color: "#15803d",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "800",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {doc.fullname?.charAt(0) || "D"}
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: "13.5px", color: "#0f172a", display: "block" }}>
+                        Dr. {doc.fullname}
+                      </strong>
+                      <span style={{ fontSize: "12px", color: "#b45309" }}>
+                        {doc.specialization} • Reg: {doc.registrationNumber || "Pending"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to="/admin/dashboard/pending-doctors"
+                    className="ap-btn-action ap-btn-action--approve"
+                    style={{ fontSize: "11.5px", padding: "5px 10px" }}
+                  >
+                    Review
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminOverview;
+}

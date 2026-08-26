@@ -1,158 +1,192 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Routes, Route, Link, Navigate } from "react-router-dom";
+import { useNavigate, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
+import {
+  FiGrid,
+  FiUsers,
+  FiUserCheck,
+  FiClock,
+  FiCalendar,
+  FiFileText,
+  FiLock,
+  FiLogOut,
+  FiMenu,
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+  FiShield,
+} from "react-icons/fi";
 import "../Css_for_all/AdminDashboard.css";
-import PendingDoctors from "../components/PendingDoctors";
+
+import AdminOverview from "../components/AdminOverview";
 import UsersManagement from "../components/UsersManagement";
 import DoctorsManagement from "../components/DoctorsManagement";
+import PendingDoctors from "../components/PendingDoctors";
 import AdminAppointments from "../components/AdminAppointments";
 import AdminPrescriptions from "../components/AdminPrescriptions";
-import AdminOverview from "../components/AdminOverview";
 import ChangeAdminPassword from "../components/ChangeAdminPassword";
 
-const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [backendReady, setBackendReady] = useState(false);
+const AUTHORIZED_ADMIN_EMAIL = "ramitgoyal1987@gmail.com";
 
+const NAV_ITEMS = [
+  { to: "/admin/dashboard", label: "Dashboard", icon: FiGrid, exact: true },
+  { to: "/admin/dashboard/users", label: "Patients & Users", icon: FiUsers },
+  { to: "/admin/dashboard/doctors", label: "Doctors", icon: FiUserCheck },
+  { to: "/admin/dashboard/pending-doctors", label: "Pending Approvals", icon: FiClock },
+  { to: "/admin/dashboard/appointments", label: "Appointments", icon: FiCalendar },
+  { to: "/admin/dashboard/prescriptions", label: "Prescriptions", icon: FiFileText },
+  { to: "/admin/dashboard/change-password", label: "Security & Access", icon: FiLock },
+];
+
+export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const adminEmail = localStorage.getItem("adminEmail") || "";
+
+  // Verify Admin Authentication
   useEffect(() => {
     const adminToken = localStorage.getItem("adminToken");
-    const adminEmail = localStorage.getItem("adminEmail");
-    const AUTHORIZED_ADMIN_EMAIL = "ramitgoyal1987@gmail.com";
-    
-    // Security Check 1: Check if token exists
+    const email = localStorage.getItem("adminEmail");
+
     if (!adminToken) {
-      console.warn("⚠️ No admin token found. Redirecting to login...");
       navigate("/admin/login");
       return;
     }
-    
-    // Security Check 2: Verify the admin email is the authorized one
-    if (!adminEmail || adminEmail.toLowerCase() !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
-      console.warn("⚠️ Unauthorized admin access attempt blocked!");
+
+    if (!email || email.toLowerCase() !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminEmail");
       localStorage.removeItem("adminRole");
-      alert("Unauthorized access! Only authorized personnel can access admin panel.");
       navigate("/admin/login");
-      return;
     }
-    
-    // All checks passed - wake up backends
-    wakeUpBackends();
   }, [navigate]);
-
-  // Wake up both backends on dashboard load
-  const wakeUpBackends = async () => {
-    try {
-      const userBackendUrl = import.meta.env.VITE_BACKEND_URL || '';
-      const doctorBackendUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL || '';
-      
-      console.log('Waking up backends...');
-      
-      // Ping both backends simultaneously
-      const promises = [];
-      if (userBackendUrl) {
-        promises.push(fetch(`${userBackendUrl}/`).catch(e => console.log('User backend waking...')));
-      } else {
-        promises.push(fetch('/').catch(e => console.log('User backend waking...')));
-      }
-      
-      if (doctorBackendUrl) {
-        promises.push(fetch(`${doctorBackendUrl}/`).catch(e => console.log('Doctor backend waking...')));
-      }
-      
-      await Promise.all(promises);
-      console.log('Backends pinged successfully');
-      
-      // Wait 2 seconds for backends to fully wake up
-      setTimeout(() => {
-        setBackendReady(true);
-      }, 2000);
-    } catch (error) {
-      console.error('Error waking backends:', error);
-      setBackendReady(true); // Proceed anyway
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminEmail");
     localStorage.removeItem("adminRole");
-    navigate("/");
+    navigate("/admin/login");
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const isActive = (item) => {
+    if (item.exact) {
+      return (
+        location.pathname === "/admin/dashboard" ||
+        location.pathname === "/admin/dashboard/"
+      );
+    }
+    return location.pathname.startsWith(item.to);
   };
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
+  const getBreadcrumbTitle = () => {
+    const current = NAV_ITEMS.find((item) => isActive(item));
+    return current ? current.label : "Admin Workspace";
   };
 
   return (
-    <div className="admin-dashboard">
-      {/* Overlay for mobile */}
-      <div 
-        className={`menu-overlay ${isMenuOpen ? "active" : ""}`} 
-        onClick={closeMenu}
-      ></div>
+    <div className="ap-layout">
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          className="ap-modal-backdrop"
+          style={{ zIndex: 95 }}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-      <aside className={`admin-sidebar ${isMenuOpen ? "open" : ""}`}>
-        <div className="admin-sidebar-header">
-          <h2>Admin Panel</h2>
-          <button className="menu-close" onClick={toggleMenu}>
-            ✕
+      {/* ─── Sidebar ─── */}
+      <aside
+        className={`ap-sidebar ${sidebarCollapsed ? "ap-sidebar--collapsed" : ""} ${
+          mobileOpen ? "ap-sidebar--mobile-open" : ""
+        }`}
+      >
+        <div className="ap-sidebar-header">
+          <Link to="/admin/dashboard" className="ap-brand" onClick={() => setMobileOpen(false)}>
+            <div className="ap-brand-icon">☘</div>
+            {!sidebarCollapsed && (
+              <>
+                <span>RemedyEase</span>
+                <span className="ap-brand-badge">Admin</span>
+              </>
+            )}
+          </Link>
+
+          <button
+            type="button"
+            className="ap-sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
           </button>
         </div>
 
-        <nav className="admin-nav">
-          <Link to="/admin/dashboard" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">📊</span>
-            Dashboard
-          </Link>
-          <Link to="/admin/dashboard/pending-doctors" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">👨‍⚕️</span>
-            Pending Doctors
-          </Link>
-          <Link to="/admin/dashboard/users" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">👥</span>
-            Users
-          </Link>
-          <Link to="/admin/dashboard/doctors" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">🏥</span>
-            Doctors
-          </Link>
-          <Link to="/admin/dashboard/appointments" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">📅</span>
-            Appointments
-          </Link>
-          <Link to="/admin/dashboard/prescriptions" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">💊</span>
-            Prescriptions
-          </Link>
-          <Link to="/admin/dashboard/change-password" className="admin-nav-link" onClick={closeMenu}>
-            <span className="nav-icon">🔐</span>
-            Change Password
-          </Link>
+        {/* Nav list */}
+        <nav className="ap-nav">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`ap-nav-link ${active ? "ap-nav-link--active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+                title={sidebarCollapsed ? item.label : ""}
+              >
+                <Icon className="ap-nav-icon" />
+                {!sidebarCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
         </nav>
 
-        <button className="admin-logout-btn" onClick={handleLogout}>
-          <span className="nav-icon">🚪</span>
-          Logout
-        </button>
+        {/* Footer Logout */}
+        <div className="ap-sidebar-footer">
+          <button type="button" className="ap-logout-btn" onClick={handleLogout}>
+            <FiLogOut size={16} />
+            {!sidebarCollapsed && <span>Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
-      <main className="admin-main">
-        <button className="menu-toggle" onClick={toggleMenu}>
-          ☰
-        </button>
+      {/* ─── Main Content ─── */}
+      <main className="ap-main">
+        {/* Topbar */}
+        <header className="ap-topbar">
+          <div className="ap-topbar-left">
+            <button
+              type="button"
+              className="ap-mobile-menu-btn"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            </button>
+            <div className="ap-breadcrumb">{getBreadcrumbTitle()}</div>
+          </div>
 
-        <div className="admin-content">
+          <div className="ap-topbar-right">
+            <div className="ap-admin-profile-pill">
+              <div className="ap-admin-avatar">RG</div>
+              <div className="ap-admin-info">
+                <span className="ap-admin-name">Admin Console</span>
+                <span className="ap-admin-role">{adminEmail || "Super Admin"}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Router Viewport */}
+        <div className="ap-content-container">
           <Routes>
             <Route index element={<AdminOverview />} />
-            <Route path="pending-doctors" element={<PendingDoctors />} />
             <Route path="users" element={<UsersManagement />} />
             <Route path="doctors" element={<DoctorsManagement />} />
+            <Route path="pending-doctors" element={<PendingDoctors />} />
             <Route path="appointments" element={<AdminAppointments />} />
             <Route path="prescriptions" element={<AdminPrescriptions />} />
             <Route path="change-password" element={<ChangeAdminPassword />} />
@@ -162,6 +196,4 @@ const AdminDashboard = () => {
       </main>
     </div>
   );
-};
-
-export default AdminDashboard;
+}
