@@ -310,6 +310,85 @@ export const getUserChatConversations = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, conversations, "Chat conversations fetched successfully"));
 });
 
+// Get all chat conversations for a doctor
+export const getDoctorChatConversations = asyncHandler(async (req, res) => {
+  const { doctorEmail } = req.params;
+
+  if (!doctorEmail) {
+    throw new ApiError(400, "Doctor email is required");
+  }
+
+  // Find all appointments for this doctor
+  const appointments = await Appointment.find({ doctorEmail })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!appointments || appointments.length === 0) {
+    return res.status(200).json(new ApiResponse(200, [], "No appointments found"));
+  }
+
+  const conversations = [];
+
+  for (const appointment of appointments) {
+    // Find latest message
+    const latestMessages = await ChatMessage.find({
+      appointmentId: appointment._id
+    }).sort({ createdAt: -1 }).limit(1).lean();
+
+    const lastMessage = latestMessages[0] || null;
+
+    // Count unread messages sent by patient to this doctor
+    const unreadCount = await ChatMessage.countDocuments({
+      appointmentId: appointment._id,
+      senderType: 'user',
+      isRead: false
+    });
+
+    const totalMessageCount = await ChatMessage.countDocuments({
+      appointmentId: appointment._id
+    });
+
+    conversations.push({
+      appointmentId: appointment._id,
+      chatRoomId: appointment.chatRoomId,
+      callRoomId: appointment.callRoomId,
+      userName: appointment.userName || appointment.userEmail?.split('@')[0] || "Patient",
+      userEmail: appointment.userEmail,
+      doctorEmail: appointment.doctorEmail,
+      doctorName: appointment.doctorName,
+      doctorOnline: Boolean(appointment.doctorOnline),
+      userOnline: Boolean(appointment.userOnline),
+      appointmentDate: appointment.date,
+      appointmentTime: appointment.time,
+      status: appointment.status,
+      symptoms: appointment.symptoms || "",
+      lastMessage: lastMessage ? {
+        message: lastMessage.message,
+        messageType: lastMessage.messageType,
+        fileName: lastMessage.fileName,
+        senderType: lastMessage.senderType,
+        senderName: lastMessage.senderName,
+        createdAt: lastMessage.createdAt || lastMessage.timestamp,
+        isRead: lastMessage.isRead
+      } : null,
+      messageCount: totalMessageCount,
+      unreadCount
+    });
+  }
+
+  // Sort: active chats first, then recent appointment date
+  conversations.sort((a, b) => {
+    const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+    const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+    if (timeA && timeB) return timeB - timeA;
+    if (timeA) return -1;
+    if (timeB) return 1;
+    return new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime();
+  });
+
+  return res.status(200).json(new ApiResponse(200, conversations, "Doctor chat conversations fetched successfully"));
+});
+
 // Mark messages as read
 export const markMessagesAsRead = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;

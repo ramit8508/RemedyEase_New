@@ -7,6 +7,7 @@ import {
   updateOnlineStatus,
   getAppointmentLiveStatus,
   getUserChatConversations,
+  getDoctorChatConversations,
   markMessagesAsRead,
   notifyDoctor,
   getDoctorNotifications,
@@ -20,6 +21,7 @@ const router = new Router();
 router.post("/chat/send", sendChatMessage);
 router.get("/chat/history/:appointmentId", getChatHistory);
 router.get("/chat/conversations/:userEmail", getUserChatConversations);
+router.get("/chat/doctor-conversations/:doctorEmail", getDoctorChatConversations);
 router.post("/chat/read/:appointmentId", markMessagesAsRead);
 
 // Video call routes
