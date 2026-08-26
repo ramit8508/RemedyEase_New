@@ -1,35 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const SignupStyles = () => (
-  <style>
-    {`
-      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-      .signup-form { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #e6ffe6, #dcf8ff); font-family: 'Poppins', sans-serif; }
-      .signup-logo { font-size: 50px; color: #388e3c; font-weight: 800; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); }
-      .signup-title { font-size: 36px; font-weight: 700; margin-top: 15px; margin-bottom: 10px; color: #333; }
-      .signup-header { font-size: 18px; font-weight: 400; color: #555; margin-bottom: 30px; text-align: center; }
-      .signup-divider { display: flex; flex-direction: column; gap: 15px; background-color: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); min-width: 500px; max-width: 550px; border: 1px solid #ffffff30; }
-      .signup-input-group { display: flex; flex-direction: column; width: 100%; }
-      .signup-label { font-size: 16px; margin-bottom: 8px; font-weight: 600; color: #333; }
-      .signup_input { width: 100%; padding: 14px 18px; font-size: 16px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; }
-      .signup_input:focus { border-color: #4CAF50; box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2); background-color: #fff; outline: none; }
-      .signup_input::placeholder { color: #aaa; }
-      .agree-row { display: flex; align-items: center; margin-top: 10px; }
-      .agree-row input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; }
-      .agree-label { font-size: 14px; color: #555; font-weight: 400; }
-      .signup-button { width: 100%; padding: 14px 20px; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; color: white; background: linear-gradient(90deg, #4CAF50, #388e3c); border: none; border-radius: 10px; cursor: pointer; margin-top: 15px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-      .signup-button:hover { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); transform: translateY(-3px); }
-      .signin-prompt { font-size: 15px; font-weight: 500; text-align: center; margin-top: 20px; }
-      .signin-link { color: #4CAF50; text-decoration: none; font-weight: 600; }
-      .signin-link:hover { text-decoration: underline; }
-      .signup-message { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; font-weight: 500; }
-      .signup-message.error { background-color: #ffebee; color: #c62828; border: 1px solid #ef5350; }
-      .signup-message.success { background-color: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; }
-      @media (max-width: 480px) { .signup-divider { min-width: 90vw; padding: 30px 25px; } .signup-logo { font-size: 40px; } .signup-title { font-size: 30px; } }
-    `}
-  </style>
-);
+import "../../Css_for_all/AuthPages.css";
+import { FiEye, FiEyeOff, FiUser, FiUpload, FiShield, FiHeart, FiCheck, FiVideo, FiMessageCircle, FiLock } from "react-icons/fi";
 
 export default function Signup() {
   const avatarRef = useRef();
@@ -43,6 +15,9 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [avatarName, setAvatarName] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -107,6 +82,7 @@ export default function Signup() {
             agree: false,
         });
         avatarRef.current.value = "";
+        setAvatarName("");
         setTimeout(() => {
           navigate("/user/login");
         }, 2000);
@@ -122,56 +98,267 @@ export default function Signup() {
     setLoading(false);
   };
 
+  const handleUploadClick = () => {
+    avatarRef.current.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setAvatarName(file ? file.name : "");
+  };
+
+  const getMessageClass = () => {
+    if (messageType === "success") return "auth-message auth-message--success";
+    if (messageType === "error") return "auth-message auth-message--error";
+    return "auth-message auth-message--info";
+  };
+
   return (
-    <>
-      <SignupStyles />
-      <div className="signup-form">
-        <h1 className="signup-logo">☘RemedyEase</h1>
-        <h2 className="signup-title">Create Your Account</h2>
-        <h3 className="signup-header">
-          Join RemedyEase and start your wellness journey today!
-        </h3>
-        <div className="signup-divider">
-          <form onSubmit={handleSubmit} encType="multipart/form-data">
-            <div className="signup-input-group">
-              <label className="signup-label">Full Name</label>
-              <input type="text" name="fullName" placeholder="John Doe" required className="signup_input" value={form.fullName} onChange={handleChange} />
-            </div>
-            <div className="signup-input-group">
-              <label className="signup-label">Email</label>
-              <input type="email" name="email" placeholder="john@example.com" required className="signup_input" value={form.email} onChange={handleChange} />
-            </div>
-            <div className="signup-input-group">
-              <label className="signup-label">Password</label>
-              <input type="password" name="password" placeholder="At least 6 characters" required className="signup_input" value={form.password} onChange={handleChange} />
-            </div>
-            <div className="signup-input-group">
-              <label className="signup-label">Confirm Password</label>
-              <input type="password" name="confirmPassword" placeholder="Re-enter your password" required className="signup_input" value={form.confirmPassword} onChange={handleChange} />
-            </div>
-            <div className="signup-input-group">
-              <label className="signup-label">Avatar (Profile Photo)</label>
-              <input type="file" name="avatar" accept="image/*" required className="signup_input" ref={avatarRef} />
-            </div>
-            <div className="agree-row">
-              <input type="checkbox" id="agree" name="agree" checked={form.agree} onChange={handleChange} required />
-              <label htmlFor="agree" className="agree-label">I agree to the terms and conditions</label>
-            </div>
-            <button type="submit" className="signup-button" disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
-            {message && (
-              <p className={`signup-message ${messageType}`}>{message}</p>
-            )}
-          </form>
-          <p className="signin-prompt">
-            Already have an account?{" "}
-            <Link to="/user/login" className="signin-link">
-              Sign In
-            </Link>
+    <div className="auth-page">
+      <div className="auth-layout">
+        {/* LEFT COLUMN — Intro */}
+        <div className="auth-intro">
+          <span className="auth-intro-badge">RemedyEase Healthcare</span>
+          <h2 className="auth-intro-heading">Healthcare made simpler.</h2>
+          <p className="auth-intro-text">
+            Connect with trusted doctors, manage your healthcare and access
+            personalized support — all from one secure platform.
           </p>
+
+          {/* Benefit items — clean vertical list */}
+          <div className="auth-benefits">
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon auth-benefit-icon--green">
+                <FiVideo size={18} />
+              </div>
+              <div className="auth-benefit-text">
+                <span className="auth-benefit-title">Video Consultations</span>
+                <span className="auth-benefit-sub">Meet trusted doctors online</span>
+              </div>
+            </div>
+
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon auth-benefit-icon--blue">
+                <FiMessageCircle size={18} />
+              </div>
+              <div className="auth-benefit-text">
+                <span className="auth-benefit-title">Real-time Doctor Chat</span>
+                <span className="auth-benefit-sub">Get support when you need it</span>
+              </div>
+            </div>
+
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon auth-benefit-icon--green">
+                <FiShield size={18} />
+              </div>
+              <div className="auth-benefit-text">
+                <span className="auth-benefit-title">Secure & Private</span>
+                <span className="auth-benefit-sub">Your healthcare data stays protected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN — Form */}
+        <div className="auth-form-column">
+          <Link to="/user/home" className="auth-brand">RemedyEase</Link>
+
+          <div className="auth-card">
+            <h1 className="auth-card-title">Create your account</h1>
+            <p className="auth-card-subtitle">Join RemedyEase and take control of your healthcare.</p>
+
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
+              {/* SECTION: Personal information */}
+              <div className="auth-section">
+                <span className="auth-section-label">Personal information</span>
+
+                <div className="auth-field">
+                  <label htmlFor="signup-fullname" className="auth-label">Full Name</label>
+                  <div className="auth-input-wrapper">
+                    <input
+                      id="signup-fullname"
+                      type="text"
+                      name="fullName"
+                      placeholder="Sam Goyal"
+                      required
+                      className="auth-input"
+                      value={form.fullName}
+                      onChange={handleChange}
+                      autoComplete="name"
+                    />
+                  </div>
+                </div>
+
+                <div className="auth-field">
+                  <label htmlFor="signup-email" className="auth-label">Email</label>
+                  <div className="auth-input-wrapper">
+                    <input
+                      id="signup-email"
+                      type="email"
+                      name="email"
+                      placeholder="SAM@example.com"
+                      required
+                      className="auth-input"
+                      value={form.email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: Secure your account */}
+              <div className="auth-section">
+                <span className="auth-section-label">Secure your account</span>
+
+                <div className="auth-field">
+                  <label htmlFor="signup-password" className="auth-label">Password</label>
+                  <div className="auth-input-wrapper">
+                    <input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="At least 6 characters"
+                      required
+                      className="auth-input auth-input--password"
+                      value={form.password}
+                      onChange={handleChange}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      tabIndex={0}
+                    >
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="auth-field">
+                  <label htmlFor="signup-confirm-password" className="auth-label">Confirm Password</label>
+                  <div className="auth-input-wrapper">
+                    <input
+                      id="signup-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      placeholder="Re-enter your password"
+                      required
+                      className="auth-input auth-input--password"
+                      value={form.confirmPassword}
+                      onChange={handleChange}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      tabIndex={0}
+                    >
+                      {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: Profile */}
+              <div className="auth-section">
+                <span className="auth-section-label">Profile</span>
+
+                <div className="auth-field">
+                  <label className="auth-label">Profile Photo</label>
+                  <div
+                    className="auth-upload"
+                    onClick={handleUploadClick}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleUploadClick(); } }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Upload profile photo"
+                  >
+                    <div className="auth-upload-icon">
+                      {avatarName ? <FiUpload size={20} /> : <FiUser size={20} />}
+                    </div>
+                    <div className="auth-upload-text">
+                      <span className="auth-upload-title">
+                        {avatarName ? "Change photo" : "Upload profile photo"}
+                      </span>
+                      {avatarName ? (
+                        <span className="auth-upload-filename">{avatarName}</span>
+                      ) : (
+                        <span className="auth-upload-hint">PNG, JPG up to 5 MB</span>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      name="avatar"
+                      accept="image/*"
+                      required
+                      className="auth-upload-input"
+                      ref={avatarRef}
+                      onChange={handleFileChange}
+                      tabIndex={-1}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="auth-checkbox-row">
+                <input
+                  type="checkbox"
+                  id="agree"
+                  name="agree"
+                  checked={form.agree}
+                  onChange={handleChange}
+                  required
+                />
+                <label htmlFor="agree" className="auth-checkbox-label">
+                  I agree to the terms and conditions
+                </label>
+              </div>
+
+              {/* Submit */}
+              <button type="submit" className="auth-submit-btn" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account →"}
+              </button>
+
+              {/* Message */}
+              {message && (
+                <div className={getMessageClass()}>
+                  {message}
+                </div>
+              )}
+            </form>
+
+            {/* Switch to Login */}
+            <p className="auth-footer-text" style={{ marginTop: '20px' }}>
+              Already have an account?{" "}
+              <Link to="/user/login" className="auth-footer-link">
+                Sign in
+              </Link>
+            </p>
+          </div>
+
+          {/* Trust indicators */}
+          <div className="auth-trust-row">
+            <div className="auth-trust-item">
+              <FiShield size={14} />
+              <span>Secure & private</span>
+            </div>
+            <div className="auth-trust-item">
+              <FiHeart size={14} />
+              <span>Patient-first</span>
+            </div>
+            <div className="auth-trust-item">
+              <FiCheck size={14} />
+              <span>Trusted healthcare platform</span>
+            </div>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

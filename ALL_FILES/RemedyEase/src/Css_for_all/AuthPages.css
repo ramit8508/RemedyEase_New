@@ -1,0 +1,737 @@
+/* ============================================================
+   AuthPages.css — RemedyEase Authentication Design System
+   Shared by Login & Signup pages
+   Typography: Manrope (headings 600–800), Inter (body 400–600)
+   ============================================================ */
+
+/* ============================================================
+   PAGE & BACKGROUND
+   ============================================================ */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #fcfdfc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 24px;
+}
+
+/* Subtle ambient gradient circles */
+.auth-page::before,
+.auth-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-page::before {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(22, 163, 74, 0.05) 0%, transparent 70%);
+  top: -180px;
+  right: -120px;
+}
+
+.auth-page::after {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(22, 163, 74, 0.04) 0%, transparent 70%);
+  bottom: -150px;
+  left: -100px;
+}
+
+/* Third ambient circle via box-shadow on layout */
+.auth-layout::before {
+  content: '';
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(21, 128, 61, 0.03) 0%, transparent 70%);
+  top: 50%;
+  left: 10%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   TWO-COLUMN LAYOUT
+   ============================================================ */
+.auth-layout {
+  display: grid;
+  grid-template-columns: 45fr 55fr;
+  max-width: 1080px;
+  width: 100%;
+  min-height: 600px;
+  position: relative;
+  z-index: 1;
+  gap: 48px;
+  align-items: start;
+}
+
+/* ============================================================
+   LEFT COLUMN — INTRO
+   ============================================================ */
+.auth-intro {
+  padding: 52px 32px 20px 0;
+  position: relative;
+}
+
+.auth-intro-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 100px;
+  letter-spacing: 0.8px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.auth-intro-heading {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  color: #111827;
+  margin: 0 0 16px;
+}
+
+.auth-intro-text {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #6b7280;
+  margin: 0 0 24px;
+  max-width: 400px;
+}
+
+/* --- Benefit Items (Clean Vertical List) --- */
+.auth-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.auth-benefit-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-benefit-icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.auth-benefit-icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.auth-benefit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-benefit-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.1px;
+}
+
+.auth-benefit-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Subtle green glow behind the intro area */
+.auth-intro::after {
+  content: '';
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(22, 163, 74, 0.06) 0%, transparent 70%);
+  top: 40%;
+  left: -40px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================================
+   RIGHT COLUMN — FORM AREA
+   ============================================================ */
+.auth-form-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Brand mark */
+.auth-brand {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #15803d;
+  text-decoration: none;
+  letter-spacing: -0.4px;
+  margin-bottom: 16px;
+  display: inline-block;
+  transition: opacity 0.15s;
+}
+
+.auth-brand:hover {
+  opacity: 0.85;
+}
+
+/* ============================================================
+   AUTH CARD
+   ============================================================ */
+.auth-card {
+  width: 100%;
+  max-width: 500px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 20px;
+  padding: 36px 40px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 12px 36px rgba(0, 0, 0, 0.02);
+}
+
+.auth-card-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px;
+}
+
+.auth-card-subtitle {
+  font-size: 14.5px;
+  font-weight: 400;
+  color: #6b7280;
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   FORM SECTIONS (Signup grouping)
+   ============================================================ */
+.auth-section {
+  margin-bottom: 18px;
+}
+
+.auth-section-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* ============================================================
+   INPUT GROUPS
+   ============================================================ */
+.auth-field {
+  margin-bottom: 14px;
+}
+
+.auth-field:last-child {
+  margin-bottom: 0;
+}
+
+.auth-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  font-size: 14.5px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  color: #0f172a;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+  background-color: #ffffff;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Password input (with toggle) needs right padding */
+.auth-input--password {
+  padding-right: 44px;
+}
+
+/* Password visibility toggle */
+.auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.auth-password-toggle:hover {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 1px;
+}
+
+/* Forgot password */
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.auth-forgot-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.auth-forgot-link:hover {
+  color: #16a34a;
+}
+
+/* ============================================================
+   PROFILE UPLOAD (Signup)
+   ============================================================ */
+.auth-upload {
+  border: 1.5px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  background: #fafbfc;
+  position: relative;
+}
+
+.auth-upload:hover {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.auth-upload:focus-within {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.auth-upload-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-upload-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-upload-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.auth-upload-filename {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #16a34a;
+  margin-top: 2px;
+}
+
+.auth-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   TERMS CHECKBOX
+   ============================================================ */
+.auth-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 4px;
+}
+
+.auth-checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: #16a34a;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.auth-checkbox-label {
+  font-size: 13.5px;
+  color: #4b5563;
+  font-weight: 400;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.auth-submit-btn {
+  width: 100%;
+  height: 46px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  color: #ffffff;
+  background: #16a34a;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 0.1px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: #15803d;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.15);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.auth-submit-btn:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   MESSAGES
+   ============================================================ */
+.auth-message {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.auth-message--error {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.auth-message--success {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.auth-message--info {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-divider-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   LINKS & FOOTER TEXT
+   ============================================================ */
+.auth-footer-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}
+
+.auth-footer-link {
+  color: #16a34a;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.auth-footer-link:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+/* Security note */
+.auth-secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.auth-secure-note svg {
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+/* ============================================================
+   TRUST INDICATORS
+   ============================================================ */
+.auth-trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.auth-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.auth-trust-item svg {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET
+   ============================================================ */
+@media (max-width: 960px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    gap: 0;
+  }
+
+  .auth-intro {
+    display: none;
+  }
+
+  .auth-page {
+    padding: 32px 20px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE
+   ============================================================ */
+@media (max-width: 600px) {
+  .auth-page {
+    padding: 24px 16px;
+    align-items: flex-start;
+    padding-top: 16px;
+  }
+
+  .auth-card {
+    padding: 28px 22px;
+    border-radius: 16px;
+  }
+
+  .auth-card-title {
+    font-size: 22px;
+  }
+
+  .auth-card-subtitle {
+    font-size: 13.5px;
+    margin-bottom: 22px;
+  }
+
+  .auth-brand {
+    font-size: 18px;
+    margin-bottom: 18px;
+  }
+
+  .auth-input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .auth-submit-btn {
+    height: 44px;
+    font-size: 14.5px;
+  }
+
+  .auth-trust-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .auth-upload {
+    padding: 16px;
+  }
+
+  .auth-section-label {
+    font-size: 11px;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .auth-submit-btn,
+  .auth-input,
+  .auth-upload,
+  .auth-password-toggle,
+  .auth-forgot-link,
+  .auth-footer-link {
+    transition: none;
+  }
+
+  .auth-submit-btn:hover:not(:disabled) {
+    transform: none;
+  }
+}
