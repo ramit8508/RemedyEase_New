@@ -26,14 +26,30 @@ import DoctorAvailability from "./Doctor_DashBoardComponents/DoctorAvailability"
 import DoctorAi from "./Doctor_DashBoardComponents/DoctorAi";
 import DoctorProfile from "./Doctor_DashBoardComponents/DoctorProfile";
 
-const NAV_ITEMS = [
-  { to: "/doctor/dashboard", label: "Dashboard", icon: FiGrid, exact: true },
-  { to: "/doctor/dashboard/appointments", label: "Appointments", icon: FiCalendar },
-  { to: "/doctor/dashboard/history", label: "Patients & History", icon: FiUsers },
-  { to: "/doctor/dashboard/chat", label: "Messages & Chat", icon: FiMessageSquare },
-  { to: "/doctor/dashboard/availability", label: "Availability", icon: FiClock },
-  { to: "/doctor/dashboard/ai", label: "AI Health Assistant", icon: FiCpu },
-  { to: "/doctor/dashboard/profile", label: "Doctor Profile", icon: FiUser },
+// Grouped Navigation Structure
+const NAV_GROUPS = [
+  {
+    groupTitle: "MAIN",
+    items: [
+      { to: "/doctor/dashboard", label: "Dashboard", icon: FiGrid, exact: true },
+      { to: "/doctor/dashboard/appointments", label: "Appointments", icon: FiCalendar },
+      { to: "/doctor/dashboard/history", label: "Patients & History", icon: FiUsers },
+      { to: "/doctor/dashboard/chat", label: "Messages & Chat", icon: FiMessageSquare },
+    ],
+  },
+  {
+    groupTitle: "CLINICAL",
+    items: [
+      { to: "/doctor/dashboard/ai", label: "AI Health Assistant", icon: FiCpu },
+      { to: "/doctor/dashboard/availability", label: "Availability", icon: FiClock },
+    ],
+  },
+  {
+    groupTitle: "ACCOUNT",
+    items: [
+      { to: "/doctor/dashboard/profile", label: "Doctor Profile", icon: FiUser },
+    ],
+  },
 ];
 
 export default function DoctorDashboard() {
@@ -101,8 +117,12 @@ export default function DoctorDashboard() {
   };
 
   const getBreadcrumbTitle = () => {
-    const current = NAV_ITEMS.find((item) => isActive(item));
-    return current ? current.label : "Doctor Workspace";
+    for (const group of NAV_GROUPS) {
+      for (const item of group.items) {
+        if (isActive(item)) return item.label;
+      }
+    }
+    return "Doctor Portal";
   };
 
   const todayFormatted = new Date().toLocaleDateString("en-IN", {
@@ -114,7 +134,7 @@ export default function DoctorDashboard() {
 
   return (
     <div className="dd-layout">
-      {/* Mobile Overlay */}
+      {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
         <div
           className="ap-modal-backdrop"
@@ -123,20 +143,25 @@ export default function DoctorDashboard() {
         />
       )}
 
-      {/* ─── Doctor Sidebar ─── */}
+      {/* ─── Doctor Fixed Sidebar (264px) ─── */}
       <aside
         className={`dd-sidebar ${sidebarCollapsed ? "dd-sidebar--collapsed" : ""} ${
           mobileOpen ? "dd-sidebar--mobile-open" : ""
         }`}
       >
+        {/* Top Brand Area */}
         <div className="dd-sidebar-header">
-          <Link to="/doctor/dashboard" className="dd-brand" onClick={() => setMobileOpen(false)}>
+          <Link
+            to="/doctor/dashboard"
+            className="dd-brand-wrapper"
+            onClick={() => setMobileOpen(false)}
+          >
             <div className="dd-brand-icon">☘</div>
             {!sidebarCollapsed && (
-              <>
-                <span>RemedyEase</span>
-                <span className="dd-brand-badge">Doctor</span>
-              </>
+              <div className="dd-brand-text-block">
+                <span className="dd-brand-name">RemedyEase</span>
+                <span className="dd-brand-portal-label">Doctor Portal</span>
+              </div>
             )}
           </Link>
 
@@ -145,99 +170,147 @@ export default function DoctorDashboard() {
             className="dd-sidebar-toggle"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label="Toggle sidebar width"
           >
             {sidebarCollapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
           </button>
         </div>
 
-        {/* Navigation list */}
-        <nav className="dd-nav">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`dd-nav-link ${active ? "dd-nav-link--active" : ""}`}
-                onClick={() => setMobileOpen(false)}
-                title={sidebarCollapsed ? item.label : ""}
-              >
-                <Icon className="dd-nav-icon" />
-                {!sidebarCollapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Doctor Identity Pill */}
+        {/* Compact Doctor Profile Box */}
         {!sidebarCollapsed && doctor && (
-          <div className="dd-sidebar-doctor">
-            {doctor.avatar ? (
-              <img src={doctor.avatar} alt={doctor.fullname} className="dd-doc-avatar" />
-            ) : (
-              <div className="dd-doc-avatar">{doctor.fullname?.charAt(0) || "D"}</div>
-            )}
-            <div className="dd-doc-details">
-              <span className="dd-doc-name">Dr. {doctor.fullname}</span>
-              <span className="dd-doc-spec">{doctor.specialization || "General Practice"}</span>
-              <span className="dd-doc-status-indicator">
-                <span
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: isAvailable ? "#4ade80" : "#f59e0b",
-                  }}
+          <div className="dd-sidebar-profile">
+            <div className="dd-profile-avatar-wrap">
+              {doctor.avatar ? (
+                <img
+                  src={doctor.avatar}
+                  alt={doctor.fullname}
+                  className="dd-profile-avatar"
                 />
-                {isAvailable ? "Available" : "Busy"}
+              ) : (
+                <div className="dd-profile-avatar">
+                  {doctor.fullname?.charAt(0) || "D"}
+                </div>
+              )}
+              <span className="dd-profile-status-dot" />
+            </div>
+
+            <div className="dd-profile-info">
+              <span className="dd-profile-name">
+                Dr. {doctor.fullname || "Doctor"}
+              </span>
+              <span className="dd-profile-role">
+                {doctor.specialization || "General Physician"}
               </span>
             </div>
           </div>
         )}
 
-        {/* Footer Logout */}
-        <div style={{ padding: "12px" }}>
-          <button type="button" className="dd-logout-btn" onClick={handleLogout}>
+        {/* Grouped Navigation */}
+        <nav className="dd-nav">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.groupTitle}>
+              {!sidebarCollapsed && (
+                <div className="dd-nav-group-title">{group.groupTitle}</div>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`dd-nav-link ${active ? "dd-nav-link--active" : ""}`}
+                    onClick={() => setMobileOpen(false)}
+                    title={sidebarCollapsed ? item.label : ""}
+                  >
+                    <div className="dd-nav-icon-container">
+                      <Icon />
+                    </div>
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Pinned Bottom Sidebar Section */}
+        <div className="dd-sidebar-bottom">
+          {/* Availability status card */}
+          {!sidebarCollapsed && (
+            <div
+              className="dd-availability-card"
+              onClick={() => setIsAvailable(!isAvailable)}
+              title="Click to toggle availability status"
+            >
+              <div className="dd-availability-info">
+                <span
+                  className={`dd-avail-dot ${
+                    isAvailable ? "dd-avail-dot--online" : "dd-avail-dot--busy"
+                  }`}
+                />
+                <span className="dd-avail-text">
+                  {isAvailable ? "Available for consultations" : "Currently busy"}
+                </span>
+              </div>
+              <span
+                className={`dd-avail-pill-btn ${
+                  isAvailable ? "dd-avail-pill-btn--online" : "dd-avail-pill-btn--busy"
+                }`}
+              >
+                {isAvailable ? "Online" : "Busy"}
+              </span>
+            </div>
+          )}
+
+          {/* Sign out button */}
+          <button
+            type="button"
+            className="dd-logout-btn"
+            onClick={handleLogout}
+            title="Sign out of doctor portal"
+          >
             <FiLogOut size={16} />
             {!sidebarCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
 
-      {/* ─── Main Content ─── */}
+      {/* ─── Main Content Area ─── */}
       <main className="dd-main">
-        {/* Topbar */}
+        {/* Top Header (Height 68px) */}
         <header className="dd-topbar">
           <div className="dd-topbar-left">
             <button
               type="button"
               className="dd-mobile-menu-btn"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
+              aria-label="Toggle mobile menu"
             >
-              {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+              {mobileOpen ? <FiX /> : <FiMenu />}
             </button>
-            <div className="dd-breadcrumb">{getBreadcrumbTitle()}</div>
+            <h2 className="dd-page-title-header" style={{ margin: 0 }}>
+              {getBreadcrumbTitle()}
+            </h2>
           </div>
 
           <div className="dd-topbar-right">
-            {/* Today's date */}
+            {/* Today's date pill */}
             <div className="dd-date-pill">
               <FiCalendar size={13} color="#16a34a" />
               <span>{todayFormatted}</span>
             </div>
 
-            {/* Availability Toggle */}
+            {/* Availability status toggle pill */}
             <button
               type="button"
-              className="dd-availability-toggle"
+              className={`dd-status-indicator-btn ${
+                isAvailable
+                  ? "dd-status-indicator-btn--online"
+                  : "dd-status-indicator-btn--busy"
+              }`}
               onClick={() => setIsAvailable(!isAvailable)}
-              style={{
-                background: isAvailable ? "#f0fdf4" : "#fffbeb",
-                color: isAvailable ? "#15803d" : "#b45309",
-                borderColor: isAvailable ? "#dcfce7" : "#fde68a",
-              }}
+              title="Toggle availability"
             >
               <span
                 style={{
@@ -257,6 +330,7 @@ export default function DoctorDashboard() {
                 className="dd-notif-btn"
                 onClick={() => setShowNotifs(!showNotifs)}
                 title="Notifications"
+                aria-label="Doctor notifications"
               >
                 <FiBell size={16} />
                 {unreadNotifsCount > 0 && (
@@ -267,12 +341,26 @@ export default function DoctorDashboard() {
               {/* Notification Dropdown */}
               {showNotifs && (
                 <div className="dd-notif-dropdown">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "#0f172a" }}>Clinical Alerts</strong>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <strong style={{ fontSize: "14px", color: "#0f172a" }}>
+                      Clinical Alerts
+                    </strong>
                     <button
                       type="button"
                       onClick={() => setShowNotifs(false)}
-                      style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#64748b",
+                        cursor: "pointer",
+                      }}
                     >
                       <FiX size={14} />
                     </button>
@@ -308,10 +396,34 @@ export default function DoctorDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Doctor Profile Pill */}
+            {doctor && (
+              <Link
+                to="/doctor/dashboard/profile"
+                className="dd-topbar-profile-pill"
+                title="Doctor Profile"
+              >
+                {doctor.avatar ? (
+                  <img
+                    src={doctor.avatar}
+                    alt={doctor.fullname}
+                    className="dd-topbar-avatar"
+                  />
+                ) : (
+                  <div className="dd-topbar-avatar">
+                    {doctor.fullname?.charAt(0) || "D"}
+                  </div>
+                )}
+                <span className="dd-topbar-doc-name">
+                  Dr. {doctor.fullname?.split(" ")[0] || "Doctor"}
+                </span>
+              </Link>
+            )}
           </div>
         </header>
 
-        {/* Router Viewport */}
+        {/* Viewport content */}
         <div className="dd-content-container">
           <Routes>
             <Route index element={<DoctorHome />} />

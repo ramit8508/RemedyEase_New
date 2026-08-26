@@ -1,12 +1,12 @@
 /* ============================================================
    REMEDYEASE DOCTOR DASHBOARD — CLINICAL SAAS DESIGN SYSTEM
-   Brand: RemedyEase Emerald (#16a34a), Slate (#0f172a), Soft Mint (#f0fdf4)
+   Brand: Dark Navy (#0F172A), Soft Emerald (#16A34A), Clean White (#FFFFFF)
    ============================================================ */
 
 :root {
   --dd-primary: #16a34a;
   --dd-primary-hover: #15803d;
-  --dd-primary-light: #f0fdf4;
+  --dd-primary-light: rgba(22, 163, 74, 0.12);
   --dd-primary-border: #dcfce7;
   --dd-dark: #0f172a;
   --dd-slate: #334155;
@@ -15,7 +15,7 @@
   --dd-border: #e2e8f0;
   --dd-card-bg: #ffffff;
   --dd-sidebar-bg: #0f172a;
-  --dd-sidebar-hover: #1e293b;
+  --dd-sidebar-hover: rgba(255, 255, 255, 0.06);
   --dd-success: #16a34a;
   --dd-warning: #f59e0b;
   --dd-danger: #dc2626;
@@ -32,10 +32,10 @@
 }
 
 /* ============================================================
-   DOCTOR SIDEBAR
+   DOCTOR SIDEBAR (260px fixed)
    ============================================================ */
 .dd-sidebar {
-  width: 260px;
+  width: 264px;
   background: var(--dd-sidebar-bg);
   color: #ffffff;
   display: flex;
@@ -46,61 +46,70 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dd-sidebar--collapsed {
   width: 76px;
 }
 
+/* Brand Header */
 .dd-sidebar-header {
-  padding: 20px;
+  padding: 20px 18px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.dd-brand {
+.dd-brand-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
   color: #ffffff;
-  font-family: 'Manrope', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
   overflow: hidden;
-  white-space: nowrap;
 }
 
 .dd-brand-icon {
-  width: 36px;
-  height: 36px;
-  background: #16a34a;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   color: #ffffff;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
 }
 
-.dd-brand-badge {
-  font-size: 10px;
-  font-weight: 700;
-  background: rgba(22, 163, 74, 0.25);
-  color: #4ade80;
-  padding: 2px 6px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  margin-left: 4px;
+.dd-brand-text-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.dd-brand-name {
+  font-family: 'Manrope', sans-serif;
+  font-size: 17.5px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+}
+
+.dd-brand-portal-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.2px;
 }
 
 .dd-sidebar-toggle {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   padding: 6px;
   border-radius: 8px;
@@ -115,70 +124,28 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Sidebar Nav */
-.dd-nav {
-  flex: 1;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-}
-
-.dd-nav-link {
+/* ─── Compact Doctor Profile Box in Sidebar ─── */
+.dd-sidebar-profile {
+  padding: 14px 16px;
+  margin: 12px 12px 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  color: #94a3b8;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: all 0.15s;
-  white-space: nowrap;
 }
 
-.dd-nav-link:hover {
-  color: #ffffff;
-  background: var(--dd-sidebar-hover);
-}
-
-.dd-nav-link--active {
-  color: #ffffff !important;
-  background: var(--dd-primary) !important;
-  font-weight: 700;
-}
-
-.dd-nav-icon {
-  font-size: 17px;
+.dd-profile-avatar-wrap {
+  position: relative;
   flex-shrink: 0;
 }
 
-.dd-nav-badge {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 100px;
-  background: #f59e0b;
-  color: #000000;
-}
-
-/* Sidebar Doctor Identity Pill */
-.dd-sidebar-doctor {
-  padding: 16px 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.dd-doc-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.dd-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
   background: #16a34a;
   color: #ffffff;
   display: flex;
@@ -186,54 +153,191 @@
   justify-content: center;
   font-weight: 800;
   font-size: 14px;
-  flex-shrink: 0;
-  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-.dd-doc-details {
-  overflow: hidden;
+.dd-profile-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid var(--dd-sidebar-bg);
+}
+
+.dd-profile-info {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.dd-doc-name {
+.dd-profile-name {
   font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: #f8fafc;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  line-height: 1.2;
 }
 
-.dd-doc-spec {
+.dd-profile-role {
   font-size: 11px;
   color: #94a3b8;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-}
-
-.dd-doc-status-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10.5px;
-  color: #4ade80;
-  font-weight: 600;
   margin-top: 1px;
 }
 
+/* ─── Grouped Navigation ─── */
+.dd-nav {
+  flex: 1;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.dd-nav-group-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 14px 12px 6px;
+}
+
+.dd-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+  position: relative;
+}
+
+.dd-nav-link:hover {
+  color: #f8fafc;
+  background: var(--dd-sidebar-hover);
+}
+
+/* Tasteful Green Active State (Soft Emerald Tint + Accent Line) */
+.dd-nav-link--active {
+  color: #4ade80 !important;
+  background: rgba(22, 163, 74, 0.14) !important;
+  font-weight: 700;
+  border-left: 3px solid #16a34a;
+}
+
+.dd-nav-icon-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.dd-nav-link--active .dd-nav-icon-container {
+  color: #4ade80;
+}
+
+.dd-nav-badge {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* ─── Bottom Sidebar Pinned Section ─── */
+.dd-sidebar-bottom {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Availability Status Card */
+.dd-availability-card {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dd-availability-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dd-availability-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dd-avail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dd-avail-dot--online { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
+.dd-avail-dot--busy { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
+
+.dd-avail-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.dd-avail-pill-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.dd-avail-pill-btn--online { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.dd-avail-pill-btn--busy { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+/* Logout Button */
 .dd-logout-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  color: #f87171;
+  gap: 10px;
+  padding: 9px 12px;
+  color: #94a3b8;
   background: transparent;
   border: none;
   border-radius: 10px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -242,11 +346,11 @@
 
 .dd-logout-btn:hover {
   background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  color: #f87171;
 }
 
 /* ============================================================
-   MAIN CONTENT AREA
+   TOPBAR HEADER (Height 68px)
    ============================================================ */
 .dd-main {
   flex: 1;
@@ -256,41 +360,42 @@
   overflow-x: hidden;
 }
 
-/* ─── Topbar ─── */
 .dd-topbar {
+  height: 68px;
   background: #ffffff;
   border-bottom: 1px solid var(--dd-border);
-  padding: 14px 28px;
+  padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 90;
-  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .dd-topbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .dd-mobile-menu-btn {
   display: none;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   color: var(--dd-slate);
   cursor: pointer;
   padding: 4px;
 }
 
-.dd-breadcrumb {
+.dd-page-title-header {
   font-family: 'Manrope', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: var(--dd-dark);
+  letter-spacing: -0.2px;
 }
 
 .dd-topbar-right {
@@ -299,44 +404,56 @@
   gap: 14px;
 }
 
+/* Date Pill */
 .dd-date-pill {
   font-size: 12.5px;
-  color: var(--dd-muted);
+  font-weight: 600;
+  color: var(--dd-slate);
   background: #f8fafc;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 100px;
   border: 1px solid var(--dd-border);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.dd-availability-toggle {
+/* Status Indicator Button */
+.dd-status-indicator-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 100px;
   font-size: 12px;
   font-weight: 700;
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #dcfce7;
+  border: 1px solid;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.dd-availability-toggle:hover {
-  background: #dcfce7;
+.dd-status-indicator-btn--online {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #dcfce7;
 }
+.dd-status-indicator-btn--online:hover { background: #dcfce7; }
 
+.dd-status-indicator-btn--busy {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.dd-status-indicator-btn--busy:hover { background: #fef3c7; }
+
+/* Notification Bell */
 .dd-notif-btn {
   position: relative;
   background: #f8fafc;
   border: 1px solid var(--dd-border);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -367,7 +484,46 @@
   border: 2px solid #ffffff;
 }
 
-/* ─── Page Container ─── */
+/* Doctor Pill in Topbar */
+.dd-topbar-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 6px;
+  background: #f8fafc;
+  border: 1px solid var(--dd-border);
+  border-radius: 100px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.dd-topbar-profile-pill:hover {
+  background: #f1f5f9;
+}
+
+.dd-topbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #16a34a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dd-topbar-doc-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dd-dark);
+}
+
+/* ============================================================
+   CONTENT VIEWPORT & RESPONSIVENESS
+   ============================================================ */
 .dd-content-container {
   padding: 28px;
   flex: 1;
