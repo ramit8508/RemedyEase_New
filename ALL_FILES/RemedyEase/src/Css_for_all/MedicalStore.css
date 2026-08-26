@@ -1,506 +1,1331 @@
-.medical-store-container {
-  padding: 0;
-  width: 100%;
-  max-width: 100%;
+/* ============================================================
+   REMEDYEASE MEDICAL STORE — MASTER STYLESHEET
+   Brand: RemedyEase Green (#16a34a), Navy (#0f172a), Soft Mint (#f0fdf4)
+   ============================================================ */
+
+/* ─── Global Store Container ─── */
+.ms-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+  box-sizing: border-box;
 }
 
-.store-header {
-  margin-bottom: 32px;
-}
-
-.store-header h1 {
-  font-size: 32px;
-  color: #388e3c;
-  margin-bottom: 8px;
-}
-
-.store-header p {
-  font-size: 16px;
-  color: #666;
-}
-
-.order-success-banner {
-  background: #e8f5e9;
-  border: 2px solid #388e3c;
-  color: #1b5e20;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.store-content {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-}
-
-/* Medicines Section */
-.medicines-section {
+/* ─── Toast / Notification ─── */
+.ms-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1000;
   display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-/* Days Selector */
-.days-selector {
-  background: white;
-  border: 2px solid #e0e0e0;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #0f172a;
+  color: #ffffff;
   border-radius: 12px;
-  padding: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: ms-slideUp 0.25s ease-out;
 }
 
-.days-selector h3 {
-  font-size: 20px;
-  color: #333;
-  margin-bottom: 16px;
+.ms-toast--success {
+  background: #15803d;
+  border-left: 4px solid #4ade80;
 }
 
-.days-buttons {
+.ms-toast--error {
+  background: #b91c1c;
+  border-left: 4px solid #f87171;
+}
+
+@keyframes ms-slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Header & Top Navigation Bar ─── */
+.ms-header {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   flex-wrap: wrap;
 }
 
-.day-btn {
-  padding: 12px 24px;
-  background: white;
-  border: 2px solid #388e3c;
-  color: #388e3c;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.day-btn:hover {
-  background: #f1f8f4;
-  transform: translateY(-2px);
-}
-
-.day-btn.active {
-  background: #388e3c;
-  color: white;
-}
-
-.days-info {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #666;
-  font-style: italic;
-}
-
-/* Medicine Groups */
-.medicine-group {
-  margin-bottom: 32px;
-}
-
-.medicine-group-title {
-  font-size: 20px;
-  color: #388e3c;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.prescribed-medicines-section h2,
-.prescriptions-list h2,
-.medicines-list h2 {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.prescription-cards {
-  display: grid;
-  gap: 16px;
-}
-
-.prescription-card {
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 20px;
+.ms-header-info h1 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
-.prescription-info p {
-  margin: 4px 0;
+.ms-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ms-header-info p {
   font-size: 14px;
-  color: #666;
+  color: #64748b;
+  margin: 0;
 }
 
-.view-prescription-btn {
-  padding: 8px 20px;
-  background: #388e3c;
-  color: white;
+.ms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ms-btn-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #334155;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.ms-btn-nav:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.ms-btn-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #ffffff;
+  background: #16a34a;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.view-prescription-btn:hover {
-  background: #2e7d32;
-  transform: scale(1.05);
-}
-
-.medicines-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.medicine-card {
-  background: white;
-  border: 2px solid #e0e0e0;
   border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  transition: all 0.3s;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
 }
 
-.medicine-card:hover {
-  border-color: #388e3c;
-  box-shadow: 0 4px 12px rgba(56, 142, 60, 0.2);
-  transform: translateY(-4px);
+.ms-btn-cart:hover {
+  background: #15803d;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
-.medicine-card h4 {
-  font-size: 18px;
-  color: #388e3c;
-  margin: 8px 0;
-  font-weight: 700;
-}
-
-.medicine-name {
-  font-size: 14px;
-  color: #666;
-  margin: 4px 0;
-}
-
-.medicine-category {
+.ms-cart-count-badge {
+  background: #ffffff;
+  color: #16a34a;
   font-size: 12px;
-  color: #999;
-  margin: 4px 0;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 100px;
+  line-height: 1;
 }
 
-.medicine-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+/* ─── Search & Category Bar ─── */
+.ms-search-section {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
-.medicine-footer {
+.ms-search-input-wrapper {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
+  width: 100%;
 }
 
-.medicine-price {
-  font-size: 20px;
-  font-weight: 700;
-  color: #388e3c;
+.ms-search-icon {
+  position: absolute;
+  left: 16px;
+  color: #94a3b8;
+  pointer-events: none;
 }
 
-.add-to-cart-btn {
+.ms-search-input {
+  width: 100%;
+  padding: 14px 44px 14px 46px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.15s;
+}
+
+.ms-search-input:focus {
+  background: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.ms-search-clear {
+  position: absolute;
+  right: 14px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Category Pills Carousel */
+.ms-category-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 14px;
+  scrollbar-width: thin;
+}
+
+.ms-category-pill {
   padding: 8px 16px;
-  background: #388e3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.add-to-cart-btn:hover:not(:disabled) {
-  background: #2e7d32;
-  transform: scale(1.05);
-}
-
-.add-to-cart-btn:disabled {
-  background: #bdbdbd;
-  cursor: not-allowed;
-}
-
-/* Cart Section */
-.cart-section {
-  position: sticky;
-  top: 20px;
-  height: fit-content;
-}
-
-.cart-container {
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 24px;
-}
-
-.cart-container h2 {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.empty-cart {
-  text-align: center;
-  padding: 40px 20px;
-  color: #999;
-}
-
-.empty-cart p {
-  margin: 8px 0;
-}
-
-.cart-items {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-bottom: 20px;
-}
-
-.cart-item {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.cart-item:last-child {
-  border-bottom: none;
-}
-
-.cart-item-info h4 {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.cart-item-info .cart-company {
-  font-size: 14px;
-  color: #388e3c;
-  font-weight: 600;
-  margin: 2px 0;
-}
-
-.cart-item-info .cart-price {
   font-size: 13px;
-  color: #666;
-  margin: 2px 0;
+  font-weight: 600;
+  font-family: inherit;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 100px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
 }
 
-.cart-item-info .cart-days {
-  font-size: 12px;
-  color: #999;
-  font-style: italic;
-  margin: 2px 0;
+.ms-category-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
-.cart-item-actions {
+.ms-category-pill--active {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+/* ─── Doctor Prescriptions Linker Banner ─── */
+.ms-prescriptions-banner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border: 1px solid #dcfce7;
+  border-radius: 16px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.quantity-controls {
+.ms-rx-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ms-rx-icon {
+  width: 44px;
+  height: 44px;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ms-rx-info h3 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.ms-rx-info p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.ms-rx-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ─── Store Main Layout (Sidebar + Product Grid) ─── */
+.ms-store-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+@media (max-width: 980px) {
+  .ms-store-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Sidebar Filter Panel ─── */
+.ms-filter-panel {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 22px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 24px;
+}
+
+.ms-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ms-filter-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f5f5f5;
-  border-radius: 6px;
-  padding: 4px;
 }
 
-.quantity-controls button {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 700;
-  color: #388e3c;
-}
-
-.quantity-controls button:hover {
-  background: #388e3c;
-  color: white;
-}
-
-.quantity-controls span {
-  min-width: 30px;
-  text-align: center;
+.ms-filter-reset {
+  font-size: 12px;
   font-weight: 600;
-}
-
-.remove-btn {
-  width: 28px;
-  height: 28px;
+  color: #16a34a;
+  background: none;
   border: none;
-  background: #ffebee;
-  color: #d32f2f;
-  border-radius: 4px;
   cursor: pointer;
-  font-weight: 700;
+  padding: 0;
 }
 
-.remove-btn:hover {
-  background: #d32f2f;
-  color: white;
+.ms-filter-reset:hover {
+  text-decoration: underline;
 }
 
-.cart-item-total {
-  grid-column: 1 / -1;
-  text-align: right;
-  font-size: 18px;
-  font-weight: 700;
-  color: #388e3c;
-}
-
-.cart-summary {
-  border-top: 2px solid #e0e0e0;
-  padding-top: 16px;
+.ms-filter-group {
   margin-bottom: 20px;
 }
 
-.summary-row {
+.ms-filter-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 10px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ms-filter-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.ms-filter-select:focus {
+  border-color: #16a34a;
+  background: #ffffff;
+}
+
+.ms-price-range-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ms-range-input {
+  width: 100%;
+  accent-color: #16a34a;
+  cursor: pointer;
+}
+
+.ms-price-limits {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
-  font-size: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
 }
 
-.summary-row.total {
-  font-size: 20px;
-  font-weight: 700;
-  color: #388e3c;
-  border-top: 2px solid #e0e0e0;
-  padding-top: 12px;
-  margin-top: 12px;
-}
-
-.place-order-btn {
-  width: 100%;
-  padding: 16px;
-  background: #388e3c;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: 700;
+.ms-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
   cursor: pointer;
-  transition: all 0.2s;
+  font-size: 13.5px;
+  color: #334155;
+  font-weight: 500;
 }
 
-.place-order-btn:hover:not(:disabled) {
-  background: #2e7d32;
-  transform: scale(1.02);
+.ms-toggle-input {
+  accent-color: #16a34a;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
-.place-order-btn:disabled {
-  background: #bdbdbd;
+/* ─── Product Listing Area ─── */
+.ms-products-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ms-results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+}
+
+.ms-results-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ms-sort-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.ms-sort-select {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ─── Medicine Cards Grid ─── */
+.ms-medicine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+@media (min-width: 1200px) {
+  .ms-medicine-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .ms-medicine-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Medicine Card ─── */
+.ms-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.ms-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+
+.ms-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.ms-badge-rx {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ms-badge-discount {
+  display: inline-flex;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #15803d;
+  background: #dcfce7;
+  border-radius: 6px;
+}
+
+.ms-card-visual {
+  height: 90px;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  color: #16a34a;
+  font-size: 36px;
+}
+
+.ms-card-category {
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+
+.ms-card-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.ms-card-brand {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 2px;
+}
+
+.ms-card-company {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 0 0 12px;
+}
+
+/* Pricing Row */
+.ms-card-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ms-card-price {
+  font-family: 'Manrope', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ms-card-mrp {
+  font-size: 13px;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* Supply Selector Pills */
+.ms-supply-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ms-supply-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.ms-supply-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.ms-supply-chip {
+  padding: 5px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.ms-supply-chip:hover {
+  background: #e2e8f0;
+}
+
+.ms-supply-chip--active {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* Card Actions */
+.ms-card-actions {
+  margin-top: auto;
+}
+
+.ms-btn-add-cart {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1.5px solid #dcfce7;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.ms-btn-add-cart:hover:not(:disabled) {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+}
+
+.ms-btn-add-cart--added {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+}
+
+.ms-btn-add-cart:disabled {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
   cursor: not-allowed;
 }
 
-.medical-store-loading {
+/* ─── Skeleton Loaders ─── */
+.ms-skeleton-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 18px 16px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.ms-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: ms-shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes ms-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Pagination ─── */
+.ms-pagination {
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  gap: 8px;
+  margin-top: 30px;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #388e3c;
+.ms-page-btn {
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ms-page-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.ms-page-btn--active {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+}
+
+.ms-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   SHOPPING CART STYLES
+   ============================================================ */
+.ms-cart-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .ms-cart-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ms-cart-items-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.ms-cart-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 16px;
+}
+
+.ms-cart-items-header h2 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ms-cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f8fafc;
+  flex-wrap: wrap;
+}
+
+.ms-cart-item-info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.ms-cart-item-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.ms-cart-item-sub {
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 0 0 6px;
+}
+
+.ms-cart-item-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ms-supply-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* Quantity Stepper */
+.ms-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 4px 6px;
+}
+
+.ms-stepper-btn {
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.ms-stepper-btn:hover {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+}
+
+.ms-stepper-val {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+.ms-cart-item-price {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 80px;
+  text-align: right;
+}
+
+.ms-btn-remove {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.ms-btn-remove:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ─── Order Summary Sticky Card ─── */
+.ms-summary-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 24px;
+}
+
+.ms-summary-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ms-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.ms-summary-row--total {
+  font-family: 'Manrope', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  padding-top: 14px;
+  border-top: 1.5px dashed #e2e8f0;
+  margin-top: 14px;
+  margin-bottom: 20px;
+}
+
+.ms-free-delivery-badge {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.ms-btn-checkout {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #ffffff;
+  background: #16a34a;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+}
+
+.ms-btn-checkout:hover {
+  background: #15803d;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+}
+
+/* Empty State */
+.ms-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+}
+
+.ms-empty-icon {
+  width: 72px;
+  height: 72px;
+  background: #f0fdf4;
+  color: #16a34a;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.ms-empty-state h3 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .store-content {
+.ms-empty-state p {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+/* ============================================================
+   CHECKOUT STYLES
+   ============================================================ */
+.ms-checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+@media (max-width: 960px) {
+  .ms-checkout-layout {
     grid-template-columns: 1fr;
   }
+}
 
-  .cart-section {
-    position: static;
-  }
+.ms-checkout-section {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
 
-  .medicines-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+.ms-section-heading {
+  font-family: 'Manrope', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-section-step {
+  width: 26px;
+  height: 26px;
+  background: #16a34a;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ms-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .ms-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
-  .store-header h1 {
-    font-size: 24px;
-  }
+.ms-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-  .medicines-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
-  }
+.ms-form-group--full {
+  grid-column: 1 / -1;
+}
 
-  .medicine-card {
-    padding: 16px;
-  }
+.ms-form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
 
-  .medicine-icon {
-    font-size: 36px;
-  }
+.ms-form-input,
+.ms-form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s;
+}
 
-  .cart-container {
-    padding: 20px;
+.ms-form-input:focus,
+.ms-form-textarea:focus {
+  background: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+/* Payment Options */
+.ms-payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .ms-payment-options {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 480px) {
-  .store-header h1 {
-    font-size: 20px;
-  }
+.ms-payment-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+}
 
-  .store-header p {
-    font-size: 14px;
-  }
+.ms-payment-card:hover {
+  background: #f1f5f9;
+}
 
-  .medicines-grid {
-    grid-template-columns: 1fr;
-  }
+.ms-payment-card--active {
+  border-color: #16a34a !important;
+  background: #f0fdf4 !important;
+}
 
-  .medicine-card h3 {
-    font-size: 14px;
-    min-height: auto;
-  }
+.ms-payment-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
 
-  .prescription-card {
-    flex-direction: column;
-    gap: 12px;
-  }
+.ms-payment-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
 
-  .view-prescription-btn {
-    width: 100%;
-  }
+/* ─── Order Success Confirmation ─── */
+.ms-success-container {
+  max-width: 620px;
+  margin: 40px auto;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
 
-  .cart-item {
-    grid-template-columns: 1fr;
-  }
+.ms-success-icon {
+  width: 76px;
+  height: 76px;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 20px;
+}
 
-  .cart-item-actions {
-    justify-content: space-between;
-  }
+.ms-success-container h2 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.ms-order-id-chip {
+  display: inline-block;
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border-radius: 100px;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 20px;
+}
+
+/* ============================================================
+   ORDER HISTORY & TRACKING STYLES
+   ============================================================ */
+.ms-orders-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ms-order-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s;
+}
+
+.ms-order-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.ms-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ms-order-id {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ms-order-date {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.ms-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.ms-status-badge--confirmed {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #dcfce7;
+}
+
+.ms-status-badge--processing {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #dbeafe;
+}
+
+.ms-status-badge--shipped {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ede9fe;
+}
+
+.ms-status-badge--delivered {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ms-status-badge--cancelled {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fee2e2;
+}
+
+.ms-order-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ms-order-items-preview {
+  font-size: 13.5px;
+  color: #475569;
+}
+
+.ms-order-total {
+  font-family: 'Manrope', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Modal */
+.ms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ms-modal-content {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
 }

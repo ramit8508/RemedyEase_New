@@ -1,318 +1,551 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../../Css_for_all/MedicalStoreCheckout.css';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FiArrowLeft,
+  FiShield,
+  FiCheck,
+  FiFileText,
+  FiCreditCard,
+  FiDollarSign,
+  FiTruck,
+  FiAlertCircle,
+  FiPackage,
+} from "react-icons/fi";
+import "../../Css_for_all/MedicalStore.css";
 
-const MedicalStoreCheckout = () => {
+export default function MedicalStoreCheckout() {
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    paymentMethod: 'cod'
+
+  // State
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem("medicalStoreCart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [selectedPrescription, setSelectedPrescription] = useState("");
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    paymentMethod: "cod",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [placedOrderDetails, setPlacedOrderDetails] = useState(null);
+  const [orderError, setOrderError] = useState("");
+
+  // Idempotency key per checkout attempt
+  const idempotencyKeyRef = useRef(`idemp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+
+  // Redirect if cart is empty and not on success screen
   useEffect(() => {
-    loadCartFromStorage();
-    loadUserData();
+    if (cart.length === 0 && !placedOrderDetails) {
+      navigate("/user/dashboard/medical-store/cart");
+    }
+  }, [cart, placedOrderDetails, navigate]);
+
+  // Autofill user profile data
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user) {
+      setUserProfile(user);
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.fullname || user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        pincode: user.pincode || "",
+      }));
+
+      // Fetch user's previous prescriptions
+      if (user.email) {
+        fetch(`/api/v1/users/prescriptions?email=${encodeURIComponent(user.email)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+              setPrescriptions(data.data);
+              setSelectedPrescription(data.data[0]?.prescriptionFile || "");
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }, []);
 
-  const loadCartFromStorage = () => {
-    try {
-      const savedCart = localStorage.getItem('medicalStoreCart');
-      console.log('Loading cart in checkout:', savedCart);
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        if (Array.isArray(parsedCart) && parsedCart.length > 0) {
-          setCart(parsedCart);
-        } else {
-          navigate('/user/dashboard/medical-store/cart');
-        }
-      } else {
-        navigate('/user/dashboard/medical-store/cart');
-      }
-    } catch (error) {
-      console.error('Error loading cart:', error);
-      navigate('/user/dashboard/medical-store/cart');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadUserData = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.fullname || '',
-        email: user.email || ''
-      }));
-    }
-  };
-
-  const handleInputChange = (e) => {
+  // Form input change
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
-  const calculateSubtotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  // Check if any cart item requires prescription
+  const hasPrescriptionItem = useMemo(() => {
+    return cart.some((item) => Boolean(item.prescriptionRequired));
+  }, [cart]);
 
-  const deliveryFee = 40;
-  const total = calculateSubtotal() + deliveryFee;
+  // Subtotal & Calculations
+  const subtotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+  }, [cart]);
 
-  const handlePlaceOrder = (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!formData.fullName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
-      alert('Please fill all required fields!');
-      return;
+  const deliveryFee = subtotal >= 500 || subtotal === 0 ? 0 : 40;
+  const grandTotal = subtotal + deliveryFee;
+
+  // Validate form
+  const validateForm = () => {
+    const errs = {};
+    if (!formData.fullName.trim()) errs.fullName = "Full name is required";
+    if (!formData.phone.trim()) errs.phone = "Phone number is required";
+    else if (!/^\+?[\d\s-]{7,15}$/.test(formData.phone.trim())) {
+      errs.phone = "Enter a valid phone number";
+    }
+    if (!formData.address.trim()) errs.address = "Street address is required";
+    if (!formData.city.trim()) errs.city = "City is required";
+    if (!formData.state.trim()) errs.state = "State is required";
+    if (!formData.pincode.trim()) errs.pincode = "PIN Code is required";
+    else if (!/^\d{5,8}$/.test(formData.pincode.trim())) {
+      errs.pincode = "Enter a valid postal PIN code";
     }
 
-    // Simulate order placement
-    setOrderPlaced(true);
-    
-    // Clear cart after 3 seconds and redirect
-    setTimeout(() => {
-      localStorage.removeItem('medicalStoreCart');
-      navigate('/user/dashboard/medical-store');
-    }, 5000);
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
-  if (orderPlaced) {
+  // Place Order Handler
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setIsPlacingOrder(true);
+    setOrderError("");
+
+    const orderPayload = {
+      idempotencyKey: idempotencyKeyRef.current,
+      userEmail: formData.email || userProfile.email || "patient@remedyease.com",
+      userName: formData.fullName || userProfile.fullname || "Patient",
+      items: cart.map((item) => ({
+        medicineId: item.medicineId,
+        name: item.name,
+        company: item.company,
+        category: item.category,
+        price: item.price,
+        quantity: item.quantity,
+        daysSupply: item.daysSupply || 30,
+        subtotal: item.price * item.quantity,
+      })),
+      deliveryAddress: {
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email || userProfile.email,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+      },
+      paymentMethod: formData.paymentMethod,
+      prescriptionFile: selectedPrescription || "",
+    };
+
+    try {
+      const res = await fetch("/api/v1/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        // Clear cart
+        localStorage.removeItem("medicalStoreCart");
+        setCart([]);
+        setPlacedOrderDetails(data.data);
+      } else {
+        setOrderError(data.message || "Failed to place order. Please verify your details and try again.");
+      }
+    } catch (err) {
+      console.error("Order error:", err);
+      setOrderError("Network error while communicating with pharmacy server. Please try again.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // ─── ORDER SUCCESS CONFIRMATION SCREEN ───
+  if (placedOrderDetails) {
     return (
-      <div className="order-success-page">
-        <div className="success-animation">
-          <div className="success-checkmark">✓</div>
-        </div>
-        <h1>Order Placed Successfully! 🎉</h1>
-        <p className="success-message">Thank you for your order!</p>
-        <div className="order-details-box">
-          <h3>Order Details</h3>
-          <p><strong>Total Amount:</strong> ₹{total}</p>
-          <p><strong>Payment Method:</strong> {formData.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</p>
-          <p><strong>Delivery Address:</strong> {formData.address}, {formData.city}, {formData.state} - {formData.pincode}</p>
-        </div>
-        <div className="delivery-info-success">
-          <h2>📦 Your order will be delivered in 24-48 hours</h2>
-          <p>We'll send you updates on your registered email and phone number</p>
-        </div>
-        <button className="back-to-store-btn" onClick={() => navigate('/user/dashboard/medical-store')}>
-          Back to Store
-        </button>
-      </div>
-    );
-  }
+      <div className="ms-container">
+        <div className="ms-success-container">
+          <div className="ms-success-icon">
+            <FiCheck />
+          </div>
+          <h2>Order Placed Successfully!</h2>
+          <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 16px" }}>
+            Thank you for ordering with RemedyEase Pharmacy. Your medicine order is confirmed and being prepared.
+          </p>
 
-  if (loading) {
-    return (
-      <div className="medical-store-loading">
-        <div className="spinner"></div>
-        <p>Loading checkout...</p>
-      </div>
-    );
-  }
+          <span className="ms-order-id-chip">Order #{placedOrderDetails.orderId}</span>
 
-  return (
-    <div className="medical-store-checkout">
-      {/* Header */}
-      <div className="checkout-header">
-        <button className="back-btn" onClick={() => navigate('/user/dashboard/medical-store/cart')}>
-          ← Back to Cart
-        </button>
-        <h1>📋 Checkout</h1>
-        <div></div>
-      </div>
-
-      <div className="checkout-content">
-        {/* Checkout Form */}
-        <div className="checkout-form-section">
-          <form onSubmit={handlePlaceOrder}>
-            {/* Delivery Information */}
-            <div className="form-section">
-              <h2>📍 Delivery Information</h2>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Phone Number *</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter your phone number"
-                    required
-                  />
-                </div>
-                <div className="form-group full-width">
-                  <label>Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter your email"
-                  />
-                </div>
-                <div className="form-group full-width">
-                  <label>Delivery Address *</label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="House No., Street, Area"
-                    rows="3"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>City *</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="Enter city"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>State *</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    placeholder="Enter state"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>PIN Code *</label>
-                  <input
-                    type="text"
-                    name="pincode"
-                    value={formData.pincode}
-                    onChange={handleInputChange}
-                    placeholder="Enter PIN code"
-                    required
-                  />
-                </div>
-              </div>
+          <div
+            style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "14px",
+              padding: "18px 20px",
+              textAlign: "left",
+              marginBottom: "24px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", fontSize: "13.5px" }}>
+              <span style={{ color: "#64748b" }}>Estimated Delivery:</span>
+              <strong style={{ color: "#15803d" }}>Within 24-48 Hours</strong>
             </div>
-
-            {/* Payment Method */}
-            <div className="form-section">
-              <h2>💳 Payment Method</h2>
-              <div className="payment-methods">
-                <label className="payment-option">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cod"
-                    checked={formData.paymentMethod === 'cod'}
-                    onChange={handleInputChange}
-                  />
-                  <div className="payment-info">
-                    <strong>Cash on Delivery</strong>
-                    <p>Pay when you receive your order</p>
-                  </div>
-                </label>
-                <label className="payment-option">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="online"
-                    checked={formData.paymentMethod === 'online'}
-                    onChange={handleInputChange}
-                  />
-                  <div className="payment-info">
-                    <strong>Online Payment</strong>
-                    <p>Pay using UPI, Card, or Net Banking</p>
-                  </div>
-                </label>
-              </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", fontSize: "13.5px" }}>
+              <span style={{ color: "#64748b" }}>Payment Method:</span>
+              <strong style={{ textTransform: "uppercase" }}>{placedOrderDetails.paymentMethod}</strong>
             </div>
-
-            <button type="submit" className="place-order-btn">
-              Place Order - ₹{total}
-            </button>
-          </form>
-        </div>
-
-        {/* Order Summary */}
-        <div className="checkout-summary-section">
-          <div className="summary-card">
-            <h2>Order Summary</h2>
-            
-            {/* Cart Items Preview */}
-            <div className="summary-items">
-              {cart.map((item, index) => (
-                <div key={`${item.name}-${item.company}-${index}`} className="summary-item">
-                  <div className="summary-item-info">
-                    <p className="summary-item-name">{item.name}</p>
-                    <p className="summary-item-company">{item.company}</p>
-                    <p className="summary-item-details">
-                      {item.quantity} x ₹{item.price} • {item.daysSupply} days
-                    </p>
-                  </div>
-                  <div className="summary-item-price">
-                    ₹{item.price * item.quantity}
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13.5px" }}>
+              <span style={{ color: "#64748b" }}>Total Amount:</span>
+              <strong style={{ fontSize: "15px", color: "#0f172a" }}>₹{placedOrderDetails.totalAmount}</strong>
             </div>
+          </div>
 
-            <div className="summary-divider"></div>
-
-            {/* Price Breakdown */}
-            <div className="summary-details">
-              <div className="summary-row">
-                <span>Subtotal:</span>
-                <span>₹{calculateSubtotal()}</span>
-              </div>
-              <div className="summary-row">
-                <span>Delivery Charges:</span>
-                <span>₹{deliveryFee}</span>
-              </div>
-              <div className="summary-divider"></div>
-              <div className="summary-row total-row">
-                <span>Total Amount:</span>
-                <span>₹{total}</span>
-              </div>
-            </div>
-
-            <div className="delivery-info">
-              <p>📦 Delivery in 24-48 hours</p>
-              <p>✅ 100% Genuine Products</p>
-              <p>🔄 Easy Returns & Refunds</p>
-            </div>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <Link to="/user/dashboard/medical-store/orders" className="ms-btn-cart">
+              <FiPackage size={16} /> View Order History
+            </Link>
+            <Link to="/user/dashboard/medical-store" className="ms-btn-nav">
+              Continue Shopping
+            </Link>
           </div>
         </div>
       </div>
+    );
+  }
+
+  // ─── CHECKOUT FORM ───
+  return (
+    <div className="ms-container">
+      {/* Header */}
+      <header className="ms-header">
+        <div className="ms-header-info">
+          <h1>
+            Pharmacy Checkout <span className="ms-header-badge">✓ Secure 256-Bit</span>
+          </h1>
+          <p>Provide your delivery details and choose a payment method.</p>
+        </div>
+
+        <Link to="/user/dashboard/medical-store/cart" className="ms-btn-nav">
+          <FiArrowLeft size={16} /> Back to Cart
+        </Link>
+      </header>
+
+      {orderError && (
+        <div
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fee2e2",
+            borderRadius: "12px",
+            padding: "14px 18px",
+            color: "#b91c1c",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "20px",
+            fontSize: "14px",
+            fontWeight: "500",
+          }}
+        >
+          <FiAlertCircle size={18} /> {orderError}
+        </div>
+      )}
+
+      <form onSubmit={handlePlaceOrder} className="ms-checkout-layout">
+        {/* Left Column: Delivery & Payment Details */}
+        <div className="ms-checkout-forms">
+          {/* 1. Delivery Information Section */}
+          <section className="ms-checkout-section">
+            <h3 className="ms-section-heading">
+              <span className="ms-section-step">1</span> Delivery Information
+            </h3>
+
+            <div className="ms-form-grid">
+              <div className="ms-form-group">
+                <label className="ms-form-label" htmlFor="chk-name">
+                  Full Name *
+                </label>
+                <input
+                  id="chk-name"
+                  type="text"
+                  name="fullName"
+                  className="ms-form-input"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="e.g. John Doe"
+                  required
+                />
+                {errors.fullName && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.fullName}</span>}
+              </div>
+
+              <div className="ms-form-group">
+                <label className="ms-form-label" htmlFor="chk-phone">
+                  Phone Number *
+                </label>
+                <input
+                  id="chk-phone"
+                  type="tel"
+                  name="phone"
+                  className="ms-form-input"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="e.g. +91 98765 43210"
+                  required
+                />
+                {errors.phone && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.phone}</span>}
+              </div>
+
+              <div className="ms-form-group ms-form-group--full">
+                <label className="ms-form-label" htmlFor="chk-address">
+                  Street Address & Flat / House No. *
+                </label>
+                <textarea
+                  id="chk-address"
+                  name="address"
+                  rows={2}
+                  className="ms-form-textarea"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="e.g. Flat 402, Green Valley Apartments, MG Road"
+                  required
+                />
+                {errors.address && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.address}</span>}
+              </div>
+
+              <div className="ms-form-group">
+                <label className="ms-form-label" htmlFor="chk-city">
+                  City *
+                </label>
+                <input
+                  id="chk-city"
+                  type="text"
+                  name="city"
+                  className="ms-form-input"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="e.g. Mumbai"
+                  required
+                />
+                {errors.city && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.city}</span>}
+              </div>
+
+              <div className="ms-form-group">
+                <label className="ms-form-label" htmlFor="chk-state">
+                  State *
+                </label>
+                <input
+                  id="chk-state"
+                  type="text"
+                  name="state"
+                  className="ms-form-input"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="e.g. Maharashtra"
+                  required
+                />
+                {errors.state && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.state}</span>}
+              </div>
+
+              <div className="ms-form-group">
+                <label className="ms-form-label" htmlFor="chk-pincode">
+                  Postal PIN Code *
+                </label>
+                <input
+                  id="chk-pincode"
+                  type="text"
+                  name="pincode"
+                  className="ms-form-input"
+                  value={formData.pincode}
+                  onChange={handleChange}
+                  placeholder="e.g. 400001"
+                  required
+                />
+                {errors.pincode && <span style={{ color: "#dc2626", fontSize: "12px" }}>{errors.pincode}</span>}
+              </div>
+            </div>
+          </section>
+
+          {/* 2. Prescription Section (if required) */}
+          {hasPrescriptionItem && (
+            <section className="ms-checkout-section">
+              <h3 className="ms-section-heading">
+                <span className="ms-section-step">2</span> Prescription Verification
+              </h3>
+
+              {prescriptions.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <p style={{ fontSize: "13px", color: "#475569", margin: "0" }}>
+                    Select a verified prescription on file:
+                  </p>
+                  <select
+                    value={selectedPrescription}
+                    onChange={(e) => setSelectedPrescription(e.target.value)}
+                    className="ms-filter-select"
+                  >
+                    {prescriptions.map((rx, idx) => (
+                      <option key={idx} value={rx.prescriptionFile}>
+                        Doctor: {rx.doctorName || "Consultation"} — {new Date(rx.date || rx.uploadedAt).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px", fontSize: "13px", color: "#64748b" }}>
+                  ℹ️ Our pharmacy team will verify your prescription details during confirmation.
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 3. Payment Method Section */}
+          <section className="ms-checkout-section">
+            <h3 className="ms-section-heading">
+              <span className="ms-section-step">{hasPrescriptionItem ? "3" : "2"}</span> Payment Method
+            </h3>
+
+            <div className="ms-payment-options">
+              {/* Cash on Delivery */}
+              <div
+                className={`ms-payment-card ${formData.paymentMethod === "cod" ? "ms-payment-card--active" : ""}`}
+                onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "cod" }))}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="cod"
+                  checked={formData.paymentMethod === "cod"}
+                  onChange={() => {}}
+                  style={{ accentColor: "#16a34a" }}
+                />
+                <div>
+                  <h4 className="ms-payment-title">Cash on Delivery (COD)</h4>
+                  <p className="ms-payment-desc">Pay in cash or UPI at the time of doorstep delivery.</p>
+                </div>
+              </div>
+
+              {/* Online Payment */}
+              <div
+                className={`ms-payment-card ${formData.paymentMethod === "online" ? "ms-payment-card--active" : ""}`}
+                onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: "online" }))}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="online"
+                  checked={formData.paymentMethod === "online"}
+                  onChange={() => {}}
+                  style={{ accentColor: "#16a34a" }}
+                />
+                <div>
+                  <h4 className="ms-payment-title">Online Payment (UPI / Cards)</h4>
+                  <p className="ms-payment-desc">Instant payment via UPI, NetBanking, Credit or Debit Card.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column: Order Summary & Confirmation */}
+        <aside className="ms-summary-card">
+          <h3 className="ms-summary-title">Order Overview ({cart.length} Items)</h3>
+
+          <div style={{ maxHeight: "200px", overflowY: "auto", marginBottom: "16px", paddingRight: "4px" }}>
+            {cart.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "13px",
+                  padding: "6px 0",
+                  borderBottom: "1px solid #f8fafc",
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: "600", color: "#0f172a" }}>{item.brand || item.name}</div>
+                  <div style={{ fontSize: "11.5px", color: "#64748b" }}>
+                    Qty: {item.quantity} • {item.daysSupply || 30}d supply
+                  </div>
+                </div>
+                <div style={{ fontWeight: "700", color: "#0f172a" }}>
+                  ₹{(Number(item.price) || 0) * (Number(item.quantity) || 1)}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="ms-summary-row">
+            <span>Items Subtotal</span>
+            <span style={{ fontWeight: "700", color: "#0f172a" }}>₹{subtotal}</span>
+          </div>
+
+          <div className="ms-summary-row">
+            <span>Delivery Fee</span>
+            {deliveryFee === 0 ? (
+              <span className="ms-free-delivery-badge">FREE</span>
+            ) : (
+              <span style={{ fontWeight: "600", color: "#0f172a" }}>₹{deliveryFee}</span>
+            )}
+          </div>
+
+          <div className="ms-summary-row ms-summary-row--total">
+            <span>Grand Total</span>
+            <span>₹{grandTotal}</span>
+          </div>
+
+          <button type="submit" className="ms-btn-checkout" disabled={isPlacingOrder}>
+            {isPlacingOrder ? "Placing Order..." : `Place Order (₹${grandTotal})`}
+          </button>
+
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "12px",
+              background: "#f0fdf4",
+              borderRadius: "10px",
+              border: "1px solid #dcfce7",
+              fontSize: "12px",
+              color: "#15803d",
+              textAlign: "center",
+            }}
+          >
+            ✓ 100% Genuine Medicines • Sealed Packaging
+          </div>
+        </aside>
+      </form>
     </div>
   );
-};
-
-export default MedicalStoreCheckout;
+}

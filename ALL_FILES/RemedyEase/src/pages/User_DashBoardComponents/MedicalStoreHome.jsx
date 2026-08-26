@@ -1,362 +1,596 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../../Css_for_all/MedicalStoreHome.css';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FiSearch,
+  FiShoppingCart,
+  FiPackage,
+  FiFileText,
+  FiFilter,
+  FiCheck,
+  FiAlertCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiX,
+  FiShield,
+  FiTruck,
+  FiPlus,
+} from "react-icons/fi";
+import "../../Css_for_all/MedicalStore.css";
 
-const MedicalStoreHome = () => {
+const CATEGORIES = [
+  "All",
+  "Pain Relief",
+  "Antibiotics",
+  "Allergy",
+  "Digestive",
+  "Heart Health",
+  "Supplements",
+  "Dermatology",
+];
+
+export default function MedicalStoreHome() {
   const navigate = useNavigate();
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [daysFilter, setDaysFilter] = useState('all');
-  const [companyFilter, setCompanyFilter] = useState('all');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 500 });
-  const [cart, setCart] = useState([]);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
 
+  // State
+  const [medicines, setMedicines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [metadata, setMetadata] = useState({ categories: [], companies: [], priceRange: { min: 0, max: 500 } });
+  const [prescriptions, setPrescriptions] = useState([]);
+
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCompany, setSelectedCompany] = useState("All");
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [prescriptionFilter, setPrescriptionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("popular");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+
+  // Selected supply duration map for cards: { [medId]: days }
+  const [supplyMap, setSupplyMap] = useState({});
+  // Add to cart animated button state: { [medId]: boolean }
+  const [addedAnimation, setAddedAnimation] = useState({});
+
+  // Toast
+  const [toast, setToast] = useState(null);
+
+  // Cart
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem("medicalStoreCart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const abortControllerRef = useRef(null);
+
+  // Load initial cart & prescriptions
   useEffect(() => {
-    fetchUserPrescriptions();
-    loadCartFromStorage();
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user?.email) {
+      fetch(`/api/v1/users/prescriptions?email=${encodeURIComponent(user.email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setPrescriptions(data.data);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Fetch Metadata
+    fetch("/api/v1/medicines/meta")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setMetadata(data.data);
+          if (data.data.priceRange?.max) {
+            setMaxPrice(data.data.priceRange.max);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
+  // Save cart changes
   useEffect(() => {
-    saveCartToStorage();
+    try {
+      localStorage.setItem("medicalStoreCart", JSON.stringify(cart));
+    } catch (err) {
+      console.error("Failed to save cart:", err);
+    }
   }, [cart]);
 
-  const loadCartFromStorage = () => {
-    try {
-      const savedCart = localStorage.getItem('medicalStoreCart');
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        setCart(Array.isArray(parsedCart) ? parsedCart : []);
-      }
-    } catch (error) {
-      console.error('Error loading cart:', error);
-      setCart([]);
+  // Fetch medicines with debounce & AbortController
+  const fetchMedicines = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  };
+    abortControllerRef.current = new AbortController();
 
-  const saveCartToStorage = () => {
-    try {
-      localStorage.setItem('medicalStoreCart', JSON.stringify(cart));
-    } catch (error) {
-      console.error('Error saving cart:', error);
+    setLoading(true);
+
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.append("search", searchQuery.trim());
+    if (selectedCategory !== "All") params.append("category", selectedCategory);
+    if (selectedCompany !== "All") params.append("company", selectedCompany);
+    if (maxPrice) params.append("maxPrice", maxPrice);
+    if (inStockOnly) params.append("inStock", "true");
+    if (prescriptionFilter !== "all") {
+      params.append("prescriptionRequired", prescriptionFilter === "required" ? "true" : "false");
     }
-  };
+    params.append("sortBy", sortBy);
+    params.append("page", page);
+    params.append("limit", 16);
 
-  const showNotification = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 3000);
-  };
-
-  const fetchUserPrescriptions = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user || !user.email) {
-        console.error('User not logged in');
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/prescriptions?email=${user.email}`);
-      const data = await response.json();
-      if (response.ok) {
-        setPrescriptions(data.data || []);
+      const res = await fetch(`/api/v1/medicines?${params.toString()}`, {
+        signal: abortControllerRef.current.signal,
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMedicines(data.data.medicines || []);
+        if (data.data.pagination) {
+          setTotalPages(data.data.pagination.totalPages || 1);
+          setTotalResults(data.data.pagination.total || 0);
+        }
       }
     } catch (err) {
-      console.error('Error fetching prescriptions:', err);
+      if (err.name !== "AbortError") {
+        console.error("Error fetching medicines:", err);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, selectedCategory, selectedCompany, maxPrice, inStockOnly, prescriptionFilter, sortBy, page]);
 
-  // Medicines database with different company alternatives
-  const medicinesDatabase = {
-    'Paracetamol 500mg': [
-      { name: 'Paracetamol 500mg', company: 'Crocin', price: 25, category: 'Pain Relief', inStock: true },
-      { name: 'Paracetamol 500mg', company: 'Dolo 650', price: 30, category: 'Pain Relief', inStock: true },
-      { name: 'Paracetamol 500mg', company: 'Calpol', price: 28, category: 'Pain Relief', inStock: true },
-      { name: 'Paracetamol 500mg', company: 'Pacimol', price: 22, category: 'Pain Relief', inStock: true },
-    ],
-    'Amoxicillin 250mg': [
-      { name: 'Amoxicillin 250mg', company: 'Novamox', price: 120, category: 'Antibiotic', inStock: true },
-      { name: 'Amoxicillin 250mg', company: 'Mox', price: 115, category: 'Antibiotic', inStock: true },
-      { name: 'Amoxicillin 250mg', company: 'Amoxil', price: 125, category: 'Antibiotic', inStock: true },
-      { name: 'Amoxicillin 250mg', company: 'Biomox', price: 110, category: 'Antibiotic', inStock: true },
-    ],
-    'Cetirizine 10mg': [
-      { name: 'Cetirizine 10mg', company: 'Zyrtec', price: 45, category: 'Allergy', inStock: true },
-      { name: 'Cetirizine 10mg', company: 'Alerid', price: 40, category: 'Allergy', inStock: true },
-      { name: 'Cetirizine 10mg', company: 'Cetrizet', price: 42, category: 'Allergy', inStock: true },
-      { name: 'Cetirizine 10mg', company: 'Okacet', price: 38, category: 'Allergy', inStock: true },
-    ],
-    'Vitamin D3': [
-      { name: 'Vitamin D3', company: 'Uprise-D3', price: 280, category: 'Supplement', inStock: true },
-      { name: 'Vitamin D3', company: 'Shelcal', price: 300, category: 'Supplement', inStock: true },
-      { name: 'Vitamin D3', company: 'Calcirol', price: 260, category: 'Supplement', inStock: true },
-      { name: 'Vitamin D3', company: 'D-Rise', price: 275, category: 'Supplement', inStock: true },
-    ],
-    'Omeprazole 20mg': [
-      { name: 'Omeprazole 20mg', company: 'Omez', price: 65, category: 'Digestive', inStock: true },
-      { name: 'Omeprazole 20mg', company: 'Prilosec', price: 70, category: 'Digestive', inStock: true },
-      { name: 'Omeprazole 20mg', company: 'Ocid', price: 60, category: 'Digestive', inStock: true },
-      { name: 'Omeprazole 20mg', company: 'Omepraz', price: 58, category: 'Digestive', inStock: true },
-    ],
-    'Aspirin 75mg': [
-      { name: 'Aspirin 75mg', company: 'Ecosprin', price: 30, category: 'Heart Health', inStock: true },
-      { name: 'Aspirin 75mg', company: 'Disprin', price: 28, category: 'Heart Health', inStock: true },
-      { name: 'Aspirin 75mg', company: 'Aspent', price: 32, category: 'Heart Health', inStock: true },
-      { name: 'Aspirin 75mg', company: 'Loprin', price: 26, category: 'Heart Health', inStock: true },
-    ],
-  };
+  // 350ms debounced trigger for filter changes
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchMedicines();
+    }, 350);
 
-  // Get all unique companies
-  const allCompanies = [...new Set(Object.values(medicinesDatabase).flat().map(m => m.company))];
+    return () => clearTimeout(handler);
+  }, [fetchMedicines]);
 
-  // Filter medicines based on search and filters
-  const getFilteredMedicines = () => {
-    let allMedicines = Object.values(medicinesDatabase).flat();
+  // Handle Add to Cart
+  const handleAddToCart = (medicine) => {
+    const medId = medicine._id || medicine.name;
+    const days = supplyMap[medId] || 30;
 
-    // Search filter
-    if (searchQuery) {
-      allMedicines = allMedicines.filter(med => 
-        med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        med.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        med.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Company filter
-    if (companyFilter !== 'all') {
-      allMedicines = allMedicines.filter(med => med.company === companyFilter);
-    }
-
-    // Price filter
-    allMedicines = allMedicines.filter(med => 
-      med.price >= priceRange.min && med.price <= priceRange.max
+    const existingIndex = cart.findIndex(
+      (item) => item.name === medicine.name && item.company === medicine.company && item.daysSupply === days
     );
 
-    return allMedicines;
-  };
-
-  const addToCart = (medicine, daysSupply) => {
-    const existingItem = cart.find(item => 
-      item.name === medicine.name && 
-      item.company === medicine.company &&
-      item.daysSupply === daysSupply
-    );
-    
-    if (existingItem) {
-      const updatedCart = cart.map(item =>
-        item.name === medicine.name && 
-        item.company === medicine.company &&
-        item.daysSupply === daysSupply
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      );
-      setCart(updatedCart);
-      showNotification(`${medicine.company} quantity updated to ${existingItem.quantity + 1}`);
+    let updatedCart = [...cart];
+    if (existingIndex > -1) {
+      updatedCart[existingIndex].quantity += 1;
     } else {
-      const newItem = { 
-        ...medicine, 
-        quantity: 1, 
-        daysSupply: daysSupply,
-        id: `${medicine.name}-${medicine.company}-${daysSupply}-${Date.now()}`
-      };
-      setCart([...cart, newItem]);
-      showNotification(`${medicine.company} ${medicine.name} added to cart (${daysSupply} days)`);
+      updatedCart.push({
+        medicineId: medicine._id,
+        name: medicine.name,
+        brand: medicine.brand || medicine.name,
+        company: medicine.company,
+        category: medicine.category,
+        price: medicine.price,
+        mrp: medicine.mrp,
+        prescriptionRequired: Boolean(medicine.prescriptionRequired),
+        daysSupply: days,
+        quantity: 1,
+        image: medicine.image,
+      });
     }
+
+    setCart(updatedCart);
+
+    // Animation feedback
+    setAddedAnimation((prev) => ({ ...prev, [medId]: true }));
+    setTimeout(() => {
+      setAddedAnimation((prev) => ({ ...prev, [medId]: false }));
+    }, 1200);
+
+    setToast({
+      type: "success",
+      message: `Added ${medicine.brand || medicine.name} (${days} days) to cart`,
+    });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const getCartCount = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+  const totalCartCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("All");
+    setSelectedCompany("All");
+    setMaxPrice(metadata.priceRange?.max || 500);
+    setInStockOnly(false);
+    setPrescriptionFilter("all");
+    setSortBy("popular");
+    setPage(1);
   };
-
-  const filteredMedicines = getFilteredMedicines();
-
-  if (loading) {
-    return (
-      <div className="medical-store-loading">
-        <div className="spinner"></div>
-        <p>Loading medical store...</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="medical-store-home">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="toast-notification">
-          ✓ {toastMessage}
+    <div className="ms-container">
+      {/* Toast */}
+      {toast && (
+        <div className={`ms-toast ${toast.type === "success" ? "ms-toast--success" : "ms-toast--error"}`}>
+          <FiCheck size={16} /> {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div className="store-header">
-        <div className="header-content">
-          <h1>🏥 Medical Store</h1>
-          <p>Order medicines from your prescriptions</p>
+      {/* ─── Header ─── */}
+      <header className="ms-header">
+        <div className="ms-header-info">
+          <h1>
+            RemedyEase Medical Store <span className="ms-header-badge">✓ Verified Pharmacy</span>
+          </h1>
+          <p>Authentic medicines, wellness essentials, and prescription refills delivered to your door.</p>
         </div>
-        <button className="cart-icon-btn" onClick={() => navigate('/user/dashboard/medical-store/cart')}>
-          🛒 Cart ({getCartCount()})
-        </button>
-      </div>
 
-      {/* Prescriptions Section */}
+        <div className="ms-header-actions">
+          <Link to="/user/dashboard/medical-store/orders" className="ms-btn-nav">
+            <FiPackage size={16} /> My Orders
+          </Link>
+          <Link to="/user/dashboard/medical-store/cart" className="ms-btn-cart">
+            <FiShoppingCart size={16} />
+            <span>Cart</span>
+            {totalCartCount > 0 && <span className="ms-cart-count-badge">{totalCartCount}</span>}
+          </Link>
+        </div>
+      </header>
+
+      {/* ─── Prescriptions Banner ─── */}
       {prescriptions.length > 0 && (
-        <div className="prescriptions-section">
-          <h2>📋 Your Prescriptions</h2>
-          <div className="prescription-cards">
-            {prescriptions.map((prescription, index) => (
-              <div key={prescription.appointmentId || index} className="prescription-card">
-                <div className="prescription-info">
-                  <p><strong>Doctor:</strong> {prescription.doctorName || 'N/A'}</p>
-                  <p><strong>Date:</strong> {prescription.date ? new Date(prescription.date).toLocaleDateString() : new Date(prescription.uploadedAt).toLocaleDateString()}</p>
-                  {prescription.treatment && (
-                    <p><strong>Treatment:</strong> {prescription.treatment}</p>
-                  )}
-                </div>
-                <button
-                  className="view-prescription-btn"
-                  onClick={() => window.open(prescription.prescriptionFile, '_blank')}
-                >
-                  View PDF
-                </button>
-              </div>
-            ))}
+        <div className="ms-prescriptions-banner">
+          <div className="ms-rx-info">
+            <div className="ms-rx-icon">
+              <FiFileText />
+            </div>
+            <div>
+              <h3>Doctor Prescriptions Available ({prescriptions.length})</h3>
+              <p>You have verified prescriptions from your previous RemedyEase consultations.</p>
+            </div>
+          </div>
+          <div className="ms-rx-actions">
+            <button
+              className="ms-btn-nav"
+              type="button"
+              onClick={() => {
+                if (prescriptions[0]?.prescriptionFile) {
+                  window.open(prescriptions[0].prescriptionFile, "_blank");
+                }
+              }}
+            >
+              View Recent Rx PDF
+            </button>
           </div>
         </div>
       )}
 
-      {/* Filters Section */}
-      <div className="filters-section">
-        <h2> Find Your Medicines</h2>
-        
-        {/* Search Bar */}
-        <div className="search-bar">
+      {/* ─── Search & Category Filter Carousel ─── */}
+      <section className="ms-search-section">
+        <div className="ms-search-input-wrapper">
+          <FiSearch size={18} className="ms-search-icon" />
           <input
             type="text"
-            placeholder="Search medicines by name, company, or category..."
+            className="ms-search-input"
+            placeholder="Search medicines by brand, generic name, category, or manufacturer..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
           />
-          <button className="search-btn">Search</button>
+          {searchQuery && (
+            <button className="ms-search-clear" onClick={() => setSearchQuery("")} type="button">
+              <FiX size={12} />
+            </button>
+          )}
         </div>
 
-        <div className="filters-grid">
-          {/* Days Filter */}
-          <div className="filter-group">
-            <label>📅 Days Supply</label>
-            <select value={daysFilter} onChange={(e) => setDaysFilter(e.target.value)} className="filter-select">
-              <option value="all">All Durations</option>
-              <option value="15">15 Days</option>
-              <option value="30">30 Days</option>
-              <option value="45">45 Days</option>
-              <option value="60">60 Days</option>
-            </select>
+        <div className="ms-category-pills">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              className={`ms-category-pill ${selectedCategory === cat ? "ms-category-pill--active" : ""}`}
+              onClick={() => {
+                setSelectedCategory(cat);
+                setPage(1);
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Store Layout (Filters + Product Grid) ─── */}
+      <div className="ms-store-layout">
+        {/* Sidebar Filters */}
+        <aside className="ms-filter-panel">
+          <div className="ms-filter-header">
+            <h3 className="ms-filter-title">
+              <FiFilter size={16} /> Filters
+            </h3>
+            <button className="ms-filter-reset" onClick={handleResetFilters} type="button">
+              Reset All
+            </button>
           </div>
 
-          {/* Company Filter */}
-          <div className="filter-group">
-            <label>🏢 Company</label>
-            <select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} className="filter-select">
-              <option value="all">All Companies</option>
-              {allCompanies.map(company => (
-                <option key={company} value={company}>{company}</option>
+          {/* Manufacturer / Company */}
+          <div className="ms-filter-group">
+            <label className="ms-filter-label">Manufacturer</label>
+            <select
+              className="ms-filter-select"
+              value={selectedCompany}
+              onChange={(e) => {
+                setSelectedCompany(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="All">All Manufacturers</option>
+              {metadata.companies.map((comp) => (
+                <option key={comp} value={comp}>
+                  {comp}
+                </option>
               ))}
             </select>
           </div>
 
-          {/* Price Range */}
-          <div className="filter-group">
-            <label>💰 Price Range: ₹{priceRange.min} - ₹{priceRange.max}</label>
-            <div className="price-inputs">
+          {/* Max Price Range Slider */}
+          <div className="ms-filter-group">
+            <label className="ms-filter-label">Max Price: ₹{maxPrice}</label>
+            <div className="ms-price-range-slider">
               <input
-                type="number"
-                placeholder="Min"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange({...priceRange, min: parseInt(e.target.value) || 0})}
-                className="price-input"
+                type="range"
+                className="ms-range-input"
+                min="20"
+                max={metadata.priceRange?.max || 500}
+                step="10"
+                value={maxPrice}
+                onChange={(e) => {
+                  setMaxPrice(Number(e.target.value));
+                  setPage(1);
+                }}
               />
-              <span>-</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange({...priceRange, max: parseInt(e.target.value) || 500})}
-                className="price-input"
-              />
+              <div className="ms-price-limits">
+                <span>₹20</span>
+                <span>₹{metadata.priceRange?.max || 500}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <button className="clear-filters-btn" onClick={() => {
-          setSearchQuery('');
-          setDaysFilter('all');
-          setCompanyFilter('all');
-          setPriceRange({ min: 0, max: 500 });
-        }}>
-          Clear Filters
-        </button>
-      </div>
-
-      {/* Medicines Grid */}
-      <div className="medicines-section">
-        <h2>💊 Available Medicines ({filteredMedicines.length})</h2>
-        {filteredMedicines.length === 0 ? (
-          <div className="no-results">
-            <p>No medicines found matching your filters.</p>
-            <button onClick={() => {
-              setSearchQuery('');
-              setDaysFilter('all');
-              setCompanyFilter('all');
-              setPriceRange({ min: 0, max: 500 });
-            }}>Clear Filters</button>
+          {/* Prescription Requirement */}
+          <div className="ms-filter-group">
+            <label className="ms-filter-label">Prescription Type</label>
+            <select
+              className="ms-filter-select"
+              value={prescriptionFilter}
+              onChange={(e) => {
+                setPrescriptionFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">All Medicines</option>
+              <option value="otc">Over-The-Counter (OTC)</option>
+              <option value="required">Prescription Required</option>
+            </select>
           </div>
-        ) : (
-          <div className="medicines-grid">
-            {filteredMedicines.map((medicine, index) => (
-              <div key={`${medicine.company}-${index}`} className="medicine-card">
-                <div className="medicine-icon">💊</div>
-                <h3>{medicine.name}</h3>
-                <p className="medicine-company">{medicine.company}</p>
-                <p className="medicine-category">{medicine.category}</p>
-                <p className="medicine-price">₹{medicine.price}</p>
-                
-                {/* Days Selection */}
-                <div className="days-selection">
-                  <label>Select Days:</label>
-                  <div className="days-buttons-small">
-                    {[15, 30, 45, 60].map(days => (
-                      <button
-                        key={days}
-                        className="day-btn-small"
-                        onClick={() => addToCart(medicine, days)}
-                      >
-                        {days}d
-                      </button>
-                    ))}
-                  </div>
+
+          {/* In-Stock Only Toggle */}
+          <div className="ms-filter-group">
+            <label className="ms-toggle-item">
+              <span>In-Stock Only</span>
+              <input
+                type="checkbox"
+                className="ms-toggle-input"
+                checked={inStockOnly}
+                onChange={(e) => {
+                  setInStockOnly(e.target.checked);
+                  setPage(1);
+                }}
+              />
+            </label>
+          </div>
+
+          {/* Quality Trust Box */}
+          <div style={{ marginTop: "24px", padding: "14px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", color: "#15803d", fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>
+              <FiShield size={16} /> 100% Genuine Care
+            </div>
+            <p style={{ fontSize: "12px", color: "#64748b", margin: "0", lineHeight: "1.4" }}>
+              All medicines are verified by licensed pharmacists and stored in temperature-controlled facilities.
+            </p>
+          </div>
+        </aside>
+
+        {/* Main Product Area */}
+        <main className="ms-products-area">
+          {/* Results Bar & Sorting */}
+          <div className="ms-results-bar">
+            <span className="ms-results-count">
+              Showing {medicines.length} of {totalResults} products
+            </span>
+
+            <div className="ms-sort-wrapper">
+              <span>Sort by:</span>
+              <select
+                className="ms-sort-select"
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="popular">Popularity</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="name_asc">Name: A to Z</option>
+                <option value="discount">Highest Discount</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Loading Skeleton */}
+          {loading ? (
+            <div className="ms-medicine-grid">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="ms-skeleton-card">
+                  <div className="ms-shimmer" style={{ height: "90px", width: "100%" }} />
+                  <div className="ms-shimmer" style={{ height: "18px", width: "70%" }} />
+                  <div className="ms-shimmer" style={{ height: "14px", width: "50%" }} />
+                  <div className="ms-shimmer" style={{ height: "24px", width: "40%" }} />
+                  <div className="ms-shimmer" style={{ height: "36px", width: "100%", marginTop: "auto" }} />
                 </div>
-                
-                <button
-                  className="add-to-cart-btn"
-                  onClick={() => addToCart(medicine, parseInt(daysFilter) || 30)}
-                  disabled={!medicine.inStock}
-                >
-                  {medicine.inStock ? '+ Add to Cart' : 'Out of Stock'}
-                </button>
+              ))}
+            </div>
+          ) : medicines.length === 0 ? (
+            /* No Results Empty State */
+            <div className="ms-empty-state">
+              <div className="ms-empty-icon">
+                <FiAlertCircle />
               </div>
-            ))}
-          </div>
-        )}
+              <h3>No medicines found</h3>
+              <p>Try adjusting your search terms, changing the category, or clearing your active filters.</p>
+              <button className="ms-btn-nav" onClick={handleResetFilters} type="button">
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            /* Medicine Cards Grid */
+            <div className="ms-medicine-grid">
+              {medicines.map((med) => {
+                const medId = med._id || med.name;
+                const currentSupply = supplyMap[medId] || 30;
+                const isAdded = Boolean(addedAnimation[medId]);
+                const supplyOptions = med.supplyOptions || [15, 30, 45, 60];
+
+                return (
+                  <div key={medId} className="ms-card">
+                    {/* Top Badges */}
+                    <div className="ms-card-top">
+                      {med.prescriptionRequired ? (
+                        <span className="ms-badge-rx" title="Prescription required from a doctor">
+                          Rx Required
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "11px", color: "#15803d", fontWeight: "600" }}>✓ In Stock</span>
+                      )}
+
+                      {med.discountPercent > 0 && (
+                        <span className="ms-badge-discount">Save {med.discountPercent}%</span>
+                      )}
+                    </div>
+
+                    {/* Card Visual Container */}
+                    <div className="ms-card-visual">
+                      💊
+                    </div>
+
+                    {/* Category & Title */}
+                    <span className="ms-card-category">{med.category}</span>
+                    <h4 className="ms-card-title">{med.brand || med.name}</h4>
+                    <p className="ms-card-brand">{med.name}</p>
+                    <p className="ms-card-company">{med.company} • {med.dosageForm || "Tablet"}</p>
+
+                    {/* Pricing */}
+                    <div className="ms-card-pricing">
+                      <span className="ms-card-price">₹{med.price}</span>
+                      {med.mrp > med.price && <span className="ms-card-mrp">₹{med.mrp}</span>}
+                    </div>
+
+                    {/* Days Supply Selector */}
+                    <div className="ms-supply-selector">
+                      <span className="ms-supply-label">Supply duration</span>
+                      <div className="ms-supply-chips">
+                        {supplyOptions.map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            className={`ms-supply-chip ${currentSupply === days ? "ms-supply-chip--active" : ""}`}
+                            onClick={() =>
+                              setSupplyMap((prev) => ({
+                                ...prev,
+                                [medId]: days,
+                              }))
+                            }
+                          >
+                            {days}d
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="ms-card-actions">
+                      <button
+                        type="button"
+                        className={`ms-btn-add-cart ${isAdded ? "ms-btn-add-cart--added" : ""}`}
+                        onClick={() => handleAddToCart(med)}
+                      >
+                        {isAdded ? (
+                          <>
+                            <FiCheck size={16} /> Added
+                          </>
+                        ) : (
+                          <>
+                            <FiPlus size={15} /> Add to Cart
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="ms-pagination">
+              <button
+                className="ms-page-btn"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                type="button"
+              >
+                <FiChevronLeft size={16} /> Previous
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    className={`ms-page-btn ${page === pageNum ? "ms-page-btn--active" : ""}`}
+                    onClick={() => setPage(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                className="ms-page-btn"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                type="button"
+              >
+                Next <FiChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
-};
-
-export default MedicalStoreHome;
+}

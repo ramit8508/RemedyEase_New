@@ -37,10 +37,14 @@ app.use(cookieParser());
 import userRouter from "./routes/user.routes.js";
 import aiRouter from "./routes/Ai.routes.js";
 import adminRouter from "./routes/admin.routes.js";
+import medicineRouter from "./routes/Medicine.routes.js";
+import orderRouter from "./routes/Order.routes.js";
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/medicines", medicineRouter);
+app.use("/api/v1/orders", orderRouter);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "RemedyEase User Backend is responsive!" });
