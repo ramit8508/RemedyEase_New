@@ -1,68 +1,337 @@
-import React, { useEffect, useState, useRef } from "react";
-// Use the correct backend URL in production
-const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  FiCalendar,
+  FiClock,
+  FiUser,
+  FiMapPin,
+  FiAward,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiXCircle,
+  FiChevronDown,
+  FiArrowRight,
+  FiMessageCircle,
+  FiVideo,
+  FiFileText,
+  FiRotateCcw,
+  FiCheck,
+  FiX,
+  FiInfo,
+} from "react-icons/fi";
 import "../../Css_for_all/Appointments.css";
 import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
 import PrescriptionView from "../../components/PrescriptionView";
 
+/* ─── Helpers ─── */
+const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
-// Helper for time formatting
-function pad(num) { return num.toString().padStart(2, '0'); }
+function formatDoctorName(name) {
+  if (!name) return "Dr. Specialist";
+  const clean = name.trim();
+  if (/^dr\.?/i.test(clean)) {
+    return clean.replace(/^dr\.?\s*/i, "Dr. ");
+  }
+  return `Dr. ${clean}`;
+}
+
+function formatSpecialization(spec) {
+  if (!spec || spec.trim() === "" || spec.toLowerCase() === "not set" || spec.toLowerCase() === "nil") {
+    return "General Physician";
+  }
+  return spec.trim();
+}
+
+function formatDegree(deg) {
+  if (!deg || deg.trim() === "" || deg.toLowerCase() === "not set" || deg.toLowerCase() === "nil") {
+    return "MBBS, MD";
+  }
+  return deg.trim();
+}
+
+function formatExperience(exp) {
+  if (!exp || exp.trim() === "" || exp.toLowerCase() === "not set" || exp.toLowerCase() === "nil") {
+    return "3+ years experience";
+  }
+  const clean = exp.trim();
+  if (/\d+/.test(clean) && !/year/i.test(clean)) {
+    return `${clean} years experience`;
+  }
+  return clean;
+}
+
+function formatClinic(clinic) {
+  if (!clinic || clinic.trim() === "" || clinic.toLowerCase() === "not set" || clinic.toLowerCase() === "nil") {
+    return "RemedyEase Partner Clinic";
+  }
+  return clinic.trim();
+}
+
+function parseDateChip(dateStr) {
+  try {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return {
+      dayName: days[dateObj.getDay()] || "",
+      dayNum: day || "",
+      monthName: months[dateObj.getMonth()] || "",
+      fullDate: dateStr,
+    };
+  } catch {
+    return { dayName: "", dayNum: dateStr, monthName: "", fullDate: dateStr };
+  }
+}
 
 export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
   const doctorFromState = location.state?.doctor;
-  const user = JSON.parse(localStorage.getItem("user"));
-  
-  // Ref to track last booking time to prevent polling interference
-  const lastBookingTimeRef = useRef(null);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  // Doctors & Selection
+  const [doctors, setDoctors] = useState([]);
+  const [selectedDoctor, setSelectedDoctor] = useState(doctorFromState || null);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+
+  // Doctor-controlled Availability Data
+  const [doctorTimeslotsData, setDoctorTimeslotsData] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
   const [symptoms, setSymptoms] = useState("");
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
+
+  // Booking process states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(null);
+
+  // Appointments History
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [availableDoctors, setAvailableDoctors] = useState([]);
-  const [selectedDoctor, setSelectedDoctor] = useState(doctorFromState || null);
-  const [loadingDoctors, setLoadingDoctors] = useState(!doctorFromState);
+  const [historyFilter, setHistoryFilter] = useState("all");
 
+  // Live / Modals
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [selectedAppointmentForLive, setSelectedAppointmentForLive] = useState(null);
-  const [justConfirmedIds, setJustConfirmedIds] = useState(new Set());
+  const [viewPrescriptionUrl, setViewPrescriptionUrl] = useState(null);
 
-  // Timeslot states
-  const [availableTimeslots, setAvailableTimeslots] = useState([]);
-  const [timeslotLoading, setTimeslotLoading] = useState(false);
+  const isMountedRef = useRef(true);
 
-  // Fetch available timeslots for selected doctor and date
-  useEffect(() => {
-    if (!selectedDoctor || !date) {
-      setAvailableTimeslots([]);
+  /* ─── 1. Fetch Doctor List ─── */
+  const fetchDoctors = useCallback(async () => {
+    setLoadingDoctors(true);
+    try {
+      const res = await fetch("/api/v1/doctors/all");
+      const data = await res.json();
+      if (isMountedRef.current && data.success && Array.isArray(data.data)) {
+        setDoctors(data.data);
+        if (!selectedDoctor && data.data.length > 0 && !doctorFromState) {
+          setSelectedDoctor(data.data[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load doctors:", err);
+    } finally {
+      if (isMountedRef.current) setLoadingDoctors(false);
+    }
+  }, [selectedDoctor, doctorFromState]);
+
+  /* ─── 2. Fetch Doctor-Controlled Timeslots ─── */
+  const fetchDoctorTimeslots = useCallback(async (docId) => {
+    if (!docId) {
+      setDoctorTimeslotsData([]);
       return;
     }
-    setTimeslotLoading(true);
-    fetch(`${apiBase}/api/v1/doctors/timeslots?doctorId=${selectedDoctor._id}&date=${date}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data.length > 0) {
-          setAvailableTimeslots(data.data[0].slots || []);
+    setLoadingSlots(true);
+    try {
+      const res = await fetch(`${apiBase}/api/v1/doctors/timeslots?doctorId=${docId}`);
+      const data = await res.json();
+      if (isMountedRef.current) {
+        if (data.success && Array.isArray(data.data)) {
+          setDoctorTimeslotsData(data.data);
+          // Pre-select first date that has available slots
+          const firstDateDoc = data.data.find(
+            (d) => Array.isArray(d.slots) && d.slots.some((s) => !s.booked)
+          );
+          if (firstDateDoc) {
+            setSelectedDate(firstDateDoc.date);
+          } else if (data.data.length > 0) {
+            setSelectedDate(data.data[0].date);
+          } else {
+            setSelectedDate("");
+          }
+          setSelectedTime("");
         } else {
-          setAvailableTimeslots([]);
+          setDoctorTimeslotsData([]);
+          setSelectedDate("");
+          setSelectedTime("");
         }
-      })
-      .catch(() => setAvailableTimeslots([]))
-      .finally(() => setTimeslotLoading(false));
-  }, [selectedDoctor, date, apiBase]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch doctor timeslots:", err);
+      if (isMountedRef.current) setDoctorTimeslotsData([]);
+    } finally {
+      if (isMountedRef.current) setLoadingSlots(false);
+    }
+  }, []);
 
+  /* ─── 3. Fetch Patient's Appointment History ─── */
+  const fetchHistory = useCallback(async () => {
+    if (!user?.email) {
+      setLoadingHistory(false);
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBase}/api/v1/appointments/user/${user.email}`);
+      const data = await res.json();
+      if (isMountedRef.current && data.success && Array.isArray(data.data)) {
+        setHistory(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch appointment history:", err);
+    } finally {
+      if (isMountedRef.current) setLoadingHistory(false);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchDoctors();
+    fetchHistory();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchDoctors, fetchHistory]);
+
+  // When selected doctor changes, re-fetch their published timeslots
+  useEffect(() => {
+    if (selectedDoctor?._id) {
+      fetchDoctorTimeslots(selectedDoctor._id);
+    } else {
+      setDoctorTimeslotsData([]);
+      setSelectedDate("");
+      setSelectedTime("");
+    }
+  }, [selectedDoctor, fetchDoctorTimeslots]);
+
+  /* ─── Available Published Dates & Slots ─── */
+  // Only published dates
+  const availablePublishedDates = useMemo(() => {
+    if (!Array.isArray(doctorTimeslotsData) || doctorTimeslotsData.length === 0) {
+      return [];
+    }
+    return doctorTimeslotsData
+      .filter((d) => d.date && Array.isArray(d.slots) && d.slots.length > 0)
+      .map((d) => d.date)
+      .sort();
+  }, [doctorTimeslotsData]);
+
+  // Available slots for selected date
+  const slotsForSelectedDate = useMemo(() => {
+    if (!selectedDate || !Array.isArray(doctorTimeslotsData)) return [];
+    const dateDoc = doctorTimeslotsData.find((d) => d.date === selectedDate);
+    if (!dateDoc || !Array.isArray(dateDoc.slots)) return [];
+    return dateDoc.slots;
+  }, [selectedDate, doctorTimeslotsData]);
+
+  /* ─── Handle Appointment Confirmation ─── */
+  const handleBookAppointment = async (e) => {
+    e.preventDefault();
+    if (!selectedDoctor || !selectedDate || !selectedTime) {
+      setBookingError("Please choose a date and an available time slot.");
+      return;
+    }
+    if (!user?.email) {
+      navigate("/login");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setBookingError("");
+
+    const payload = {
+      doctorId: selectedDoctor._id,
+      doctorEmail: selectedDoctor.email,
+      doctorName: selectedDoctor.fullname,
+      date: selectedDate,
+      time: selectedTime,
+      userEmail: user.email,
+      userName: user.fullname || user.email.split("@")[0],
+      symptoms: symptoms.trim() || "General Consultation",
+    };
+
+    try {
+      const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const createdAppt = data.data;
+        setBookingSuccess({
+          appointmentId: createdAppt?._id || `APT-${Date.now().toString().slice(-6)}`,
+          doctorName: formatDoctorName(selectedDoctor.fullname),
+          doctorSpec: formatSpecialization(selectedDoctor.specialization),
+          clinic: formatClinic(selectedDoctor.clinic),
+          date: selectedDate,
+          time: selectedTime,
+          status: createdAppt?.status || "pending",
+        });
+
+        // Add to history optimistically
+        if (createdAppt) {
+          setHistory((prev) => [createdAppt, ...prev]);
+        }
+
+        // Re-fetch doctor timeslots so the booked slot immediately shows as Booked
+        fetchDoctorTimeslots(selectedDoctor._id);
+      } else {
+        setBookingError(data.message || "Failed to book appointment. Please choose another slot.");
+      }
+    } catch (err) {
+      setBookingError("Unable to connect to the appointment service. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* ─── Handle Patient Cancel Appointment ─── */
+  const handleCancelAppointment = async (apptId) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+
+    try {
+      const res = await fetch(`${apiBase}/api/v1/appointments/cancel/${apptId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userEmail: user.email, reason: "Cancelled by patient" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setHistory((prev) =>
+          prev.map((a) => (a._id === apptId ? { ...a, status: "cancelled" } : a))
+        );
+        // Refresh doctor slots in case the cancelled slot is for the current doctor
+        if (selectedDoctor?._id) {
+          fetchDoctorTimeslots(selectedDoctor._id);
+        }
+      } else {
+        alert(data.message || "Failed to cancel appointment.");
+      }
+    } catch (err) {
+      alert("Error connecting to server.");
+    }
+  };
+
+  /* ─── Live Consultation Actions ─── */
   const startLiveChat = async (appt) => {
     try {
-      // Notify doctor that patient is starting live chat
       await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,11 +340,11 @@ export default function Appointments() {
           doctorEmail: appt.doctorEmail,
           patientName: user.fullname || user.email,
           sessionType: "chat",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         }),
       });
-    } catch (error) {
-      console.error("Failed to notify doctor:", error);
+    } catch (e) {
+      console.error(e);
     }
     setSelectedAppointmentForLive(appt);
     setShowLiveChat(true);
@@ -92,8 +361,6 @@ export default function Appointments() {
           onlineStatus: true,
         }),
       });
-
-      // Notify doctor that patient is starting video call
       await fetch(`${apiBase}/api/v1/live/notify-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,540 +369,515 @@ export default function Appointments() {
           doctorEmail: appt.doctorEmail,
           patientName: user.fullname || user.email,
           sessionType: "video",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         }),
       });
-
-      setSelectedAppointmentForLive(appt);
-      setShowVideoCall(true);
-    } catch (error) {
-      console.error("Error starting video call:", error);
-      setMessage("Failed to start video call.");
-      setMessageType("error");
+    } catch (e) {
+      console.error(e);
     }
+    setSelectedAppointmentForLive(appt);
+    setShowVideoCall(true);
   };
 
-  const closeLiveFeatures = () => {
-    setShowLiveChat(false);
-    setShowVideoCall(false);
-    setSelectedAppointmentForLive(null);
-  };
-
-  const fetchHistoryAndDoctors = (silent = false) => {
-    if (user?.email) {
-      // Skip fetch if we just booked (within last 5 seconds)
-      if (lastBookingTimeRef.current && Date.now() - lastBookingTimeRef.current < 5000) {
-        console.log('[HISTORY] Skipping fetch - recent booking');
-        return;
-      }
-      
-      if (!silent) setLoadingHistory(true);
-      console.log('[HISTORY] Fetching appointments for user:', user.email);
-      console.log('[HISTORY] Full user object:', user);
-      console.log('[HISTORY] API URL:', `${apiBase}/api/v1/appointments/user/${user.email}`);
-  fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
-        .then((res) => res.json())
-        .then((data) => {
-          console.log('[HISTORY] Response received:', data);
-          if (data.success) {
-            console.log('[HISTORY] Setting history with', data.data?.length || 0, 'appointments');
-            
-            // Don't clear history if backend returns empty but we have appointments in state
-            setHistory(prevHistory => {
-              if (data.data && data.data.length > 0) {
-                return data.data;
-              } else if (prevHistory.length > 0) {
-                console.log('[HISTORY] Backend returned empty, keeping current state');
-                return prevHistory;
-              } else {
-                return [];
-              }
-            });
-          } else {
-            console.error('[HISTORY] Response not successful:', data);
-          }
-        })
-        .catch((err) => {
-          console.error("[HISTORY] Failed to fetch history:", err);
-          // Don't clear history on error
-        })
-        .finally(() => {
-          if (!silent) setLoadingHistory(false);
-        });
+  /* ─── Filtered Appointments History ─── */
+  const filteredHistory = useMemo(() => {
+    if (historyFilter === "upcoming") {
+      return history.filter((a) => a.status === "pending" || a.status === "confirmed" || a.status === "approved");
     }
-    if (!doctorFromState) {
-      setLoadingDoctors(true);
-  fetch(`${apiBase}/api/v1/doctors/all`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setAvailableDoctors(data.data || []);
-          }
-        })
-        .catch((err) => console.error("Failed to fetch doctors:", err))
-        .finally(() => setLoadingDoctors(false));
+    if (historyFilter === "completed") {
+      return history.filter((a) => a.status === "completed");
     }
-  };
-
-  useEffect(() => {
-    fetchHistoryAndDoctors();
-  }, [user?.email, doctorFromState]);
-
-  // Separate effect for polling to avoid infinite loop
-  useEffect(() => {
-    if (!user?.email) return;
-
-    // Set up polling to check for appointment updates every 10 seconds
-    const pollingInterval = setInterval(() => {
-      // Skip polling if we just booked an appointment (within last 5 seconds)
-      if (lastBookingTimeRef.current && Date.now() - lastBookingTimeRef.current < 5000) {
-        console.log('[POLLING] Skipping poll - recent booking');
-        return;
-      }
-      
-      // Silently fetch updates without showing loading state
-      console.log('[POLLING] Checking for appointment updates...');
-      fetch(`${apiBase}/api/v1/appointments/user/${user.email}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            const newHistory = data.data || [];
-            
-            setHistory((prevHistory) => {
-              // If we have no previous history, just use new data
-              if (prevHistory.length === 0) {
-                return newHistory;
-              }
-              
-              // Check for newly confirmed appointments
-              newHistory.forEach((newAppt) => {
-                const oldAppt = prevHistory.find((h) => h._id === newAppt._id);
-                
-                // If appointment was pending and is now confirmed
-                if (
-                  oldAppt &&
-                  oldAppt.status?.toLowerCase() === "pending" &&
-                  ["confirmed", "approved", "accepted"].includes(
-                    newAppt.status?.toLowerCase()
-                  )
-                ) {
-                  // Mark this appointment as just confirmed
-                  setJustConfirmedIds((prev) => new Set(prev).add(newAppt._id));
-                  
-                  // Show success message
-                  setMessage(
-                    `✅ Dr. ${newAppt.doctorName} confirmed your appointment! Live features are now available.`
-                  );
-                  setMessageType("success");
-                  
-                  // Auto-hide message after 5 seconds
-                  setTimeout(() => {
-                    setMessage("");
-                  }, 5000);
-                  
-                  // Remove the highlight after 10 seconds
-                  setTimeout(() => {
-                    setJustConfirmedIds((prev) => {
-                      const newSet = new Set(prev);
-                      newSet.delete(newAppt._id);
-                      return newSet;
-                    });
-                  }, 10000);
-                }
-              });
-              
-              // Only update history if backend data has all our appointments
-              // Check if all prevHistory appointments exist in newHistory
-              const allExistInBackend = prevHistory.every(oldAppt => 
-                newHistory.some(newAppt => newAppt._id === oldAppt._id)
-              );
-              
-              if (allExistInBackend) {
-                console.log('[POLLING] Backend has all appointments, updating history');
-                return newHistory;
-              } else {
-                console.log('[POLLING] Backend missing some appointments, keeping current state');
-                // Merge: keep existing appointments and add any new ones from backend
-                const merged = [...prevHistory];
-                newHistory.forEach(newAppt => {
-                  if (!merged.find(m => m._id === newAppt._id)) {
-                    merged.push(newAppt);
-                  }
-                });
-                return merged;
-              }
-            });
-          }
-        })
-        .catch((err) => console.error("Polling error:", err));
-    }, 10000); // Poll every 10 seconds
-
-    // Cleanup interval on unmount
-    return () => clearInterval(pollingInterval);
-  }, [user?.email, apiBase]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedDoctor) {
-      setMessage("Please select a doctor.");
-      setMessageType("error");
-      return;
+    if (historyFilter === "cancelled") {
+      return history.filter((a) => a.status === "cancelled");
     }
-    
-    // Check if selected timeslot is booked
-    if (availableTimeslots.length > 0) {
-      const selectedSlot = availableTimeslots.find(slot => slot.time === time);
-      if (selectedSlot && selectedSlot.booked) {
-        setMessage("⚠️ This time slot is already booked. Please select another time.");
-        setMessageType("error");
-        return;
-      }
-    }
-    
-    try {
-      const bookingData = {
-        doctorEmail: selectedDoctor.email,
-        doctorName: selectedDoctor.fullname,
-        doctorId: selectedDoctor._id,
-        userEmail: user.email,
-        userName: user.fullname,
-        date,
-        time,
-        symptoms,
-      };
-      console.log('[BOOKING] Sending booking data:', bookingData);
-      
-      const res = await fetch(`${apiBase}/api/v1/appointments/book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bookingData),
-      });
-      const data = await res.json();
-      console.log('[BOOKING] Response:', data);
-      
-      if (res.ok && data.success) {
-        // Record booking time to prevent polling interference
-        lastBookingTimeRef.current = Date.now();
-        
-        setMessage(
-          `✅ Booking request sent to Dr. ${selectedDoctor.fullname}. Waiting for confirmation.`
-        );
-        setMessageType("pending");
-        
-        // Add the new appointment to history immediately for instant feedback
-        if (data.data && data.data._id) {
-          const newAppointment = {
-            _id: data.data._id,
-            doctorName: selectedDoctor.fullname,
-            doctorEmail: selectedDoctor.email,
-            userEmail: user.email,
-            userName: user.fullname,
-            date: data.data.date,
-            time: data.data.time,
-            symptoms: data.data.symptoms,
-            status: data.data.status || "pending"
-          };
-          console.log('[BOOKING] Adding appointment to history:', newAppointment);
-          setHistory(prev => [newAppointment, ...prev]);
-        }
-        
-        // Clear form
-        setDate("");
-        setTime("");
-        setSymptoms("");
-        setAvailableTimeslots([]);
-        
-        // Refresh from backend after protection window expires
-        setTimeout(() => {
-          console.log('[BOOKING] Syncing with backend...');
-          lastBookingTimeRef.current = null; // Clear protection
-          fetchHistoryAndDoctors(true); // Silent refresh
-        }, 5500); // After the 5 second protection window
-      } else {
-        setMessage(data.message || "Booking failed.");
-        setMessageType("error");
-      }
-    } catch (error) {
-      console.error("Booking error:", error);
-      setMessage("Something went wrong.");
-      setMessageType("error");
-    }
-  };
-
-  if (!doctorFromState && loadingDoctors) {
-    return <div>Loading doctors...</div>;
-  }
+    return history;
+  }, [history, historyFilter]);
 
   return (
-    <>
-      <div className="appointment-page">
-        <h1 className="appointment-title">Book a New Appointment</h1>
+    <div className="apt-page">
+      {/* ── HERO HEADER ── */}
+      <section className="apt-hero">
+        <div className="apt-hero-inner">
+          <span className="apt-eyebrow">
+            <FiCalendar size={13} /> Appointment Booking
+          </span>
+          <h1 className="apt-hero-title">Book an Appointment</h1>
+          <p className="apt-hero-desc">
+            Select your doctor, view their real published availability, and reserve your consultation instantly.
+          </p>
+        </div>
+      </section>
 
-        {!doctorFromState && (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "15px",
-              backgroundColor: "#f9f9f9",
-              borderRadius: "8px",
-            }}
-          >
-            <h3>Select a Doctor</h3>
-            <select
-              value={selectedDoctor?.email || ""}
-              onChange={(e) => {
-                const doc = availableDoctors.find(
-                  (d) => d.email === e.target.value
-                );
-                setSelectedDoctor(doc);
-              }}
-              style={{ width: "100%", padding: "10px", borderRadius: "5px" }}
-            >
-              <option value="">Choose a doctor...</option>
-              {availableDoctors.map((doc) => (
-                <option key={doc._id} value={doc.email}>
-                  Dr. {doc.fullname} - {doc.specialization}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+      <main className="apt-main">
+        {/* ============================================================
+            BOOKING WORKSPACE (TWO COLUMNS)
+            ============================================================ */}
+        {bookingSuccess ? (
+          /* ── SUCCESS SCREEN ── */
+          <div className="apt-success-screen">
+            <div className="apt-success-icon">
+              <FiCheck size={36} />
+            </div>
+            <h2 className="apt-success-title">Appointment Confirmed!</h2>
+            <p className="apt-success-desc">
+              Your consultation with <strong>{bookingSuccess.doctorName}</strong> ({bookingSuccess.doctorSpec}) has been successfully scheduled.
+            </p>
 
-        {selectedDoctor ? (
-          <>
-            <h2>Book Appointment with Dr. {selectedDoctor.fullname}</h2>
-            
-            {/* Timeslot availability indicator */}
-            {date && availableTimeslots.length > 0 && (
-              <div style={{
-                padding: '12px',
-                marginBottom: '16px',
-                borderRadius: '8px',
-                backgroundColor: '#e3f2fd',
-                border: '1px solid #2196f3',
-                fontSize: '14px'
-              }}>
-                <strong>📊 Timeslot Availability:</strong>
-                <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
-                  <span style={{ color: '#4caf50', fontWeight: '600' }}>
-                    ✅ Available: {availableTimeslots.filter(s => !s.booked).length}
-                  </span>
-                  <span style={{ color: '#f44336', fontWeight: '600' }}>
-                    ❌ Booked: {availableTimeslots.filter(s => s.booked).length}
-                  </span>
-                </div>
+            <div className="apt-success-details">
+              <div>
+                <span className="apt-success-meta-label">Booking ID</span>
+                <p className="apt-success-meta-val">{bookingSuccess.appointmentId}</p>
               </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="appointment-content">
-              <label>
-                Date:{" "}
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </label>
-              <label>
-                Time:{" "}
-                {timeslotLoading ? (
-                  <div style={{ padding: "10px", textAlign: "center" }}>
-                    <span>⏳ Loading timeslots...</span>
-                  </div>
-                ) : availableTimeslots.length > 0 ? (
-                  <select 
-                    value={time} 
-                    onChange={(e) => setTime(e.target.value)} 
-                    required
-                    style={{ width: "100%", padding: "10px", borderRadius: "7px", border: "1px solid #b2dfdb" }}
+              <div>
+                <span className="apt-success-meta-label">Status</span>
+                <p className="apt-success-meta-val" style={{ color: "#16a34a", textTransform: "capitalize" }}>
+                  {bookingSuccess.status}
+                </p>
+              </div>
+              <div>
+                <span className="apt-success-meta-label">Date</span>
+                <p className="apt-success-meta-val">{bookingSuccess.date}</p>
+              </div>
+              <div>
+                <span className="apt-success-meta-label">Time</span>
+                <p className="apt-success-meta-val">{bookingSuccess.time}</p>
+              </div>
+            </div>
+
+            <div className="apt-success-actions">
+              <button
+                className="apt-btn-switch-doc"
+                onClick={() => {
+                  setBookingSuccess(null);
+                  setSelectedTime("");
+                  setSymptoms("");
+                }}
+                type="button"
+                style={{ padding: "12px 24px", fontSize: "14px" }}
+              >
+                Book Another Appointment
+              </button>
+              <button
+                className="apt-btn-confirm"
+                onClick={() => {
+                  setBookingSuccess(null);
+                  const el = document.getElementById("apt-history-anchor");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                type="button"
+                style={{ width: "auto", padding: "12px 28px" }}
+              >
+                View in History <FiArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── ACTIVE BOOKING FORM ── */
+          <div className="apt-booking-layout">
+            {/* ── LEFT COLUMN: DOCTOR CARD & SELECTOR ── */}
+            <aside className="apt-doctor-panel">
+              <div className="apt-card">
+                <h3 className="apt-panel-title">
+                  <FiUser size={18} color="#16a34a" /> Select Doctor
+                </h3>
+
+                {/* Doctor Dropdown Selector */}
+                <div className="apt-select-wrapper">
+                  <select
+                    className="apt-select"
+                    value={selectedDoctor?._id || ""}
+                    onChange={(e) => {
+                      const doc = doctors.find((d) => d._id === e.target.value);
+                      if (doc) setSelectedDoctor(doc);
+                    }}
+                    disabled={loadingDoctors}
+                    aria-label="Select Doctor"
                   >
-                    <option value="">Select a timeslot...</option>
-                    {availableTimeslots.map((slot, idx) => (
-                      <option 
-                        key={idx} 
-                        value={slot.time} 
-                        disabled={slot.booked}
-                        style={{
-                          color: slot.booked ? '#999' : '#000',
-                          backgroundColor: slot.booked ? '#f5f5f5' : '#fff'
-                        }}
-                      >
-                        {slot.time} {slot.booked ? '❌ (Already Booked)' : '✅ (Available)'}
+                    {doctors.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {formatDoctorName(d.fullname)} — {formatSpecialization(d.specialization)}
                       </option>
                     ))}
                   </select>
-                ) : date ? (
-                  <div style={{ padding: "10px", color: "#666" }}>
-                    <span>⚠️ No timeslots available for this date. Please select another date or use custom time:</span>
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      required
-                      style={{ width: "100%", marginTop: "10px" }}
-                    />
+                  <FiChevronDown size={16} className="apt-select-chevron" />
+                </div>
+
+                {/* Compact Selected Doctor Profile Card */}
+                {selectedDoctor && (
+                  <div className="apt-doctor-card">
+                    <div className="apt-doc-avatar-wrap">
+                      <img
+                        src={selectedDoctor.avatar || "/default-doctor.png"}
+                        alt={selectedDoctor.fullname}
+                        className="apt-doc-avatar"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/default-doctor.png";
+                        }}
+                      />
+                    </div>
+
+                    <span className="apt-doc-verified">
+                      <FiCheckCircle size={11} /> Verified Doctor
+                    </span>
+
+                    <h4 className="apt-doc-name">{formatDoctorName(selectedDoctor.fullname)}</h4>
+                    <p className="apt-doc-spec">{formatSpecialization(selectedDoctor.specialization)}</p>
+
+                    <div className="apt-doc-meta-grid">
+                      <div className="apt-doc-meta-item">
+                        <FiAward size={15} />
+                        <span>{formatDegree(selectedDoctor.degree)}</span>
+                      </div>
+                      <div className="apt-doc-meta-item">
+                        <FiClock size={15} />
+                        <span>{formatExperience(selectedDoctor.experience)}</span>
+                      </div>
+                      <div className="apt-doc-meta-item">
+                        <FiMapPin size={15} />
+                        <span>{formatClinic(selectedDoctor.clinic)}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      className="apt-change-doc-btn"
+                      onClick={() => navigate("/user/dashboard/Meetdoctor")}
+                      type="button"
+                    >
+                      Browse All Doctors
+                    </button>
                   </div>
-                ) : (
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    required
-                  />
                 )}
-              </label>
-              <label>
-                Symptoms/Reason for visit:{" "}
-                <textarea
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-                  placeholder="Describe your symptoms..."
-                  required
-                />
-              </label>
-              <button type="submit" className="book-btn">
-                Book Appointment
-              </button>
-            </form>
-          </>
-        ) : (
-          <p style={{ textAlign: "center", padding: "20px" }}>
-            Please select a doctor to book an appointment.
-          </p>
-        )}
-        {message && <div className={`message ${messageType}`}>{message}</div>}
-      </div>
+              </div>
+            </aside>
 
-      <div className="history">
-        <h2 className="history-title">Your Appointments History</h2>
-        {loadingHistory ? (
-          <div>Loading your appointments...</div>
-        ) : history.length === 0 ? (
-          <div>No appointments found.</div>
-        ) : (
-          <ul className="history-list">
-            {history.map((appt) => (
-              <li 
-                key={appt._id} 
-                className={`history-item ${
-                  justConfirmedIds.has(appt._id) ? 'just-confirmed' : ''
-                }`}
-              >
-                <div style={{ marginBottom: "8px" }}>
-                  <strong>Dr. {appt.doctorName}</strong>
-                </div>
-                <div>
-                  <strong>Date:</strong>{" "}
-                  {new Date(appt.date).toLocaleDateString()} at {appt.time}
-                </div>
+            {/* ── RIGHT COLUMN: DOCTOR-CONTROLLED APPOINTMENT SLOTS PANEL ── */}
+            <section className="apt-booking-panel">
+              <form onSubmit={handleBookAppointment}>
+                {/* ── STEP 1: AVAILABLE DATES ── */}
+                <div className="apt-step-section">
+                  <div className="apt-step-header">
+                    <span className="apt-step-num">1</span>
+                    <h3 className="apt-step-title">Select Available Date</h3>
+                  </div>
 
-                {/* --- THIS IS THE UPDATED SECTION --- */}
-                {appt.status?.toLowerCase() === "pending" ? (
-                  <div className="pending-confirmation-card">
-                    <div className="pending-icon">⏳</div>
-                    <div className="pending-text">
-                      <strong>Waiting for Confirmation</strong>
-                      <span>The doctor will review your request shortly.</span>
-                      <button className="auto-update-button" disabled style={{
-                        fontSize: '11px',
-                        padding: '4px 10px',
-                        backgroundColor: '#e3f2fd',
-                        color: '#1976d2',
-                        border: '1px solid #90caf9',
-                        borderRadius: '12px',
-                        cursor: 'default',
-                        fontWeight: '500',
-                        marginTop: '8px'
-                      }}>
-                        ✓ Auto-Update
+                  {loadingSlots ? (
+                    <div style={{ padding: "20px 0", color: "#6b7280", fontSize: "14px" }}>
+                      Fetching doctor's published availability...
+                    </div>
+                  ) : availablePublishedDates.length === 0 ? (
+                    /* DOCTOR HAS NO PUBLISHED SLOTS */
+                    <div className="apt-no-slots-box">
+                      <h4 className="apt-no-slots-title">No appointment slots available</h4>
+                      <p className="apt-no-slots-desc">
+                        This doctor hasn't published any appointment availability yet. Please check again later or choose another doctor.
+                      </p>
+                      <button
+                        className="apt-btn-switch-doc"
+                        onClick={() => navigate("/user/dashboard/Meetdoctor")}
+                        type="button"
+                      >
+                        Choose Another Doctor
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <strong>Status:</strong>{" "}
-                      <span 
-                        className={
-                          appt.status?.toLowerCase() === "cancelled" 
-                            ? "status-cancelled"
-                            : ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())
-                            ? "status-confirmed"
-                            : "status-pending"
-                        }
-                        style={{
-                          color: appt.status?.toLowerCase() === "cancelled" ? "#f44336" : undefined,
-                          fontWeight: "bold"
-                        }}
-                      >
-                        {appt.status?.toLowerCase() === "cancelled" && "❌ "}
-                        {justConfirmedIds.has(appt._id) && "🎉 "}
-                        {appt.status?.toLowerCase() === "cancelled" 
-                          ? "Cancelled by Doctor" 
-                          : appt.status}
-                        {justConfirmedIds.has(appt._id) && " (Just Confirmed!)"}
-                      </span>
+                  ) : (
+                    /* RENDER ONLY DOCTOR PUBLISHED DATES */
+                    <div className="apt-dates-carousel">
+                      {availablePublishedDates.map((dateStr) => {
+                        const parsed = parseDateChip(dateStr);
+                        const isSelected = selectedDate === dateStr;
+                        return (
+                          <button
+                            key={dateStr}
+                            type="button"
+                            className={`apt-date-chip ${isSelected ? "apt-date-chip--active" : ""}`}
+                            onClick={() => {
+                              setSelectedDate(dateStr);
+                              setSelectedTime("");
+                              setBookingError("");
+                            }}
+                          >
+                            <span className="apt-date-day">{parsed.dayName}</span>
+                            <span className="apt-date-num">{parsed.dayNum}</span>
+                            <span className="apt-date-month">{parsed.monthName}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── STEP 2: AVAILABLE TIME SLOTS (DOCTOR-CONTROLLED ONLY) ── */}
+                {selectedDate && availablePublishedDates.length > 0 && (
+                  <div className="apt-step-section">
+                    <div className="apt-step-header">
+                      <span className="apt-step-num">2</span>
+                      <h3 className="apt-step-title">
+                        Available Times for {parseDateChip(selectedDate).dayName}, {selectedDate}
+                      </h3>
                     </div>
 
-                    {/* Show cancellation reason if available */}
-                    {appt.status?.toLowerCase() === "cancelled" && appt.consultationNotes && (
-                      <div style={{ 
-                        marginTop: "10px",
-                        padding: "10px",
-                        backgroundColor: "#ffebee",
-                        borderRadius: "6px",
-                        borderLeft: "4px solid #f44336"
-                      }}>
-                        <strong style={{ color: "#d32f2f" }}>Cancellation Reason:</strong>
-                        <p style={{ margin: "5px 0 0 0", color: "#555" }}>
-                          {appt.consultationNotes}
-                        </p>
-                      </div>
-                    )}
+                    {slotsForSelectedDate.length === 0 ? (
+                      <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                        No slots published for this date. Please pick another date above.
+                      </p>
+                    ) : (
+                      <div className="apt-slots-grid">
+                        {slotsForSelectedDate.map((slotObj, idx) => {
+                          const slotTime = typeof slotObj === "string" ? slotObj : slotObj.time;
+                          const isBooked = typeof slotObj === "object" ? slotObj.booked : false;
+                          const isSelected = selectedTime === slotTime;
 
-                    {["confirmed", "approved", "accepted"].includes(
-                      appt.status?.toLowerCase()
-                    ) && (
-                      <div className="live-features-section">
-                        <h4>Live Features</h4>
-                        <div className="live-buttons-container">
-                          <button
-                            className="live-feature-btn chat-btn"
-                            onClick={() => startLiveChat(appt)}
-                          >
-                            💬 Live Chat
-                          </button>
-                          <button
-                            className="live-feature-btn video-btn"
-                            onClick={() => startVideoCall(appt)}
-                          >
-                            📹 Video Call
-                          </button>
-                        </div>
-                        
-                        {/* Prescription View Section */}
-                        <PrescriptionView appointmentId={appt._id} />
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              disabled={isBooked}
+                              className={`apt-slot-btn ${isSelected ? "apt-slot-btn--active" : ""}`}
+                              onClick={() => {
+                                if (!isBooked) {
+                                  setSelectedTime(slotTime);
+                                  setBookingError("");
+                                }
+                              }}
+                            >
+                              <span>{slotTime}</span>
+                              <span className="apt-slot-status-label">
+                                {isBooked ? "Booked" : "Available"}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
-                {/* --- END OF UPDATED SECTION --- */}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
 
+                {/* ── STEP 3: REASON FOR CONSULTATION / SYMPTOMS ── */}
+                {selectedTime && (
+                  <div className="apt-step-section">
+                    <div className="apt-step-header">
+                      <span className="apt-step-num">3</span>
+                      <h3 className="apt-step-title">Reason for Visit / Symptoms</h3>
+                    </div>
+                    <div className="apt-textarea-wrap">
+                      <textarea
+                        className="apt-textarea"
+                        placeholder="Briefly describe your symptoms, existing medical conditions, or what you would like to discuss with the doctor..."
+                        value={symptoms}
+                        onChange={(e) => setSymptoms(e.target.value.slice(0, 500))}
+                        maxLength={500}
+                        rows={3}
+                      />
+                      <div className="apt-char-count">{symptoms.length} / 500</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── STEP 4: APPOINTMENT SUMMARY & CONFIRMATION ── */}
+                {selectedDate && selectedTime && selectedDoctor && (
+                  <div className="apt-summary-card">
+                    <h4 className="apt-summary-title">Appointment Summary</h4>
+                    <div className="apt-summary-row">
+                      <div className="apt-summary-item">
+                        <FiUser size={15} />
+                        <strong>Doctor:</strong> {formatDoctorName(selectedDoctor.fullname)}
+                      </div>
+                      <div className="apt-summary-item">
+                        <FiAward size={15} />
+                        <strong>Specialization:</strong> {formatSpecialization(selectedDoctor.specialization)}
+                      </div>
+                      <div className="apt-summary-item">
+                        <FiCalendar size={15} />
+                        <strong>Date:</strong> {selectedDate}
+                      </div>
+                      <div className="apt-summary-item">
+                        <FiClock size={15} />
+                        <strong>Time:</strong> {selectedTime}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {bookingError && (
+                  <div className="apt-error-banner" role="alert">
+                    <FiAlertCircle size={16} />
+                    <span>{bookingError}</span>
+                  </div>
+                )}
+
+                {/* Confirm Button */}
+                <button
+                  type="submit"
+                  className="apt-btn-confirm"
+                  disabled={
+                    isSubmitting ||
+                    !selectedDoctor ||
+                    !selectedDate ||
+                    !selectedTime ||
+                    availablePublishedDates.length === 0
+                  }
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="apt-spinner" />
+                      <span>Confirming Appointment...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Confirm Appointment</span>
+                      <FiArrowRight size={17} />
+                    </>
+                  )}
+                </button>
+              </form>
+            </section>
+          </div>
+        )}
+
+        {/* ============================================================
+            APPOINTMENTS HISTORY SECTION
+            ============================================================ */}
+        <section className="apt-history-section" id="apt-history-anchor">
+          <div className="apt-history-header">
+            <h2 className="apt-history-title">Your Appointments History</h2>
+
+            {/* Filter Tabs */}
+            <div className="apt-filter-tabs">
+              {["all", "upcoming", "completed", "cancelled"].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`apt-tab-btn ${historyFilter === tab ? "apt-tab-btn--active" : ""}`}
+                  onClick={() => setHistoryFilter(tab)}
+                >
+                  {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loadingHistory ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+              Loading your appointments history...
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="apt-empty-history">
+              <div className="apt-empty-history-icon">
+                <FiCalendar size={24} />
+              </div>
+              <h3 style={{ fontFamily: "Manrope", fontSize: "17px", color: "#0f172a", margin: "0 0 6px" }}>
+                No appointments found
+              </h3>
+              <p style={{ fontSize: "14px", margin: 0 }}>
+                {historyFilter === "all"
+                  ? "You have not booked any appointments yet."
+                  : `No ${historyFilter} appointments found.`}
+              </p>
+            </div>
+          ) : (
+            <div className="apt-history-list">
+              {filteredHistory.map((appt) => {
+                const parsed = parseDateChip(appt.date);
+                const status = (appt.status || "pending").toLowerCase();
+                const isCancellable = status === "pending" || status === "confirmed" || status === "approved";
+
+                return (
+                  <div className="apt-history-card" key={appt._id}>
+                    {/* Left: Date Badge */}
+                    <div className="apt-history-date-badge">
+                      <span className="apt-history-month">{parsed.monthName || "DATE"}</span>
+                      <span className="apt-history-day">{parsed.dayNum || "—"}</span>
+                      <span className="apt-history-time">{appt.time}</span>
+                    </div>
+
+                    {/* Middle: Doctor Details & Symptoms */}
+                    <div className="apt-history-info">
+                      <h4 className="apt-history-doc-name">{formatDoctorName(appt.doctorName)}</h4>
+                      <p className="apt-history-doc-spec">
+                        {appt.doctorEmail} • <strong>ID:</strong> {appt._id?.slice(-6).toUpperCase()}
+                      </p>
+                      <p className="apt-history-symptoms">
+                        <strong>Reason:</strong> {appt.symptoms || "General Consultation"}
+                      </p>
+                    </div>
+
+                    {/* Right: Status Pill & Dynamic Actions */}
+                    <div className="apt-history-actions">
+                      <span className={`apt-status-badge apt-status--${status}`}>
+                        {status === "confirmed" || status === "approved"
+                          ? "🟢 Confirmed"
+                          : status === "pending"
+                          ? "🟡 Pending Confirmation"
+                          : status === "cancelled"
+                          ? "🔴 Cancelled"
+                          : "⚪ Completed"}
+                      </span>
+
+                      <div className="apt-action-btns-row">
+                        {/* Live Consultation Actions (when active or confirmed) */}
+                        {(status === "confirmed" || status === "approved") && (
+                          <>
+                            <button
+                              className="apt-btn-live-chat"
+                              onClick={() => startLiveChat(appt)}
+                              type="button"
+                            >
+                              <FiMessageCircle size={14} /> Live Chat
+                            </button>
+                            <button
+                              className="apt-btn-live-video"
+                              onClick={() => startVideoCall(appt)}
+                              type="button"
+                            >
+                              <FiVideo size={14} /> Video Call
+                            </button>
+                          </>
+                        )}
+
+                        {/* Prescription Button */}
+                        {appt.prescriptionFile && (
+                          <button
+                            className="apt-btn-prescription"
+                            onClick={() => setViewPrescriptionUrl(appt.prescriptionFile)}
+                            type="button"
+                          >
+                            <FiFileText size={14} /> Prescription
+                          </button>
+                        )}
+
+                        {/* Cancel Appointment Button (only for active appointments) */}
+                        {isCancellable && (
+                          <button
+                            className="apt-btn-cancel"
+                            onClick={() => handleCancelAppointment(appt._id)}
+                            type="button"
+                          >
+                            <FiX size={13} /> Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* ============================================================
+          LIVE CHAT, VIDEO CALL & PRESCRIPTION MODALS (PRESERVED)
+          ============================================================ */}
       {showLiveChat && selectedAppointmentForLive && (
         <div className="modal-overlay">
           <div className="modal-content">
             <LiveChat
               appointmentId={selectedAppointmentForLive._id}
-              currentUser={{ id: user.email, name: user.fullname }}
               userType="patient"
-              onClose={closeLiveFeatures}
+              userId={user.email}
+              userName={user.fullname || user.email}
+              onClose={() => setShowLiveChat(false)}
             />
           </div>
         </div>
@@ -645,14 +887,23 @@ export default function Appointments() {
         <div className="modal-overlay video-overlay">
           <div className="modal-content video-modal">
             <VideoCall
-              appointmentId={selectedAppointmentForLive._id}
-              currentUser={{ id: user.email, name: user.fullname }}
+              roomId={selectedAppointmentForLive.callRoomId || selectedAppointmentForLive._id}
               userType="patient"
-              onClose={closeLiveFeatures}
+              userId={user.email}
+              userName={user.fullname || user.email}
+              appointmentId={selectedAppointmentForLive._id}
+              onClose={() => setShowVideoCall(false)}
             />
           </div>
         </div>
       )}
-    </>
+
+      {viewPrescriptionUrl && (
+        <PrescriptionView
+          prescriptionUrl={viewPrescriptionUrl}
+          onClose={() => setViewPrescriptionUrl(null)}
+        />
+      )}
+    </div>
   );
 }

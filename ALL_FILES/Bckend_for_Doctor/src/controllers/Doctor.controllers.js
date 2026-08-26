@@ -160,7 +160,27 @@ const getDoctorTimeslots = asyncHandler(async (req, res) => {
     let query = { doctor: doctorId };
     if (date) query.date = date;
     const timeslots = await Timeslot.find(query);
-    return res.status(200).json(new ApiResponse(200, timeslots, "Timeslots fetched successfully"));
+
+    // Normalize slots format
+    const normalized = timeslots.map(doc => {
+        const docObj = doc.toObject();
+        if (Array.isArray(docObj.slots)) {
+            docObj.slots = docObj.slots.map(s => {
+                if (typeof s === "string") {
+                    return { time: s, booked: false };
+                }
+                return {
+                    time: s.time,
+                    booked: Boolean(s.booked)
+                };
+            });
+        } else {
+            docObj.slots = [];
+        }
+        return docObj;
+    });
+
+    return res.status(200).json(new ApiResponse(200, normalized, "Timeslots fetched successfully"));
 });
 
 export { 

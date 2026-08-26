@@ -11,59 +11,81 @@ export const bookAppointment = asyncHandler(async (req, res) => {
   const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId } = req.body;
   console.log('[BOOK] Incoming booking:', { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId });
   
-  if (!doctorEmail || !doctorName || !date || !time || !userEmail || !userName) {
-    console.error('[BOOK] Missing required fields:', req.body);
-    throw new ApiError(400, "All fields are required");
+  if (!doctorEmail || !date || !time || !userEmail || !userName) {
+    throw new ApiError(400, "All fields (doctor, date, time, patient information) are required");
   }
 
-  // Check if the timeslot is already booked (optional feature)
+  // 1. Identify the doctor
+  let doctorDoc = null;
   if (doctorId) {
-    try {
-      const timeslotDoc = await Timeslot.findOne({ 
-        doctor: doctorId, 
-        date: date 
-      });
-
-      if (timeslotDoc && timeslotDoc.slots && Array.isArray(timeslotDoc.slots)) {
-        const slot = timeslotDoc.slots.find(s => s.time === time);
-        if (slot && slot.booked) {
-          console.log('[BOOK] Slot already booked:', time);
-          throw new ApiError(400, "This time slot is already booked. Please select another time.");
-        }
-        
-        // Mark the slot as booked
-        if (slot) {
-          slot.booked = true;
-          slot.bookedBy = userEmail;
-          await timeslotDoc.save();
-          console.log('[BOOK] Timeslot marked as booked:', time);
-        } else {
-          console.log('[BOOK] Slot not found in timeslots, allowing booking anyway');
-        }
-      } else {
-        console.log('[BOOK] No timeslots found for this date, allowing booking');
-      }
-    } catch (error) {
-      // If timeslot check fails, log but continue with booking
-      // This ensures bookings work even without timeslot system
-      if (error instanceof ApiError) {
-        throw error; // Re-throw ApiError (like "already booked")
-      }
-      console.error('[BOOK] Timeslot check error (continuing anyway):', error.message);
-    }
-  } else {
-    console.log('[BOOK] No doctorId provided, skipping timeslot check');
+    doctorDoc = await Doctor.findById(doctorId);
+  }
+  if (!doctorDoc && doctorEmail) {
+    doctorDoc = await Doctor.findOne({ email: doctorEmail });
   }
 
-  // Create the appointment
+  const effectiveDoctorId = doctorDoc?._id || doctorId;
+  const effectiveDoctorName = doctorDoc?.fullname || doctorName || "Doctor";
+
+  // 2. Validate and reserve the doctor-published timeslot
+  if (effectiveDoctorId) {
+    const timeslotDoc = await Timeslot.findOne({ 
+      doctor: effectiveDoctorId, 
+      date: date 
+    });
+
+    if (timeslotDoc && Array.isArray(timeslotDoc.slots) && timeslotDoc.slots.length > 0) {
+      const slotIndex = timeslotDoc.slots.findIndex(s => s.time === time || s === time);
+      
+      if (slotIndex === -1) {
+        throw new ApiError(400, "The selected time slot was not published by this doctor.");
+      }
+
+      const slot = timeslotDoc.slots[slotIndex];
+      const isAlreadyBooked = typeof slot === "object" ? slot.booked : false;
+
+      if (isAlreadyBooked) {
+        throw new ApiError(400, "This time slot is already booked. Please choose another available slot.");
+      }
+
+      // Mark slot as booked
+      if (typeof slot === "object") {
+        timeslotDoc.slots[slotIndex].booked = true;
+        timeslotDoc.slots[slotIndex].bookedBy = userEmail;
+      } else {
+        timeslotDoc.slots[slotIndex] = {
+          time: slot,
+          booked: true,
+          bookedBy: userEmail
+        };
+      }
+      
+      await timeslotDoc.save();
+    }
+  }
+
+  // 3. Prevent duplicate active appointments for same user, doctor, date, time
+  const existingAppt = await Appointment.findOne({
+    doctorEmail,
+    userEmail,
+    date,
+    time,
+    status: { $in: ["pending", "confirmed", "approved"] }
+  });
+
+  if (existingAppt) {
+    throw new ApiError(400, "You already have an active appointment scheduled for this time slot.");
+  }
+
+  // 4. Create the appointment
   const appointment = await Appointment.create({
     doctorEmail,
-    doctorName,
+    doctorName: effectiveDoctorName,
     userEmail,
     userName,
     date,
     time,
-    symptoms,
+    symptoms: symptoms?.trim() || "General Consultation",
     status: "pending"
   });
   
@@ -129,28 +151,48 @@ export const approveAppointment = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment approved successfully"));
 });
 
-// Cancel appointment (doctor cancels the booking)
+// Cancel appointment (doctor or patient cancels the booking)
 export const cancelAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
-  const { doctorEmail, reason } = req.body;
+  const { doctorEmail, userEmail, reason } = req.body;
   
-  console.log('[CANCEL] Cancelling appointment:', appointmentId, 'by doctor:', doctorEmail, 'reason:', reason);
+  let query = { _id: appointmentId };
+  if (doctorEmail) {
+    query.doctorEmail = doctorEmail;
+  } else if (userEmail) {
+    query.userEmail = userEmail;
+  }
   
-  const appointment = await Appointment.findOne({ _id: appointmentId, doctorEmail });
+  const appointment = await Appointment.findOne(query);
   
   if (!appointment) {
     throw new ApiError(404, "Appointment not found or you don't have permission");
   }
   
   if (appointment.status === "completed") {
-    throw new ApiError(400, "Cannot cancel a completed appointment");
+    throw new ApiError(400, "Cannot cancel an already completed appointment");
   }
   
   appointment.status = "cancelled";
-  appointment.consultationNotes = reason ? `Cancelled by doctor. Reason: ${reason}` : "Cancelled by doctor";
+  appointment.consultationNotes = reason 
+    ? `Cancelled: ${reason}` 
+    : (userEmail ? "Cancelled by patient" : "Cancelled by doctor");
   await appointment.save();
+
+  // Free the timeslot so it can be re-booked
+  try {
+    const doctorDoc = await Doctor.findOne({ email: appointment.doctorEmail });
+    if (doctorDoc) {
+      await Timeslot.updateOne(
+        { doctor: doctorDoc._id, date: appointment.date, "slots.time": appointment.time },
+        { "$set": { "slots.$.booked": false, "slots.$.bookedBy": null } }
+      );
+    }
+  } catch (err) {
+    console.error("Failed to free timeslot on cancellation:", err);
+  }
   
-  console.log('[CANCEL] Appointment cancelled successfully');
+  console.log('[CANCEL] Appointment cancelled successfully:', appointmentId);
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment cancelled successfully"));
 });
 
