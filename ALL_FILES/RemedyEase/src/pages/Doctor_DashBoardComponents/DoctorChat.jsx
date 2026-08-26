@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FiSend,
   FiSearch,
@@ -6,19 +7,25 @@ import {
   FiClock,
   FiCalendar,
   FiCheck,
-  FiCheckCircle,
   FiPaperclip,
   FiRefreshCw,
   FiMessageSquare,
   FiFileText,
   FiVideo,
+  FiArrowLeft,
+  FiEye,
+  FiActivity,
+  FiInfo,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
-import "../../Css_for_all/Chat.css";
+import "../../Css_for_all/DoctorChat.css";
+import "../../Css_for_all/DoctorDashboard.css";
 
 const DOCTOR_BACKEND_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function DoctorChat() {
+  const navigate = useNavigate();
+
   let doctor = null;
   try {
     doctor = JSON.parse(localStorage.getItem("doctor"));
@@ -26,6 +33,7 @@ export default function DoctorChat() {
 
   const doctorEmail = doctor?.email;
 
+  // Data states
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -35,6 +43,9 @@ export default function DoctorChat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
+
+  // Mobile state: 'list' or 'chat'
+  const [mobileView, setMobileView] = useState("list");
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -66,12 +77,11 @@ export default function DoctorChat() {
 
       if (data.success && Array.isArray(data.data)) {
         setConversations(data.data);
-        // Select first conversation if none selected
         if (!activeConvRef.current && data.data.length > 0) {
           setActiveConv(data.data[0]);
         }
       } else {
-        // Fallback: fetch appointments
+        // Fallback: fetch doctor appointments
         const apptRes = await fetch(`/api/v1/appointments/doctor/${doctorEmail}`);
         const apptData = await apptRes.json();
         if (apptData.success && Array.isArray(apptData.data)) {
@@ -139,7 +149,7 @@ export default function DoctorChat() {
     }
   }, [activeConv?.appointmentId, fetchMessages]);
 
-  // Socket.IO Setup
+  // Socket.IO Connection
   useEffect(() => {
     const socketUrl = DOCTOR_BACKEND_URL || window.location.origin;
     const socket = io(socketUrl, {
@@ -204,8 +214,8 @@ export default function DoctorChat() {
 
   // Send Message
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim() || !activeConv) return;
+    if (e) e.preventDefault();
+    if (!inputValue.trim() || !activeConv || sendingMessage) return;
 
     const text = inputValue.trim();
     setInputValue("");
@@ -250,6 +260,13 @@ export default function DoctorChat() {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   // Filter conversations
   const filteredConversations = conversations.filter((c) => {
     if (!searchTerm.trim()) return true;
@@ -270,173 +287,284 @@ export default function DoctorChat() {
   };
 
   return (
-    <div className="chat-container-pro" style={{ height: "calc(100vh - 120px)" }}>
-      {/* ─── Sidebar Conversations ─── */}
-      <div className="chat-sidebar-pro">
-        <div className="chat-sidebar-header-pro">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h2 className="chat-sidebar-title-pro" style={{ margin: 0 }}>
-              Patient Consultations
-            </h2>
-            <button
-              type="button"
-              className="dd-btn-action"
-              onClick={fetchConversations}
-              title="Refresh chats"
-            >
-              <FiRefreshCw size={12} className={loadingConv ? "hr-spin" : ""} />
-            </button>
+    <div className="dc-container">
+      <div className="dc-workspace">
+        {/* ─── 1. LEFT PANEL: Conversations Sidebar ─── */}
+        <aside
+          className={`dc-sidebar ${mobileView === "chat" ? "dc-sidebar--hidden" : ""}`}
+        >
+          <div className="dc-sidebar-header">
+            <div className="dc-sidebar-title-row">
+              <h2 className="dc-sidebar-title">
+                Messages <span className="dc-sidebar-count">{filteredConversations.length}</span>
+              </h2>
+              <button
+                type="button"
+                className="dd-btn-action"
+                onClick={fetchConversations}
+                title="Refresh conversations"
+              >
+                <FiRefreshCw size={12} className={loadingConv ? "hr-spin" : ""} />
+              </button>
+            </div>
+
+            <div className="dc-search-wrap">
+              <FiSearch className="dc-search-icon" />
+              <input
+                type="text"
+                placeholder="Search patient or symptoms..."
+                className="dc-search-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="chat-search-wrapper-pro">
-            <FiSearch className="chat-search-icon-pro" />
-            <input
-              type="text"
-              placeholder="Search patients..."
-              className="chat-search-input-pro"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="chat-conv-list-pro">
-          {loadingConv ? (
-            <div style={{ textAlign: "center", padding: "40px 20px" }}>
-              <div className="hr-spinner" style={{ width: "24px", height: "24px" }} />
-              <p style={{ fontSize: "12.5px", color: "#64748b", marginTop: "8px" }}>Loading patient chats...</p>
-            </div>
-          ) : filteredConversations.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748b", fontSize: "13px" }}>
-              No consultation chats found.
-            </div>
-          ) : (
-            filteredConversations.map((conv) => {
-              const isSelected = activeConv?.appointmentId === conv.appointmentId;
-              return (
-                <div
-                  key={conv.appointmentId}
-                  className={`chat-conv-item-pro ${isSelected ? "chat-conv-item-active" : ""}`}
-                  onClick={() => setActiveConv(conv)}
-                >
-                  <div className="chat-avatar-pro">
-                    <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#15803d", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px" }}>
+          <div className="dc-conv-list">
+            {loadingConv ? (
+              <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                <div className="hr-spinner" style={{ width: "24px", height: "24px" }} />
+                <p style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
+                  Loading patient chats...
+                </p>
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b", fontSize: "12.5px" }}>
+                No active conversations found.
+              </div>
+            ) : (
+              filteredConversations.map((conv) => {
+                const isSelected = activeConv?.appointmentId === conv.appointmentId;
+                return (
+                  <div
+                    key={conv.appointmentId}
+                    className={`dc-conv-item ${isSelected ? "dc-conv-item--active" : ""} ${
+                      conv.unreadCount > 0 ? "dc-conv-item--unread" : ""
+                    }`}
+                    onClick={() => {
+                      setActiveConv(conv);
+                      setMobileView("chat");
+                    }}
+                  >
+                    <div className="dc-avatar">
                       {conv.userName?.charAt(0) || "P"}
-                    </div>
-                  </div>
-
-                  <div className="chat-conv-content-pro">
-                    <div className="chat-conv-top-row">
-                      <h4 className="chat-conv-name-pro">{conv.userName}</h4>
-                      <span className="chat-conv-time-pro">
-                        {conv.appointmentTime || conv.appointmentDate}
-                      </span>
+                      <span className="dc-avatar-dot" />
                     </div>
 
-                    <p className="chat-conv-preview-pro">
-                      {conv.lastMessage?.message || conv.symptoms || "Consultation chat session"}
-                    </p>
+                    <div className="dc-conv-body">
+                      <div className="dc-conv-top">
+                        <span className="dc-conv-name">{conv.userName}</span>
+                        <span className="dc-conv-time">
+                          {conv.appointmentTime || conv.appointmentDate}
+                        </span>
+                      </div>
+
+                      <div className="dc-conv-bottom">
+                        <p className="dc-conv-preview">
+                          {conv.lastMessage?.message || conv.symptoms || "Clinical consultation room"}
+                        </p>
+                        {conv.unreadCount > 0 && (
+                          <span className="dc-unread-badge">{conv.unreadCount}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </aside>
+
+        {/* ─── 2. CENTER PANEL: Main Active Chat Area ─── */}
+        <section
+          className={`dc-chat-main ${mobileView === "list" ? "dc-chat-main--hidden" : ""}`}
+        >
+          {activeConv ? (
+            <>
+              {/* Header */}
+              <div className="dc-chat-header">
+                <div className="dc-chat-header-left">
+                  <button
+                    type="button"
+                    className="dc-back-mobile-btn"
+                    onClick={() => setMobileView("list")}
+                    title="Back to conversation list"
+                  >
+                    <FiArrowLeft size={18} />
+                  </button>
+
+                  <div className="dc-avatar" style={{ width: "38px", height: "38px" }}>
+                    {activeConv.userName?.charAt(0) || "P"}
+                    <span className="dc-avatar-dot" />
                   </div>
 
-                  {conv.unreadCount > 0 && (
-                    <span className="chat-unread-badge-pro">{conv.unreadCount}</span>
-                  )}
+                  <div className="dc-chat-doc-info">
+                    <h3>{activeConv.userName}</h3>
+                    <span>
+                      Confirmed Consultation • {activeConv.appointmentDate} at {activeConv.appointmentTime}
+                    </span>
+                  </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
 
-      {/* ─── Active Chat Window ─── */}
-      <div className="chat-main-window-pro">
-        {activeConv ? (
-          <>
-            {/* Header */}
-            <div className="chat-header-pro">
-              <div className="chat-header-doctor-info">
-                <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#dcfce7", color: "#15803d", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px" }}>
-                  {activeConv.userName?.charAt(0) || "P"}
+                <div className="dc-chat-header-actions">
+                  <span className={`dd-badge dd-badge--${activeConv.status || "confirmed"}`}>
+                    {activeConv.status || "confirmed"}
+                  </span>
+                  <Link
+                    to="/doctor/dashboard/history"
+                    className="dd-btn-action"
+                    title="Open medical history"
+                  >
+                    <FiFileText size={13} /> History
+                  </Link>
                 </div>
-                <div>
-                  <h3 className="chat-header-doc-name">{activeConv.userName}</h3>
-                  <span className="chat-header-doc-spec">
-                    Consultation • {activeConv.appointmentDate} at {activeConv.appointmentTime}
+              </div>
+
+              {/* Consultation Context Ribbon */}
+              <div className="dc-context-banner">
+                <div className="dc-context-item">
+                  <FiCalendar size={12} color="#16a34a" />
+                  <span>
+                    <strong>Date:</strong> {activeConv.appointmentDate} • {activeConv.appointmentTime}
+                  </span>
+                </div>
+                <div className="dc-context-item">
+                  <FiActivity size={12} color="#2563eb" />
+                  <span>
+                    <strong>Chief Complaint:</strong> {activeConv.symptoms || "General Outpatient Care"}
                   </span>
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span className={`dd-badge dd-badge--${activeConv.status || "confirmed"}`}>
-                  {activeConv.status || "confirmed"}
-                </span>
+              {/* Messages Viewport */}
+              <div className="dc-messages-viewport">
+                {loadingMessages ? (
+                  <div style={{ textAlign: "center", padding: "40px" }}>
+                    <div className="hr-spinner" style={{ width: "24px", height: "24px" }} />
+                    <p style={{ fontSize: "12.5px", color: "#64748b", marginTop: "8px" }}>
+                      Loading consultation messages...
+                    </p>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                    <FiMessageSquare size={38} color="#16a34a" style={{ opacity: 0.6 }} />
+                    <h4 style={{ margin: "10px 0 4px", color: "#0f172a", fontSize: "15px" }}>
+                      Start clinical consultation with {activeConv.userName}
+                    </h4>
+                    <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
+                      Send advice, prescriptions, or clinical notes directly to the patient.
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((msg, index) => {
+                    const isDoctor = msg.senderType === "doctor";
+                    return (
+                      <div
+                        key={msg._id || index}
+                        className={`dc-bubble-row ${
+                          isDoctor ? "dc-bubble-row--doctor" : "dc-bubble-row--patient"
+                        }`}
+                      >
+                        <div
+                          className={`dc-bubble-msg ${
+                            isDoctor ? "dc-bubble-msg--doctor" : "dc-bubble-msg--patient"
+                          }`}
+                        >
+                          <div>{msg.message}</div>
+                          <div className="dc-bubble-meta">
+                            <span>{formatMessageTime(msg.createdAt)}</span>
+                            {isDoctor && <FiCheck size={11} />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Composer */}
+              <div className="dc-composer-wrapper">
+                <form onSubmit={handleSendMessage} className="dc-composer-form">
+                  <textarea
+                    rows={1}
+                    placeholder="Type a clinical message... (Press Enter to send)"
+                    className="dc-composer-textarea"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <button
+                    type="submit"
+                    className="dc-send-btn"
+                    disabled={!inputValue.trim() || sendingMessage}
+                    title="Send message"
+                  >
+                    <FiSend size={14} />
+                  </button>
+                </form>
+                <div className="dc-security-text">
+                  🔒 Messages are encrypted and stored securely in the patient's medical record.
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b" }}>
+              <FiMessageSquare size={48} color="#cbd5e1" />
+              <h3 style={{ fontSize: "16px", color: "#0f172a", margin: "14px 0 4px" }}>
+                No conversation selected
+              </h3>
+              <p style={{ fontSize: "13px", color: "#64748b" }}>
+                Select a patient consultation on the left to start messaging.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* ─── 3. RIGHT PANEL: Patient Details & Context ─── */}
+        {activeConv && (
+          <aside className="dc-patient-panel">
+            <h4 className="dc-panel-header">Patient Details</h4>
+
+            <div className="dc-panel-profile">
+              <div className="dc-panel-avatar">
+                {activeConv.userName?.charAt(0) || "P"}
+              </div>
+              <h3 className="dc-panel-name">{activeConv.userName}</h3>
+              <p className="dc-panel-email">{activeConv.userEmail}</p>
+            </div>
+
+            <div>
+              <div className="dc-panel-section-title">Consultation Schedule</div>
+              <div className="dc-panel-card-box">
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                  <FiCalendar size={12} color="#16a34a" />
+                  <strong>{activeConv.appointmentDate}</strong>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <FiClock size={12} color="#64748b" />
+                  <span>{activeConv.appointmentTime}</span>
+                </div>
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="chat-messages-viewport-pro">
-              {loadingMessages ? (
-                <div style={{ textAlign: "center", padding: "40px" }}>
-                  <div className="hr-spinner" style={{ width: "24px", height: "24px" }} />
-                  <p style={{ fontSize: "12.5px", color: "#64748b", marginTop: "8px" }}>Loading messages...</p>
-                </div>
-              ) : messages.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                  <FiMessageSquare size={36} color="#16a34a" style={{ opacity: 0.6 }} />
-                  <h4 style={{ margin: "10px 0 4px", color: "#0f172a", fontSize: "15px" }}>
-                    Start clinical consultation with {activeConv.userName}
-                  </h4>
-                  <p style={{ color: "#64748b", fontSize: "13px", margin: 0 }}>
-                    Messages sent here are encrypted and stored securely in the patient's medical record.
-                  </p>
-                </div>
-              ) : (
-                messages.map((msg, index) => {
-                  const isDoctor = msg.senderType === "doctor";
-                  return (
-                    <div
-                      key={msg._id || index}
-                      className={`chat-bubble-row-pro ${isDoctor ? "chat-bubble-user-row" : "chat-bubble-doctor-row"}`}
-                    >
-                      <div className={`chat-bubble-pro ${isDoctor ? "chat-bubble-user" : "chat-bubble-doctor"}`}>
-                        <div className="chat-bubble-text-pro">{msg.message}</div>
-                        <div className="chat-bubble-meta-pro">
-                          <span className="chat-bubble-time">{formatMessageTime(msg.createdAt)}</span>
-                          {isDoctor && <FiCheck className="chat-tick-icon" />}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
+            <div>
+              <div className="dc-panel-section-title">Reported Symptoms</div>
+              <div className="dc-panel-card-box" style={{ lineHeight: "1.4" }}>
+                {activeConv.symptoms || "No specific symptoms reported on booking."}
+              </div>
             </div>
 
-            {/* Composer */}
-            <form onSubmit={handleSendMessage} className="chat-composer-pro">
-              <input
-                type="text"
-                placeholder="Type clinical advice or consultation message..."
-                className="chat-composer-input-pro"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="chat-send-btn-pro"
-                disabled={!inputValue.trim() || sendingMessage}
+            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <Link
+                to="/doctor/dashboard/history"
+                className="dd-btn-action dd-btn-action--approve"
+                style={{ justifyContent: "center", padding: "10px" }}
               >
-                <FiSend size={15} />
-              </button>
-            </form>
-          </>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b" }}>
-            <FiMessageSquare size={48} color="#94a3b8" />
-            <p style={{ fontSize: "14px", marginTop: "12px", fontWeight: "600" }}>
-              Select a patient consultation to view and send messages.
-            </p>
-          </div>
+                <FiFileText size={14} /> View Medical History
+              </Link>
+            </div>
+          </aside>
         )}
       </div>
     </div>
