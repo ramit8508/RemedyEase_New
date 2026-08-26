@@ -4,6 +4,7 @@ import {
     loginUser, 
     getUserProfile, 
     updateUserProfile, 
+    updateUserAvatar,
     getUserAppointments,
     getUserPrescriptions 
 } from "../controllers/user.controller.js";
@@ -20,8 +21,8 @@ router.route("/register").post(
 router.route("/login").post(loginUser);
 router.route("/profile").get(getUserProfile);
 router.route("/profile/update").put(updateUserProfile);
+router.route("/profile/avatar").put(upload.single("avatar"), updateUserAvatar);
 router.route("/:userEmail/appointments").get(getUserAppointments);
 router.route("/prescriptions").get(getUserPrescriptions);
 
 export default router;
-

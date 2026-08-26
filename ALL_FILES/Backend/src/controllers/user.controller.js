@@ -73,14 +73,48 @@ const getUserProfile = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, user, "User profile fetched successfully"));
 });
 
+// Allowed profile fields — prevents arbitrary field injection
+const ALLOWED_PROFILE_FIELDS = ["phone", "gender", "dob", "address", "bloodGroup", "emergencyContact", "allergies", "medications"];
+
 const updateUserProfile = asyncHandler(async (req, res) => {
     const email = req.user?.email || req.body.email;
     if (!email) throw new ApiError(400, "Email is required");
-    const updateFields = { ...req.body };
-    delete updateFields.email;
+
+    // Only pick allowed fields
+    const updateFields = {};
+    for (const field of ALLOWED_PROFILE_FIELDS) {
+        if (req.body[field] !== undefined) {
+            updateFields[field] = typeof req.body[field] === "string" ? req.body[field].trim() : req.body[field];
+        }
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "No valid fields to update");
+    }
+
     const user = await User.findOneAndUpdate({ email }, updateFields, { new: true }).select("-password -confirmPassword -refreshToken");
     if (!user) throw new ApiError(404, "User not found");
     return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const email = req.user?.email || req.body.email;
+    if (!email) throw new ApiError(400, "Email is required");
+    if (!req.file || !req.file.buffer) throw new ApiError(400, "Avatar file is required");
+
+    const cloudinaryResponse = await uploadOnCloudinary(req.file.buffer);
+    if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+        throw new ApiError(500, "Avatar upload failed");
+    }
+
+    const user = await User.findOneAndUpdate(
+        { email },
+        { avatar: cloudinaryResponse.secure_url },
+        { new: true }
+    ).select("-password -confirmPassword -refreshToken");
+
+    if (!user) throw new ApiError(404, "User not found");
+    return res.status(200).json(new ApiResponse(200, user, "Avatar updated"));
 });
 
 const getUserAppointments = asyncHandler(async (req, res) => {
@@ -148,4 +182,4 @@ const getUserPrescriptions = asyncHandler(async (req, res) => {
     }
 });
 
-export { registerUser, loginUser, getUserAppointments, getUserProfile, updateUserProfile, getUserPrescriptions };
+export { registerUser, loginUser, getUserAppointments, getUserProfile, updateUserProfile, updateUserAvatar, getUserPrescriptions };
