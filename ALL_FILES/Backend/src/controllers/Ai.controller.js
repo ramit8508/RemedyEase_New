@@ -68,13 +68,71 @@ function isDuplicate(key) {
   return false;
 }
 
-/* ─── getAIRecommendation (unchanged contract) ─── */
+/* ─── Emergency & Red-Flag Symptom Screener ─── */
+const EMERGENCY_PATTERNS = [
+  /\b(chest pain|heart attack|angina|pressure in chest|crushing pain)\b/i,
+  /\b(shortness of breath|difficulty breathing|cannot breathe|suffocating|stridor|gasping for air)\b/i,
+  /\b(stroke|facial droop|arm weakness|slurred speech|sudden paralysis|sudden numbness)\b/i,
+  /\b(severe bleeding|uncontrolled bleeding|coughing blood|vomiting blood|heavy blood loss)\b/i,
+  /\b(unconscious|loss of consciousness|passed out|fainting|blackout|seizure|convulsions)\b/i,
+  /\b(anaphylaxis|swollen throat|throat closing|tongue swelling|severe allergic reaction)\b/i,
+  /\b(sudden blindness|sudden vision loss|severe trauma|head injury)\b/i,
+  /\b(poisoning|overdose|swallowed chemicals|toxic ingestion)\b/i,
+  /\b(suicide|self harm|end my life)\b/i,
+];
+
+function checkEmergencySymptom(text) {
+  for (const pattern of EMERGENCY_PATTERNS) {
+    if (pattern.test(text)) return true;
+  }
+  return false;
+}
+
+/* ─── getAIRecommendation (Enhanced with Medical Safety & Structured JSON) ─── */
 export const getAIRecommendation = async (req, res) => {
   const rawSymptoms = req.body?.symptoms;
-  const symptoms = sanitize(rawSymptoms);
+  const rawLanguage = req.body?.language || req.body?.lang || "en-US";
+  const userProfile = req.body?.userProfile || {};
+  const symptoms = sanitize(rawSymptoms, 1000);
 
   if (!symptoms || symptoms.length === 0) {
-    return res.status(400).json({ error: "Symptoms are required." });
+    return res.status(400).json({ error: "Please describe your symptoms to receive recommendations." });
+  }
+
+  const targetLangName = LANGUAGE_NAMES[rawLanguage] || LANGUAGE_NAMES["en-US"] || "English";
+
+  // 1. Immediate Emergency Detection
+  if (checkEmergencySymptom(symptoms)) {
+    console.log(`[AI SAFETY] Emergency detected for input: "${symptoms.slice(0, 60)}..."`);
+    const emergencyResponse = {
+      summary: "Based on the symptoms described, urgent professional medical evaluation is required. Home remedies are not appropriate.",
+      severity: "emergency",
+      isEmergency: true,
+      remedies: [],
+      selfCare: [
+        "Seek emergency medical care immediately or call your local emergency services (e.g. 108 / 112 / 911).",
+        "Stay calm and sit in a comfortable, safe resting position.",
+        "Have a family member, friend, or caregiver stay with you while arranging immediate care."
+      ],
+      avoid: [
+        "Do NOT attempt home remedies or delay professional medical evaluation.",
+        "Do NOT drive yourself to the hospital if experiencing chest pain, dizziness, or shortness of breath."
+      ],
+      warningSigns: [
+        "Chest pain radiating to arm, back, neck, or jaw",
+        "Severe difficulty breathing or blue lips",
+        "Sudden numbness, weakness, or difficulty speaking",
+        "Loss of consciousness or severe confusion"
+      ],
+      whenToSeeDoctor: "Seek emergency medical attention or visit the nearest emergency department immediately.",
+      recommendation: "⚠️ EMERGENCY WARNING: Based on the symptoms described, home remedies are not safe or appropriate. Please seek immediate professional medical attention or call emergency services."
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: emergencyResponse,
+      recommendation: emergencyResponse.recommendation
+    });
   }
 
   const headers = getGroqHeaders();
@@ -82,32 +140,135 @@ export const getAIRecommendation = async (req, res) => {
     return res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 
+  // Profile safety context (e.g. allergies)
+  let profileSafetyNotes = "";
+  if (userProfile?.allergies && userProfile.allergies.trim()) {
+    profileSafetyNotes += `\nPatient Known Allergies: ${sanitize(userProfile.allergies, 200)}. DO NOT recommend anything containing these allergens.`;
+  }
+
+  const systemPrompt = `You are RemedyEase Clinical AI, a healthcare assistant specializing in safe, non-invasive home remedies and self-care for mild, everyday symptoms.
+Respond ENTIRELY in ${targetLangName}.
+${profileSafetyNotes}
+
+SAFETY RULES:
+1. Only recommend safe, gentle, non-prescription home remedies (hydration, honey, ginger, salt water gargle, steam, chamomile, rest).
+2. Clearly specify how to prepare and use each remedy safely.
+3. List contraindications (e.g. "Do not give honey to infants under 1 year").
+4. List clear warning signs indicating when to consult a doctor.
+5. You MUST return ONLY a valid JSON object with the following schema:
+{
+  "summary": "1-2 sentence empathetic summary in ${targetLangName}",
+  "severity": "mild" or "moderate",
+  "isEmergency": false,
+  "remedies": [
+    {
+      "title": "Remedy title in ${targetLangName}",
+      "description": "Why it helps in ${targetLangName}",
+      "howToUse": "Instructions and frequency in ${targetLangName}",
+      "caution": "Precaution or contraindication in ${targetLangName}"
+    }
+  ],
+  "selfCare": ["Self care tip 1", "Tip 2", "Tip 3"],
+  "avoid": ["Avoid item 1", "Avoid item 2"],
+  "warningSigns": ["Red flag sign 1", "Red flag sign 2"],
+  "whenToSeeDoctor": "Advice on when to see a doctor in ${targetLangName}"
+}`;
+
   try {
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         messages: [
-          {
-            role: "user",
-            content: `Suggest a safe home remedy for these symptoms: ${symptoms}`,
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Patient symptoms: ${symptoms}` },
         ],
         model: "llama-3.1-8b-instant",
+        temperature: 0.3,
+        response_format: { type: "json_object" },
       },
       { headers, timeout: API_TIMEOUT }
     );
 
-    const remedy = response.data.choices[0]?.message?.content || "No remedy suggestion found.";
-    res.status(200).json({ recommendation: remedy.trim() });
+    const rawContent = response.data.choices[0]?.message?.content || "{}";
+    let parsedData;
+
+    try {
+      parsedData = JSON.parse(rawContent);
+    } catch {
+      // Clean markdown code blocks if any
+      const cleaned = rawContent.replace(/```json/gi, "").replace(/```/g, "").trim();
+      parsedData = JSON.parse(cleaned);
+    }
+
+    // Validate and structure fields
+    const structuredResult = {
+      summary: parsedData.summary || "Here are personalized home remedies based on your symptoms.",
+      severity: parsedData.severity || "mild",
+      isEmergency: Boolean(parsedData.isEmergency),
+      remedies: Array.isArray(parsedData.remedies) ? parsedData.remedies : [],
+      selfCare: Array.isArray(parsedData.selfCare) ? parsedData.selfCare : [
+        "Get adequate rest and sleep.",
+        "Stay well hydrated throughout the day."
+      ],
+      avoid: Array.isArray(parsedData.avoid) ? parsedData.avoid : [],
+      warningSigns: Array.isArray(parsedData.warningSigns) ? parsedData.warningSigns : [
+        "Symptoms worsen significantly or fail to improve after 3-5 days.",
+        "High persistent fever develops."
+      ],
+      whenToSeeDoctor: parsedData.whenToSeeDoctor || "Consult a healthcare professional if symptoms persist beyond a few days or worsen.",
+    };
+
+    // Construct backward-compatible plain text recommendation string
+    const remediesSummary = structuredResult.remedies
+      .map((r, i) => `${i + 1}. ${r.title}: ${r.description} (${r.howToUse})`)
+      .join("\n\n");
+    const textRecommendation = `${structuredResult.summary}\n\nRecommended Remedies:\n${remediesSummary}\n\nWhen to See a Doctor:\n${structuredResult.whenToSeeDoctor}`;
+
+    return res.status(200).json({
+      success: true,
+      data: structuredResult,
+      recommendation: textRecommendation,
+    });
   } catch (error) {
     if (error.code === "ECONNABORTED") {
-      return res.status(408).json({ error: "Request timed out. Please try again." });
+      return res.status(408).json({ error: "Analysis timed out. Please try again." });
     }
     if (error.response?.status === 429) {
-      return res.status(429).json({ error: "Too many requests. Please wait a moment." });
+      return res.status(429).json({ error: "High request volume. Please wait a moment and try again." });
     }
-    console.error("Groq API Error:", error.response?.status || error.message);
-    res.status(503).json({ error: "AI service is temporarily unavailable." });
+    console.error("Groq AI Recommendation Error:", error.response?.status || error.message);
+
+    // Provide safe structured fallback instead of breaking
+    const fallbackResponse = {
+      summary: "Gentle self-care and hydration are recommended for mild symptoms.",
+      severity: "mild",
+      isEmergency: false,
+      remedies: [
+        {
+          title: "Warm Water & Hydration",
+          description: "Adequate fluids maintain mucous membrane moisture and aid recovery.",
+          howToUse: "Sip warm water or herbal tea throughout the day.",
+          caution: "Avoid extremely hot liquids which can irritate throat tissues."
+        },
+        {
+          title: "Rest & Sleep",
+          description: "Rest allows the immune system to focus energy on natural healing.",
+          howToUse: "Aim for 7-9 hours of restful sleep in a well-ventilated room.",
+          caution: "Avoid intense physical exertion until symptoms resolve."
+        }
+      ],
+      selfCare: ["Drink warm water regularly", "Rest in a comfortable environment"],
+      avoid: ["Avoid smoking and cold drinks"],
+      warningSigns: ["Difficulty breathing", "High fever lasting > 3 days"],
+      whenToSeeDoctor: "Please consult a healthcare provider if symptoms worsen or do not improve.",
+      recommendation: "Stay hydrated and get plenty of rest. If your symptoms worsen, please consult a qualified healthcare provider."
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: fallbackResponse,
+      recommendation: fallbackResponse.recommendation,
+    });
   }
 };
 
