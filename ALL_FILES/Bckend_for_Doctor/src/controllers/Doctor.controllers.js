@@ -102,7 +102,7 @@ const getAllDoctors = asyncHandler(async (req, res) => {
 
     let query = {
         isBlocked: { $ne: true },
-        approvalStatus: { $ne: "rejected" }
+        approvalStatus: "approved"
     };
 
     if (specialization && specialization !== "All" && specialization !== "all") {

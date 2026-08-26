@@ -111,13 +111,18 @@ export default function Meetdoctor() {
   const [doctors, setDoctors] = useState(() => {
     try {
       const cached = sessionStorage.getItem("remedyease_cached_doctors");
-      return cached ? JSON.parse(cached) : [];
+      const parsed = cached ? JSON.parse(cached) : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((d) => (!d.approvalStatus || d.approvalStatus === "approved") && !d.isBlocked)
+        : [];
     } catch {
       return [];
     }
   });
 
   const [loading, setLoading] = useState(() => doctors.length === 0);
+
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpec, setSelectedSpec] = useState("All");
   const [experienceFilter, setExperienceFilter] = useState("all");
@@ -146,8 +151,12 @@ export default function Meetdoctor() {
       const res = await fetch("/api/v1/doctors/all");
       const data = await res.json();
       if (isMountedRef.current && data.success && Array.isArray(data.data)) {
-        setDoctors(data.data);
-        sessionStorage.setItem("remedyease_cached_doctors", JSON.stringify(data.data));
+        // Enforce verified & approved status only
+        const verifiedOnly = data.data.filter(
+          (d) => (!d.approvalStatus || d.approvalStatus === "approved") && !d.isBlocked
+        );
+        setDoctors(verifiedOnly);
+        sessionStorage.setItem("remedyease_cached_doctors", JSON.stringify(verifiedOnly));
       }
     } catch (err) {
       console.error("Failed to fetch doctors:", err);
