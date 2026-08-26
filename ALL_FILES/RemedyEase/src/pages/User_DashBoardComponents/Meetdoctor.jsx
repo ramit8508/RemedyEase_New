@@ -36,18 +36,22 @@ const SPECIALIZATIONS = [
   "ENT Specialist",
 ];
 
-const DEFAULT_SLOTS = [
-  "09:00 AM",
-  "09:30 AM",
-  "10:00 AM",
-  "10:30 AM",
-  "11:30 AM",
-  "02:00 PM",
-  "02:30 PM",
-  "03:30 PM",
-  "04:30 PM",
-  "05:00 PM",
-];
+function parseDateChip(dateStr) {
+  try {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return {
+      dayName: days[dateObj.getDay()] || "",
+      dayNum: day || "",
+      monthName: months[dateObj.getMonth()] || "",
+      fullDate: dateStr,
+    };
+  } catch {
+    return { dayName: "", dayNum: dateStr, monthName: "", fullDate: dateStr };
+  }
+}
 
 /* ─── Normalization & Formatting Helpers ─── */
 function formatDoctorName(name) {
@@ -124,14 +128,11 @@ export default function Meetdoctor() {
   const [profileDoctor, setProfileDoctor] = useState(null);
   const [bookingDoctor, setBookingDoctor] = useState(null);
 
-  // Booking form state
-  const [bookingDate, setBookingDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
+  // Doctor-controlled Booking form state
+  const [doctorPublishedTimeslots, setDoctorPublishedTimeslots] = useState([]);
+  const [bookingDate, setBookingDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [bookingSymptoms, setBookingSymptoms] = useState("");
-  const [availableTimeslots, setAvailableTimeslots] = useState(DEFAULT_SLOTS);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
@@ -163,22 +164,56 @@ export default function Meetdoctor() {
     };
   }, [fetchDoctors]);
 
-  /* ─── Fetch Timeslots for Booking Modal ─── */
-  useEffect(() => {
-    if (!bookingDoctor || !bookingDate) return;
+  /* ─── Fetch Doctor-Controlled Timeslots for Booking Modal ─── */
+  const fetchDoctorTimeslotsForModal = useCallback(async (docId) => {
+    if (!docId) {
+      setDoctorPublishedTimeslots([]);
+      return;
+    }
     setLoadingSlots(true);
-    fetch(`/api/v1/doctors/timeslots?doctorId=${bookingDoctor._id}&date=${bookingDate}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data && data.data.length > 0 && Array.isArray(data.data[0].slots) && data.data[0].slots.length > 0) {
-          setAvailableTimeslots(data.data[0].slots);
+    try {
+      const res = await fetch(`/api/v1/doctors/timeslots?doctorId=${docId}`);
+      const data = await res.json();
+      if (isMountedRef.current) {
+        if (data.success && Array.isArray(data.data)) {
+          // Filter to only dates that have published slots
+          const validDates = data.data.filter(
+            (d) => d.date && Array.isArray(d.slots) && d.slots.length > 0
+          );
+          setDoctorPublishedTimeslots(validDates);
+          if (validDates.length > 0) {
+            // Find first date with at least one available slot
+            const firstAvailable = validDates.find((d) => d.slots.some((s) => !s.booked));
+            setBookingDate(firstAvailable ? firstAvailable.date : validDates[0].date);
+          } else {
+            setBookingDate("");
+          }
+          setSelectedSlot("");
         } else {
-          setAvailableTimeslots(DEFAULT_SLOTS);
+          setDoctorPublishedTimeslots([]);
+          setBookingDate("");
+          setSelectedSlot("");
         }
-      })
-      .catch(() => setAvailableTimeslots(DEFAULT_SLOTS))
-      .finally(() => setLoadingSlots(false));
-  }, [bookingDoctor, bookingDate]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch doctor timeslots:", err);
+      if (isMountedRef.current) {
+        setDoctorPublishedTimeslots([]);
+        setBookingDate("");
+        setSelectedSlot("");
+      }
+    } finally {
+      if (isMountedRef.current) setLoadingSlots(false);
+    }
+  }, []);
+
+  // Compute available slots for currently selected booking date
+  const slotsForSelectedBookingDate = useMemo(() => {
+    if (!bookingDate || !Array.isArray(doctorPublishedTimeslots)) return [];
+    const dateDoc = doctorPublishedTimeslots.find((d) => d.date === bookingDate);
+    if (!dateDoc || !Array.isArray(dateDoc.slots)) return [];
+    return dateDoc.slots;
+  }, [bookingDate, doctorPublishedTimeslots]);
 
   /* ─── Filtering & Sorting Logic ─── */
   const filteredDoctors = useMemo(() => {
@@ -271,9 +306,9 @@ export default function Meetdoctor() {
     setBookingSymptoms("");
     setBookingError("");
     setBookingSuccess(null);
-    const today = new Date().toISOString().split("T")[0];
-    setBookingDate(today);
-  }, []);
+    setBookingDate("");
+    fetchDoctorTimeslotsForModal(doc._id);
+  }, [fetchDoctorTimeslotsForModal]);
 
   /* ─── Handle Appointment Confirmation ─── */
   const handleConfirmAppointment = useCallback(async (e) => {
@@ -294,7 +329,9 @@ export default function Meetdoctor() {
     setBookingError("");
 
     const bookingPayload = {
+      doctorId: bookingDoctor._id,
       doctorEmail: bookingDoctor.email,
+      doctorName: bookingDoctor.fullname,
       userEmail: user.email,
       userName: user.fullname || user.email.split("@")[0],
       date: bookingDate,
@@ -316,6 +353,8 @@ export default function Meetdoctor() {
           date: bookingDate,
           time: selectedSlot,
         });
+        // Refresh doctor timeslots so the slot is immediately marked booked
+        fetchDoctorTimeslotsForModal(bookingDoctor._id);
       } else {
         setBookingError(data.message || "Failed to confirm appointment. Please try another slot.");
       }
@@ -324,7 +363,7 @@ export default function Meetdoctor() {
     } finally {
       setIsBooking(false);
     }
-  }, [bookingDoctor, selectedSlot, bookingDate, bookingSymptoms, navigate]);
+  }, [bookingDoctor, selectedSlot, bookingDate, bookingSymptoms, navigate, fetchDoctorTimeslotsForModal]);
 
   return (
     <div className="md-container">
@@ -774,58 +813,106 @@ export default function Meetdoctor() {
                 </div>
 
                 <form className="md-modal-body md-booking-form" onSubmit={handleConfirmAppointment}>
-                  {/* Select Date */}
-                  <div className="md-form-group">
-                    <label className="md-form-label" htmlFor="md-book-date">
-                      Select Date
-                    </label>
-                    <input
-                      id="md-book-date"
-                      type="date"
-                      className="md-form-input"
-                      value={bookingDate}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Select Time Slot */}
-                  <div className="md-form-group">
-                    <label className="md-form-label">
-                      Available Time Slots {loadingSlots && <span style={{ color: "#16a34a", fontWeight: "normal" }}>(fetching...)</span>}
-                    </label>
-                    <div className="md-slots-grid">
-                      {availableTimeslots.map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          className={`md-slot-chip ${selectedSlot === slot ? "md-slot-chip--active" : ""}`}
-                          onClick={() => {
-                            setSelectedSlot(slot);
-                            if (bookingError) setBookingError("");
-                          }}
-                        >
-                          {slot}
-                        </button>
-                      ))}
+                  {loadingSlots ? (
+                    <div style={{ padding: "20px 0", textAlign: "center", color: "#6b7280", fontSize: "14px" }}>
+                      Fetching doctor's published availability...
                     </div>
-                  </div>
+                  ) : doctorPublishedTimeslots.length === 0 ? (
+                    /* DOCTOR HAS NO PUBLISHED SLOTS */
+                    <div className="md-no-slots-alert">
+                      <FiAlertCircle size={22} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
+                      <div>
+                        <h4>No appointment slots available</h4>
+                        <p>This doctor hasn't published any appointment availability yet. Please check again later or choose another doctor.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Select Date (Doctor-Published Dates Only) */}
+                      <div className="md-form-group">
+                        <label className="md-form-label">
+                          Select Date (Published by Doctor)
+                        </label>
+                        <div className="md-date-chips-row">
+                          {doctorPublishedTimeslots.map((d) => {
+                            const parsed = parseDateChip(d.date);
+                            const isSelected = bookingDate === d.date;
+                            return (
+                              <button
+                                key={d.date}
+                                type="button"
+                                className={`md-date-chip ${isSelected ? "md-date-chip--active" : ""}`}
+                                onClick={() => {
+                                  setBookingDate(d.date);
+                                  setSelectedSlot("");
+                                  if (bookingError) setBookingError("");
+                                }}
+                              >
+                                <span className="md-date-chip-day">{parsed.dayName}</span>
+                                <span className="md-date-chip-num">{parsed.dayNum}</span>
+                                <span className="md-date-chip-month">{parsed.monthName}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                  {/* Reason / Symptoms */}
-                  <div className="md-form-group">
-                    <label className="md-form-label" htmlFor="md-book-symptoms">
-                      Symptoms / Reason for Visit (Optional)
-                    </label>
-                    <textarea
-                      id="md-book-symptoms"
-                      className="md-form-textarea"
-                      placeholder="Briefly describe your symptoms or what you'd like to consult about..."
-                      value={bookingSymptoms}
-                      onChange={(e) => setBookingSymptoms(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
+                      {/* Select Time Slot (Doctor-Published Slots Only) */}
+                      {bookingDate && (
+                        <div className="md-form-group">
+                          <label className="md-form-label">
+                            Available Time Slots for {bookingDate}
+                          </label>
+                          {slotsForSelectedBookingDate.length === 0 ? (
+                            <p style={{ color: "#6b7280", fontSize: "13px" }}>
+                              No slots published for this date.
+                            </p>
+                          ) : (
+                            <div className="md-slots-grid">
+                              {slotsForSelectedBookingDate.map((slotObj, idx) => {
+                                const slotTime = typeof slotObj === "string" ? slotObj : slotObj.time;
+                                const isBooked = typeof slotObj === "object" ? Boolean(slotObj.booked) : false;
+                                const isSelected = selectedSlot === slotTime;
+
+                                return (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    disabled={isBooked}
+                                    className={`md-slot-chip ${isSelected ? "md-slot-chip--active" : ""}`}
+                                    onClick={() => {
+                                      if (!isBooked) {
+                                        setSelectedSlot(slotTime);
+                                        if (bookingError) setBookingError("");
+                                      }
+                                    }}
+                                  >
+                                    <span>{slotTime}</span>
+                                    <span className="md-slot-status-lbl">{isBooked ? "Booked" : "Available"}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Reason / Symptoms */}
+                      <div className="md-form-group">
+                        <label className="md-form-label" htmlFor="md-book-symptoms">
+                          Symptoms / Reason for Visit (Optional)
+                        </label>
+                        <textarea
+                          id="md-book-symptoms"
+                          className="md-form-textarea"
+                          placeholder="Briefly describe your symptoms or what you'd like to consult about..."
+                          value={bookingSymptoms}
+                          onChange={(e) => setBookingSymptoms(e.target.value)}
+                          rows={2}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {bookingError && (
                     <div style={{ display: "flex", gap: "6px", alignItems: "center", color: "#dc2626", fontSize: "13px", fontWeight: "500" }}>
@@ -845,7 +932,7 @@ export default function Meetdoctor() {
                     <button
                       className="md-btn-book"
                       type="submit"
-                      disabled={isBooking || !selectedSlot}
+                      disabled={isBooking || !selectedSlot || doctorPublishedTimeslots.length === 0}
                       style={{ padding: "10px 24px" }}
                     >
                       {isBooking ? "Confirming..." : "Confirm Appointment"}

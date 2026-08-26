@@ -849,13 +849,96 @@
   background: #ffffff;
 }
 
-.md-slots-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.md-date-chips-row {
+  display: flex;
   gap: 8px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 2px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+}
+
+.md-date-chip {
+  min-width: 80px;
+  padding: 10px 8px;
+  background: #fafcfb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.md-date-chip:hover {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.md-date-chip--active {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}
+
+.md-date-chip-day {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.md-date-chip--active .md-date-chip-day {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.md-date-chip-num {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.md-date-chip--active .md-date-chip-num {
+  color: #ffffff;
+}
+
+.md-date-chip-month {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.md-date-chip--active .md-date-chip-month {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.md-no-slots-alert {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 10px 0;
+  text-align: left;
+}
+
+.md-no-slots-alert h4 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 4px;
+}
+
+.md-no-slots-alert p {
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .md-slot-chip {
@@ -870,9 +953,13 @@
   cursor: pointer;
   transition: all 0.15s;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
-.md-slot-chip:hover {
+.md-slot-chip:hover:not(:disabled) {
   border-color: #16a34a;
   background: #f0fdf4;
   color: #15803d;
@@ -882,6 +969,23 @@
   background: #16a34a !important;
   color: #ffffff !important;
   border-color: #16a34a !important;
+}
+
+.md-slot-chip:disabled {
+  background: #f9fafb;
+  border-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.md-slot-status-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.md-slot-chip--active .md-slot-status-lbl {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .md-booking-success {
