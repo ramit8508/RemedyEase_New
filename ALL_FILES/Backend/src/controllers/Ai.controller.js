@@ -35,7 +35,14 @@ const LANGUAGE_NAMES = {
 const API_TIMEOUT = 30000;
 
 function getGroqHeaders() {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = (
+    process.env.GROQ_API_KEY ||
+    process.env.GROQ_APIKEY ||
+    process.env.GROQ_KEY ||
+    process.env.GROQ_API_TOKEN ||
+    process.env.GROQ
+  )?.trim();
+
   if (!apiKey) return null;
   return {
     Authorization: `Bearer ${apiKey}`,

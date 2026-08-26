@@ -9,11 +9,18 @@ export const getAIDoctorSuggestion = async (req, res) => {
     return res.status(400).json({ error: "Symptoms and history are required." });
   }
 
-  // 2. Use the GROQ_API_KEY from your .env file
-  const apiKey = process.env.GROQ_API_KEY;
+  // 2. Use the GROQ_API_KEY from environment variables
+  const apiKey = (
+    process.env.GROQ_API_KEY ||
+    process.env.GROQ_APIKEY ||
+    process.env.GROQ_KEY ||
+    process.env.GROQ_API_TOKEN ||
+    process.env.GROQ
+  )?.trim();
+
   if (!apiKey) {
     console.error("Groq API key is not set in environment variables.");
-    return res.status(500).json({ error: "Server configuration error." });
+    return res.status(503).json({ error: "AI service is temporarily unavailable." });
   }
 
   // 3. Construct the detailed prompt for the doctor
