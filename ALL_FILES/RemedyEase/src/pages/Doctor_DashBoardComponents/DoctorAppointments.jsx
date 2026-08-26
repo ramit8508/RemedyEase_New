@@ -1,771 +1,1243 @@
-import React, { useEffect, useState } from "react";
-import "../../Css_for_all/Appointments.css";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  FiCalendar,
+  FiClock,
+  FiSearch,
+  FiFilter,
+  FiCheck,
+  FiX,
+  FiEye,
+  FiMessageSquare,
+  FiVideo,
+  FiFileText,
+  FiRefreshCw,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiDownload,
+  FiUpload,
+  FiUser,
+  FiActivity,
+  FiList,
+  FiGrid,
+} from "react-icons/fi";
 import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
-import PrescriptionUpload from "../../components/PrescriptionUpload";
+import "../../Css_for_all/DoctorDashboard.css";
 
 const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
-
-// Helper for time formatting
-function pad(num) { return num.toString().padStart(2, '0'); }
 
 export default function DoctorAppointments() {
   let doctor = null;
   try {
     doctor = JSON.parse(localStorage.getItem("doctor"));
   } catch {}
+
+  const doctorEmail = doctor?.email;
+
+  // Data states
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successToast, setSuccessToast] = useState("");
 
-  // Timeslot management states
-  const [timeslotDate, setTimeslotDate] = useState("");
-  const [customSlots, setCustomSlots] = useState([{ start: "", end: "" }]);
-  const [savingSlots, setSavingSlots] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
+  // Filters & View states
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'calendar'
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusTab, setStatusTab] = useState("all");
+  const [dateFilter, setDateFilter] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const [showLiveChat, setShowLiveChat] = useState(false);
-  const [showVideoCall, setShowVideoCall] = useState(false);
-  const [selectedAppointmentForLive, setSelectedAppointmentForLive] =
-    useState(null);
-  
-  // Notification states
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationData, setNotificationData] = useState(null);
-  const [notifiedIds, setNotifiedIds] = useState(new Set());
+  // Calendar View state
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
 
-  // Patient-initiated session notifications
-  const [patientNotifications, setPatientNotifications] = useState([]);
-  const [showPatientNotification, setShowPatientNotification] = useState(false);
-  const [currentPatientNotif, setCurrentPatientNotif] = useState(null);
+  // Modal states
+  const [selectedAppointmentDetail, setSelectedAppointmentDetail] = useState(null);
+  const [selectedForChat, setSelectedForChat] = useState(null);
+  const [selectedForVideo, setSelectedForVideo] = useState(null);
+  const [prescriptionModalAppt, setPrescriptionModalAppt] = useState(null);
+  const [rejectionModalAppt, setRejectionModalAppt] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
-  const fetchAppointments = () => {
-    if (doctor?.email) {
-      setLoading(true);
-      fetch(`${apiBase}/api/v1/appointments/doctor/${doctor.email}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setAppointments(data.data || []);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    } else {
+  // Treatment / Prescription form
+  const [treatmentNotes, setTreatmentNotes] = useState("");
+  const [prescriptionText, setPrescriptionText] = useState("");
+  const [prescriptionFile, setPrescriptionFile] = useState(null);
+  const [prescriptionUploading, setPrescriptionUploading] = useState(false);
+
+  const showToast = (msg) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(""), 3500);
+  };
+
+  // Fetch appointments for this doctor
+  const fetchAppointments = useCallback(async () => {
+    if (!doctorEmail) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/v1/appointments/doctor/${doctorEmail}`);
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.data)) {
+        setAppointments(data.data);
+      } else {
+        setAppointments([]);
+      }
+    } catch (err) {
+      console.error("Fetch doctor appointments error:", err);
+      setError("Unable to load appointments. Please check your network.");
+    } finally {
       setLoading(false);
     }
-  };
+  }, [doctorEmail]);
 
   useEffect(() => {
     fetchAppointments();
-  }, [doctor?.email]);
+  }, [fetchAppointments]);
 
-  // Check for upcoming appointments every minute
-  useEffect(() => {
-    const checkAppointmentTime = () => {
-      const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
-      const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+  // Today string YYYY-MM-DD
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-      console.log('🔍 Checking appointments at:', new Date().toLocaleTimeString());
-      console.log('Current time in minutes:', currentTime);
-      console.log('Current date:', currentDate);
-      console.log('Total appointments:', appointments.length);
+  /* ─── Robust Date Formatter ─── */
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr.trim() === "") return "Date unavailable";
 
-      appointments.forEach((appt) => {
-        console.log('Checking appointment:', {
-          id: appt._id,
-          status: appt.status,
-          date: appt.date,
-          time: appt.time,
-          patient: appt.userName
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split("-");
+      const d = new Date(Number(year), Number(month) - 1, Number(day));
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-IN", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
         });
-
-        // Only check confirmed appointments
-        if (!["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())) {
-          console.log('❌ Skipped - Status not confirmed:', appt.status);
-          return;
-        }
-
-        // Skip if already notified
-        if (notifiedIds.has(appt._id)) {
-          console.log('❌ Skipped - Already notified');
-          return;
-        }
-
-        const appointmentDate = new Date(appt.date).toISOString().split('T')[0];
-        
-        // Only check appointments for today
-        if (appointmentDate !== currentDate) {
-          console.log('❌ Skipped - Not today. Appointment date:', appointmentDate);
-          return;
-        }
-
-        // Parse appointment time (HH:MM format)
-        const [hours, minutes] = appt.time.split(':').map(Number);
-        const appointmentTimeInMinutes = hours * 60 + minutes;
-
-        // Calculate time difference in minutes
-        const timeDiff = appointmentTimeInMinutes - currentTime;
-
-        console.log('⏰ Time check:', {
-          appointmentTime: appt.time,
-          appointmentMinutes: appointmentTimeInMinutes,
-          currentMinutes: currentTime,
-          timeDiff: timeDiff,
-          shouldNotify: timeDiff <= 10 && timeDiff >= -5
-        });
-
-        // Notify if appointment is within 10 minutes or has started
-        if (timeDiff <= 10 && timeDiff >= -5) { // 10 min before to 5 min after
-          console.log('✅ SHOWING NOTIFICATION for appointment:', appt.userName);
-          setNotifiedIds((prev) => new Set(prev).add(appt._id));
-          setNotificationData(appt);
-          setShowNotification(true);
-          
-          // Play notification sound (optional)
-          try {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {}); // Ignore if no sound file
-          } catch (e) {}
-
-          // Auto-hide notification after 30 seconds
-          setTimeout(() => {
-            setShowNotification(false);
-          }, 30000);
-        }
-      });
-    };
-
-    // Check immediately and then every 30 seconds
-    checkAppointmentTime();
-    const interval = setInterval(checkAppointmentTime, 30000); // Every 30 seconds for faster response
-
-    return () => clearInterval(interval);
-  }, [appointments, notifiedIds]);
-
-  // Poll for patient-initiated notifications (when patient starts live chat/video)
-  useEffect(() => {
-    if (!doctor?.email) return;
-
-    const checkPatientNotifications = async () => {
-      try {
-        const res = await fetch(`${apiBase}/api/v1/live/notifications/${doctor.email}`);
-        const data = await res.json();
-        
-        if (data.success && data.data.notifications.length > 0) {
-          console.log('📢 Patient notifications received:', data.data.notifications);
-          const latestNotif = data.data.notifications[0];
-          
-          // Show notification popup
-          setCurrentPatientNotif(latestNotif);
-          setShowPatientNotification(true);
-
-          // Play notification sound
-          try {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {});
-          } catch (e) {}
-
-          // Mark as read after showing
-          await fetch(`${apiBase}/api/v1/live/notifications/read`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              doctorEmail: doctor.email,
-              notificationId: latestNotif.id
-            })
-          });
-
-          // Auto-hide after 30 seconds
-          setTimeout(() => {
-            setShowPatientNotification(false);
-          }, 30000);
-        }
-      } catch (error) {
-        console.error('Failed to fetch patient notifications:', error);
       }
-    };
+    }
 
-    // Check immediately and then every 10 seconds
-    checkPatientNotifications();
-    const interval = setInterval(checkPatientNotifications, 10000);
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-IN", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
 
-    return () => clearInterval(interval);
-  }, [doctor?.email]);
+    return dateStr;
+  };
 
-  const handleConfirm = async (appointmentId) => {
+  // Accept Appointment
+  const handleAccept = async (apptId) => {
+    setActionLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/v1/appointments/confirm/${appointmentId}`, {
+      const res = await fetch(`/api/v1/appointments/confirm/${apptId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorEmail: doctor.email }),
-      });
-      if (res.ok) {
-        fetchAppointments();
-      }
-    } catch (error) {
-      console.error("Failed to confirm appointment", error);
-    }
-  };
-
-  const handleApprove = async (appointmentId) => {
-    try {
-      console.log("🟢 [APPROVE] Approving appointment:", appointmentId);
-      const res = await fetch(`${apiBase}/api/v1/appointments/approve/${appointmentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorEmail: doctor.email }),
-      });
-      
-      if (res.ok) {
-        console.log("✅ [APPROVE] Appointment approved successfully");
-        alert("Appointment approved! Patient will be notified.");
-        fetchAppointments(); // Refresh the list
-      } else {
-        const errorData = await res.json();
-        console.error("❌ [APPROVE] Failed:", errorData);
-        alert(`Failed to approve: ${errorData.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("❌ [APPROVE] Error approving appointment:", error);
-      alert("Failed to approve appointment. Please try again.");
-    }
-  };
-
-  const handleCancel = async (appointmentId) => {
-    const reason = prompt("Please provide a reason for cancellation (optional):");
-    
-    // Allow cancellation even if no reason is provided
-    try {
-      console.log("🔴 [CANCEL] Cancelling appointment:", appointmentId);
-      const res = await fetch(`${apiBase}/api/v1/appointments/cancel/${appointmentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          doctorEmail: doctor.email,
-          reason: reason || "No reason provided"
-        }),
-      });
-      
-      if (res.ok) {
-        console.log("✅ [CANCEL] Appointment cancelled successfully");
-        alert("Appointment cancelled. Patient will be notified.");
-        fetchAppointments(); // Refresh the list
-      } else {
-        const errorData = await res.json();
-        console.error("❌ [CANCEL] Failed:", errorData);
-        alert(`Failed to cancel: ${errorData.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("❌ [CANCEL] Error cancelling appointment:", error);
-      alert("Failed to cancel appointment. Please try again.");
-    }
-  };
-
-  const handleJoinPatientSession = (notif) => {
-    // Find the appointment
-    const appt = appointments.find(a => a._id === notif.appointmentId);
-    if (!appt) return;
-
-    if (notif.sessionType === 'chat') {
-      startLiveChat(appt);
-    } else if (notif.sessionType === 'video') {
-      startVideoCall(appt);
-    }
-    
-    setShowPatientNotification(false);
-  };
-
-  const startLiveChat = (appt) => {
-    setSelectedAppointmentForLive(appt);
-    setShowLiveChat(true);
-    setShowNotification(false); // Hide notification when starting chat
-  };
-
-  const startVideoCall = async (appt) => {
-    try {
-      await fetch(`${apiBase}/api/v1/live/status/${appt._id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: doctor.email,
-          userType: "doctor",
-          onlineStatus: true,
-        }),
-      });
-      setSelectedAppointmentForLive(appt);
-      setShowVideoCall(true);
-      setShowNotification(false); // Hide notification when starting video
-    } catch (error) {
-      console.error("Error starting video call:", error);
-    }
-  };
-
-  const closeLiveFeatures = () => {
-    setShowLiveChat(false);
-    setShowVideoCall(false);
-    setSelectedAppointmentForLive(null);
-  };
-
-  // Add/remove custom slot fields
-  const addSlotField = () => setCustomSlots([...customSlots, { start: "", end: "" }]);
-  const removeSlotField = (idx) => setCustomSlots(customSlots.filter((_, i) => i !== idx));
-  const updateSlotField = (idx, field, value) => {
-    setCustomSlots(customSlots.map((slot, i) => i === idx ? { ...slot, [field]: value } : slot));
-  };
-
-  // Save timeslots to backend
-  const saveTimeslots = async () => {
-    if (!timeslotDate || customSlots.some(s => !s.start || !s.end)) {
-      setSaveMsg("Please fill all slot fields and select a date.");
-      return;
-    }
-    setSavingSlots(true);
-    setSaveMsg("");
-    try {
-      const slots = customSlots.map(s => ({ time: `${s.start} - ${s.end}`, booked: false }));
-      const res = await fetch(`${apiBase}/api/v1/doctors/timeslots`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorId: doctor._id, date: timeslotDate, slots }),
       });
       const data = await res.json();
-      if (data.success) {
-        setSaveMsg("✅ Timeslots saved successfully!");
-        setCustomSlots([{ start: "", end: "" }]);
-        setTimeslotDate("");
+      if (res.ok) {
+        setAppointments((prev) =>
+          prev.map((a) => (a._id === apptId ? { ...a, status: "confirmed" } : a))
+        );
+        if (selectedAppointmentDetail?._id === apptId) {
+          setSelectedAppointmentDetail((prev) => ({ ...prev, status: "confirmed" }));
+        }
+        showToast("✓ Appointment confirmed successfully!");
       } else {
-        setSaveMsg(data.message || "Failed to save timeslots.");
+        alert(data.message || "Failed to confirm appointment");
       }
-    } catch (e) {
-      console.error("Error saving timeslots:", e);
-      setSaveMsg("Error saving timeslots.");
+    } catch (err) {
+      console.error("Accept error:", err);
+      alert("Network error while confirming appointment.");
+    } finally {
+      setActionLoading(false);
     }
-    setSavingSlots(false);
   };
 
-  if (loading) {
-    return <div>Loading appointments...</div>;
-  }
+  // Reject Appointment
+  const handleReject = async () => {
+    if (!rejectionModalAppt) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/v1/appointments/cancel/${rejectionModalAppt._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: rejectionReason || "Doctor unavailable" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAppointments((prev) =>
+          prev.map((a) =>
+            a._id === rejectionModalAppt._id
+              ? { ...a, status: "cancelled", consultationNotes: rejectionReason }
+              : a
+          )
+        );
+        if (selectedAppointmentDetail?._id === rejectionModalAppt._id) {
+          setSelectedAppointmentDetail((prev) => ({ ...prev, status: "cancelled" }));
+        }
+        setRejectionModalAppt(null);
+        setRejectionReason("");
+        showToast("Appointment rejected and timeslot released.");
+      } else {
+        alert(data.message || "Failed to reject appointment");
+      }
+    } catch (err) {
+      console.error("Reject error:", err);
+      alert("Network error while rejecting appointment.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-  if (!doctor || !doctor.email) {
-    return <div>No doctor info found. Please log in as a doctor.</div>;
-  }
+  // Save Treatment & Prescription
+  const handleSaveTreatment = async (e) => {
+    e.preventDefault();
+    if (!prescriptionModalAppt) return;
 
-  console.log('🎯 DoctorAppointments Component Rendered');
-  console.log('📊 Doctor Info:', { email: doctor?.email, name: doctor?.fullname });
-  console.log('⏰ Timeslot States:', { timeslotDate, customSlots, saveMsg });
+    setPrescriptionUploading(true);
+
+    try {
+      // 1. If file attached, upload prescription file
+      if (prescriptionFile) {
+        const formData = new FormData();
+        formData.append("prescription", prescriptionFile);
+        formData.append("doctorEmail", doctorEmail);
+        formData.append("prescriptionNotes", prescriptionText || treatmentNotes);
+
+        await fetch(`/api/v1/appointments/prescription/${prescriptionModalAppt._id}`, {
+          method: "POST",
+          body: formData,
+        });
+      }
+
+      // 2. Save treatment details and mark as completed
+      const treatmentRes = await fetch(
+        `/api/v1/appointments/treatment/${prescriptionModalAppt._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            treatment: treatmentNotes,
+            prescription: prescriptionText,
+            treatedBy: doctor?.fullname || doctorEmail,
+            treatmentDate: new Date().toISOString(),
+            consultationNotes: treatmentNotes,
+          }),
+        }
+      );
+
+      const treatmentData = await treatmentRes.json();
+      if (treatmentRes.ok) {
+        setAppointments((prev) =>
+          prev.map((a) =>
+            a._id === prescriptionModalAppt._id
+              ? {
+                  ...a,
+                  status: "completed",
+                  treatment: treatmentNotes,
+                  prescription: prescriptionText,
+                  prescriptionFile: prescriptionFile
+                    ? URL.createObjectURL(prescriptionFile)
+                    : a.prescriptionFile,
+                }
+              : a
+          )
+        );
+        showToast("✓ Clinical prescription and treatment saved!");
+        setPrescriptionModalAppt(null);
+        setTreatmentNotes("");
+        setPrescriptionText("");
+        setPrescriptionFile(null);
+      } else {
+        alert(treatmentData.message || "Failed to save treatment details.");
+      }
+    } catch (err) {
+      console.error("Prescription save error:", err);
+      alert("Network error while saving treatment.");
+    } finally {
+      setPrescriptionUploading(false);
+    }
+  };
+
+  // Statistics calculation
+  const stats = useMemo(() => {
+    const todayCount = appointments.filter((a) => {
+      const d = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+      return d === todayStr;
+    }).length;
+
+    const pending = appointments.filter((a) => a.status === "pending").length;
+    const confirmed = appointments.filter((a) =>
+      ["confirmed", "approved", "accepted"].includes(a.status?.toLowerCase())
+    ).length;
+    const completed = appointments.filter((a) => a.status === "completed").length;
+    const cancelled = appointments.filter((a) => a.status === "cancelled").length;
+
+    return { todayCount, pending, confirmed, completed, cancelled };
+  }, [appointments, todayStr]);
+
+  // Filtered & Sorted appointments
+  const filteredAppointments = useMemo(() => {
+    let list = [...appointments];
+
+    // 1. Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (a) =>
+          a.userName?.toLowerCase().includes(q) ||
+          a.userEmail?.toLowerCase().includes(q) ||
+          a._id?.toLowerCase().includes(q) ||
+          a.symptoms?.toLowerCase().includes(q)
+      );
+    }
+
+    // 2. Status Tab Filter
+    if (statusTab === "today") {
+      list = list.filter((a) => {
+        const d = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+        return d === todayStr;
+      });
+    } else if (statusTab === "upcoming") {
+      list = list.filter((a) => {
+        const d = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+        return d > todayStr && a.status !== "cancelled";
+      });
+    } else if (statusTab === "pending") {
+      list = list.filter((a) => a.status === "pending");
+    } else if (statusTab === "confirmed") {
+      list = list.filter((a) =>
+        ["confirmed", "approved", "accepted"].includes(a.status?.toLowerCase())
+      );
+    } else if (statusTab === "completed") {
+      list = list.filter((a) => a.status === "completed");
+    } else if (statusTab === "cancelled") {
+      list = list.filter((a) => a.status === "cancelled");
+    }
+
+    // 3. Date Picker Filter
+    if (dateFilter) {
+      list = list.filter((a) => {
+        const d = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+        return d === dateFilter;
+      });
+    }
+
+    // 4. Sorting
+    list.sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      if (sortBy === "oldest") {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+      if (sortBy === "name") {
+        return (a.userName || "").localeCompare(b.userName || "");
+      }
+      return 0;
+    });
+
+    return list;
+  }, [appointments, searchQuery, statusTab, dateFilter, sortBy, todayStr]);
+
+  // Paginated slice
+  const totalPages = Math.ceil(filteredAppointments.length / pageSize) || 1;
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAppointments.slice(start, start + pageSize);
+  }, [filteredAppointments, currentPage, pageSize]);
+
+  // Clear filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusTab("all");
+    setDateFilter("");
+    setSortBy("newest");
+    setCurrentPage(1);
+  };
+
+  /* ─── Compact Calendar Calculation ─── */
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const apptsOnDay = appointments.filter((a) => {
+        const ad = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+        return ad === iso;
+      });
+
+      days.push({
+        date: d,
+        iso,
+        dayNumber: day,
+        hasAppts: apptsOnDay.length > 0,
+        apptsCount: apptsOnDay.length,
+      });
+    }
+    return days;
+  }, [calendarMonth, appointments]);
+
+  const selectedCalendarDateAppointments = useMemo(() => {
+    if (!selectedCalendarDate) return [];
+    return appointments.filter((a) => {
+      const ad = a.date?.includes("T") ? a.date.split("T")[0] : a.date;
+      return ad === selectedCalendarDate;
+    });
+  }, [appointments, selectedCalendarDate]);
 
   return (
-    <div className="doctor-appointments-page" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Timeslot selection UI - DOCTOR CAN SET AVAILABLE TIME SLOTS HERE */}
-      <div className="timeslot-section" style={{
-        border: '3px solid #4caf50', 
-        padding: '24px', 
-        marginTop: '20px',
-        marginBottom: '30px', 
-        borderRadius: '12px',
-        backgroundColor: '#f1f8f4',
-        boxShadow: '0 6px 16px rgba(76, 175, 80, 0.2)',
-        position: 'relative'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-12px',
-          left: '20px',
-          backgroundColor: '#4caf50',
-          color: 'white',
-          padding: '4px 16px',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: '700',
-          textTransform: 'uppercase',
-          letterSpacing: '1px'
-        }}>
-          NEW FEATURE
+    <div>
+      {/* Toast */}
+      {successToast && (
+        <div style={{ position: "fixed", top: "24px", right: "24px", background: "#16a34a", color: "#ffffff", padding: "12px 20px", borderRadius: "12px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 1200, fontWeight: "700", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <FiCheckCircle size={16} /> {successToast}
         </div>
-        <h3 style={{
-          color: '#2e7d32', 
-          marginBottom: '20px', 
-          fontSize: '24px',
-          fontWeight: '700',
-          borderBottom: '2px solid #4caf50',
-          paddingBottom: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          🕒 Set Your Available Timeslots
-          <span style={{fontSize: '14px', color: '#666', fontWeight: '400', marginLeft: 'auto'}}>
-            (Patients will see and book these times)
-          </span>
-        </h3>
-        <div style={{marginBottom: '16px'}}>
-          <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>
-            📅 Date: 
-            <input 
-              type="date" 
-              value={timeslotDate} 
-              onChange={e => setTimeslotDate(e.target.value)}
-              style={{
-                marginLeft: '10px',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid #4caf50',
-                fontSize: '14px'
-              }}
-            />
-          </label>
+      )}
+
+      {/* Live Chat Modal View */}
+      {selectedForChat && (
+        <LiveChat
+          appointmentId={selectedForChat._id}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setSelectedForChat(null)}
+        />
+      )}
+
+      {/* Video Call Modal View */}
+      {selectedForVideo && (
+        <VideoCall
+          appointmentId={selectedForVideo._id}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setSelectedForVideo(null)}
+        />
+      )}
+
+      {/* Page Header */}
+      <div className="dd-page-header">
+        <div>
+          <h1 className="dd-page-title">Appointments Workspace</h1>
+          <p className="dd-page-subtitle">
+            Review patient consultation requests, conduct live sessions, and issue clinical prescriptions.
+          </p>
         </div>
-        <div style={{marginBottom: '12px'}}>
-          <strong style={{display: 'block', marginBottom: '8px'}}>Time Slots:</strong>
-          {customSlots.map((slot, idx) => (
-            <div key={idx} style={{
-              display: 'flex', 
-              alignItems: 'center', 
-              marginBottom: '10px',
-              padding: '8px',
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              border: '1px solid #e0e0e0'
-            }}>
-              <span style={{marginRight: '8px', fontWeight: '600'}}>Slot {idx + 1}:</span>
-              <input 
-                type="time" 
-                value={slot.start} 
-                onChange={e => updateSlotField(idx, 'start', e.target.value)} 
-                style={{
-                  marginRight: '8px',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }} 
+
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {/* View Mode Toggle */}
+          <div className="ap-filter-tabs" style={{ background: "#e2e8f0" }}>
+            <button
+              type="button"
+              className={`ap-tab-btn ${viewMode === "list" ? "ap-tab-btn--active" : ""}`}
+              onClick={() => setViewMode("list")}
+            >
+              <FiList size={13} /> Table
+            </button>
+            <button
+              type="button"
+              className={`ap-tab-btn ${viewMode === "calendar" ? "ap-tab-btn--active" : ""}`}
+              onClick={() => setViewMode("calendar")}
+            >
+              <FiCalendar size={13} /> Calendar
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="dd-btn-action"
+            onClick={fetchAppointments}
+            disabled={loading}
+          >
+            <FiRefreshCw size={13} className={loading ? "hr-spin" : ""} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "14px 18px", borderRadius: "12px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", color: "#b91c1c", fontSize: "13.5px" }}>
+          <FiAlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* ─── 1. Statistics Cards ─── */}
+      <div className="dd-kpi-grid" style={{ marginBottom: "24px" }}>
+        <div className="dd-kpi-card">
+          <div className="dd-kpi-icon-wrap dd-kpi-icon--today">
+            <FiCalendar />
+          </div>
+          <div className="dd-kpi-data">
+            <div className="dd-kpi-value">{loading ? "..." : stats.todayCount}</div>
+            <div className="dd-kpi-label">Today's Schedule</div>
+          </div>
+        </div>
+
+        <div className="dd-kpi-card">
+          <div className="dd-kpi-icon-wrap dd-kpi-icon--pending">
+            <FiClock />
+          </div>
+          <div className="dd-kpi-data">
+            <div className="dd-kpi-value">{loading ? "..." : stats.pending}</div>
+            <div className="dd-kpi-label">Pending Requests</div>
+          </div>
+        </div>
+
+        <div className="dd-kpi-card">
+          <div className="dd-kpi-icon-wrap dd-kpi-icon--confirmed">
+            <FiCheckCircle />
+          </div>
+          <div className="dd-kpi-data">
+            <div className="dd-kpi-value">{loading ? "..." : stats.confirmed}</div>
+            <div className="dd-kpi-label">Confirmed</div>
+          </div>
+        </div>
+
+        <div className="dd-kpi-card">
+          <div className="dd-kpi-icon-wrap dd-kpi-icon--messages">
+            <FiCheck />
+          </div>
+          <div className="dd-kpi-data">
+            <div className="dd-kpi-value">{loading ? "..." : stats.completed}</div>
+            <div className="dd-kpi-label">Completed</div>
+          </div>
+        </div>
+
+        <div className="dd-kpi-card">
+          <div className="dd-kpi-icon-wrap" style={{ background: "#fef2f2", color: "#dc2626" }}>
+            <FiX />
+          </div>
+          <div className="dd-kpi-data">
+            <div className="dd-kpi-value">{loading ? "..." : stats.cancelled}</div>
+            <div className="dd-kpi-label">Cancelled</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Calendar View (When toggled) ─── */}
+      {viewMode === "calendar" ? (
+        <div className="dd-dashboard-grid">
+          {/* Calendar Widget */}
+          <div className="dd-panel-card">
+            <div className="dd-compact-calendar">
+              <div className="dd-cal-header">
+                <span className="dd-cal-month-title">
+                  {monthNames[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                </span>
+                <div className="dd-cal-nav-buttons">
+                  <button
+                    type="button"
+                    className="dd-cal-btn"
+                    onClick={() => {
+                      const prev = new Date(calendarMonth);
+                      prev.setMonth(prev.getMonth() - 1);
+                      setCalendarMonth(prev);
+                    }}
+                  >
+                    <FiChevronLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="dd-cal-btn"
+                    onClick={() => setCalendarMonth(new Date())}
+                    title="Current Month"
+                  >
+                    ●
+                  </button>
+                  <button
+                    type="button"
+                    className="dd-cal-btn"
+                    onClick={() => {
+                      const next = new Date(calendarMonth);
+                      next.setMonth(next.getMonth() + 1);
+                      setCalendarMonth(next);
+                    }}
+                  >
+                    <FiChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="dd-cal-grid">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                  <div key={day} className="dd-cal-weekday">
+                    {day}
+                  </div>
+                ))}
+
+                {calendarDays.map((item, idx) => {
+                  if (!item) {
+                    return <div key={`empty-${idx}`} className="dd-cal-day dd-cal-day--empty" />;
+                  }
+                  const isSelected = selectedCalendarDate === item.iso;
+                  const isToday = todayStr === item.iso;
+
+                  return (
+                    <div
+                      key={item.iso}
+                      className={`dd-cal-day ${isToday ? "dd-cal-day--today" : ""} ${
+                        isSelected ? "dd-cal-day--selected" : ""
+                      } ${item.hasAppts ? "dd-cal-day--has-appt" : ""}`}
+                      onClick={() => setSelectedCalendarDate(item.iso)}
+                    >
+                      <span>{item.dayNumber}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule for Selected Date */}
+          <div className="dd-panel-card">
+            <div className="dd-panel-header">
+              <h3>Schedule for {formatDate(selectedCalendarDate)}</h3>
+              <span className="dd-badge dd-badge--confirmed">
+                {selectedCalendarDateAppointments.length} Consultations
+              </span>
+            </div>
+
+            {selectedCalendarDateAppointments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontSize: "36px", marginBottom: "10px" }}>☕</div>
+                <p style={{ color: "#64748b", fontSize: "13px" }}>
+                  No consultations scheduled for {formatDate(selectedCalendarDate)}.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {selectedCalendarDateAppointments.map((appt) => (
+                  <div
+                    key={appt._id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 14px",
+                      background: "#f8fafc",
+                      borderRadius: "12px",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ fontSize: "13.5px", color: "#0f172a", display: "block" }}>
+                        {appt.userName}
+                      </strong>
+                      <span style={{ fontSize: "12px", color: "#64748b" }}>
+                        {appt.time} • {appt.symptoms || "Consultation"}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        type="button"
+                        className="dd-btn-action"
+                        onClick={() => setSelectedAppointmentDetail(appt)}
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        className="dd-btn-action dd-btn-action--approve"
+                        onClick={() => setSelectedForChat(appt)}
+                      >
+                        <FiMessageSquare size={13} /> Chat
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ─── List / Table View ─── */
+        <div className="ap-table-card">
+          {/* Toolbar & Filter Tabs */}
+          <div className="ap-toolbar">
+            <div className="ap-filter-tabs">
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "all" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("all");
+                  setCurrentPage(1);
+                }}
+              >
+                All ({appointments.length})
+              </button>
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "today" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("today");
+                  setCurrentPage(1);
+                }}
+              >
+                Today ({stats.todayCount})
+              </button>
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "pending" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("pending");
+                  setCurrentPage(1);
+                }}
+              >
+                Pending ({stats.pending})
+              </button>
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "confirmed" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("confirmed");
+                  setCurrentPage(1);
+                }}
+              >
+                Confirmed ({stats.confirmed})
+              </button>
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "completed" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("completed");
+                  setCurrentPage(1);
+                }}
+              >
+                Completed ({stats.completed})
+              </button>
+              <button
+                type="button"
+                className={`ap-tab-btn ${statusTab === "cancelled" ? "ap-tab-btn--active" : ""}`}
+                onClick={() => {
+                  setStatusTab("cancelled");
+                  setCurrentPage(1);
+                }}
+              >
+                Cancelled ({stats.cancelled})
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {/* Date Filter */}
+              <input
+                type="date"
+                className="ap-table-search"
+                style={{ width: "auto" }}
+                value={dateFilter}
+                onChange={(e) => {
+                  setDateFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
-              <span style={{margin: '0 8px', fontWeight: 'bold'}}>to</span>
-              <input 
-                type="time" 
-                value={slot.end} 
-                onChange={e => updateSlotField(idx, 'end', e.target.value)} 
-                style={{
-                  marginRight: '12px',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc'
-                }} 
-              />
-              {customSlots.length > 1 && (
-                <button 
-                  onClick={() => removeSlotField(idx)} 
-                  style={{
-                    color: 'white',
-                    backgroundColor: '#f44336',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '600'
+
+              {/* Sort By Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="ap-table-search"
+                style={{ width: "auto", padding: "8px 12px" }}
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Patient Name</option>
+              </select>
+
+              {/* Search Box */}
+              <div className="ap-search-input-wrap">
+                <FiSearch className="ap-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search patient, symptoms..."
+                  className="ap-table-search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
                   }}
+                />
+              </div>
+
+              {(searchQuery || statusTab !== "all" || dateFilter) && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="dd-btn-action"
+                  title="Clear all filters"
                 >
-                  ❌ Remove
+                  Clear Filters
                 </button>
               )}
             </div>
-          ))}
-        </div>
-        <div style={{display: 'flex', gap: '10px', marginTop: '16px'}}>
-          <button 
-            onClick={addSlotField}
-            style={{
-              backgroundColor: '#2196f3',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            ➕ Add Slot
-          </button>
-          <button 
-            onClick={saveTimeslots} 
-            disabled={savingSlots}
-            style={{
-              backgroundColor: savingSlots ? '#ccc' : '#4caf50',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              cursor: savingSlots ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            {savingSlots ? '⏳ Saving...' : '💾 Save Timeslots'}
-          </button>
-        </div>
-        {saveMsg && (
-          <div style={{
-            marginTop: '12px', 
-            padding: '10px', 
-            borderRadius: '6px',
-            backgroundColor: saveMsg.includes('✅') ? '#e8f5e9' : '#ffebee',
-            color: saveMsg.includes('✅') ? '#2e7d32' : '#c62828',
-            fontWeight: '600',
-            border: `1px solid ${saveMsg.includes('✅') ? '#4caf50' : '#f44336'}`
-          }}>
-            {saveMsg}
           </div>
-        )}
-      </div>
-      {/* Appointment Time Notification - Hidden during active call/chat */}
-      {showNotification && notificationData && !showVideoCall && !showLiveChat && (
-        <div className="appointment-notification-popup">
-          <div className="notification-header">
-            <div className="notification-icon">🔔</div>
-            <h3>Appointment Time!</h3>
-            <button 
-              className="notification-close"
-              onClick={() => setShowNotification(false)}
-            >
-              ×
-            </button>
-          </div>
-          <div className="notification-body">
-            <div className="notification-patient">
-              <strong>Patient:</strong> {notificationData.userName}
-            </div>
-            <div className="notification-time">
-              <strong>Time:</strong> {notificationData.time}
-            </div>
-            <div className="notification-actions">
-              <button
-                className="notification-btn video-btn-notif"
-                onClick={() => startVideoCall(notificationData)}
-              >
-                📹 Start Video Call
-              </button>
-              <button
-                className="notification-btn chat-btn-notif"
-                onClick={() => startLiveChat(notificationData)}
-              >
-                💬 Start Chat
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Patient-Initiated Session Notification - Hidden during active call/chat */}
-      {showPatientNotification && currentPatientNotif && !showVideoCall && !showLiveChat && (
-        <div className="patient-waiting-notification-popup">
-          <div className="notification-header">
-            <div className="notification-icon">👤</div>
-            <h3>Patient Waiting!</h3>
-            <button 
-              className="notification-close"
-              onClick={() => setShowPatientNotification(false)}
-            >
-              ×
-            </button>
-          </div>
-          <div className="notification-body">
-            <div className="notification-patient">
-              <strong>Patient:</strong> {currentPatientNotif.patientName}
-            </div>
-            <div className="notification-time">
-              <strong>Started:</strong> {new Date(currentPatientNotif.timestamp).toLocaleTimeString()}
-            </div>
-            <div className="notification-message">
-              {currentPatientNotif.sessionType === 'video' 
-                ? '📹 Patient is waiting in video call' 
-                : '💬 Patient started live chat'}
-            </div>
-            <div className="notification-actions">
-              <button
-                className="notification-btn join-btn-notif"
-                onClick={() => handleJoinPatientSession(currentPatientNotif)}
-              >
-                🚀 Join Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          {/* Table */}
+          <div className="ap-table-responsive">
+            <table className="ap-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Schedule Date & Time</th>
+                  <th>Reason / Symptoms</th>
+                  <th>Status</th>
+                  <th>Live Consultation</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "40px" }}>
+                      <div className="hr-spinner" style={{ width: "28px", height: "28px" }} />
+                      <p style={{ fontSize: "13px", color: "#64748b", marginTop: "10px" }}>Loading consultations...</p>
+                    </td>
+                  </tr>
+                ) : paginatedAppointments.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "50px 20px" }}>
+                      <div style={{ fontSize: "36px", marginBottom: "10px" }}>📋</div>
+                      <strong style={{ fontSize: "15px", color: "#0f172a", display: "block", marginBottom: "4px" }}>
+                        No Appointments Found
+                      </strong>
+                      <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
+                        No appointments match your selected status, search, or date criteria.
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedAppointments.map((appt) => (
+                    <tr key={appt._id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div className="dd-patient-avatar" style={{ width: "36px", height: "36px", fontSize: "13px" }}>
+                            {appt.userName?.charAt(0) || "P"}
+                          </div>
+                          <div>
+                            <strong style={{ display: "block" }}>{appt.userName || "Patient"}</strong>
+                            <span style={{ fontSize: "11.5px", color: "#64748b" }}>{appt.userEmail}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <strong style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <FiCalendar size={13} color="#16a34a" /> {formatDate(appt.date)}
+                          </strong>
+                          <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                            <FiClock size={12} /> {appt.time || "Time not specified"}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ color: "#334155" }}>
+                          {appt.symptoms || "General Care"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`dd-badge dd-badge--${appt.status || "pending"}`}>
+                          {appt.status || "pending"}
+                        </span>
+                      </td>
+                      <td>
+                        {["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase()) ? (
+                          <div style={{ display: "inline-flex", gap: "6px" }}>
+                            <button
+                              type="button"
+                              className="dd-btn-action dd-btn-action--approve"
+                              onClick={() => setSelectedForChat(appt)}
+                              title="Open chat consultation"
+                            >
+                              <FiMessageSquare size={13} /> Chat
+                            </button>
+                            <button
+                              type="button"
+                              className="dd-btn-action"
+                              onClick={() => setSelectedForVideo(appt)}
+                              title="Start video consultation"
+                            >
+                              <FiVideo size={13} /> Video
+                            </button>
+                          </div>
+                        ) : appt.status === "completed" ? (
+                          <button
+                            type="button"
+                            className="dd-btn-action"
+                            onClick={() => setSelectedForChat(appt)}
+                            title="View chat history"
+                          >
+                            <FiMessageSquare size={13} /> Chat Log
+                          </button>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: "12px" }}>Awaiting Confirmation</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", gap: "6px" }}>
+                          <button
+                            type="button"
+                            className="dd-btn-action"
+                            onClick={() => setSelectedAppointmentDetail(appt)}
+                            title="View appointment details"
+                          >
+                            <FiEye size={13} /> View
+                          </button>
 
-      <h2>Your Appointment Requests</h2>
-      {appointments.length === 0 ? (
-        <div>No appointments found.</div>
-      ) : (
-        <ul className="history-list">
-          {appointments.map((appt) => {
-            // Check if appointment is happening now or soon
-            const now = new Date();
-            const currentTime = now.getHours() * 60 + now.getMinutes();
-            const currentDate = now.toISOString().split('T')[0];
-            const appointmentDate = new Date(appt.date).toISOString().split('T')[0];
-            const [hours, minutes] = appt.time.split(':').map(Number);
-            const appointmentTimeInMinutes = hours * 60 + minutes;
-            const timeDiff = appointmentTimeInMinutes - currentTime;
-            const isNow = appointmentDate === currentDate && timeDiff <= 10 && timeDiff >= -30;
+                          {appt.status === "pending" && (
+                            <>
+                              <button
+                                type="button"
+                                className="dd-btn-action dd-btn-action--approve"
+                                onClick={() => handleAccept(appt._id)}
+                                disabled={actionLoading}
+                                title="Accept appointment"
+                              >
+                                <FiCheck size={13} /> Accept
+                              </button>
+                              <button
+                                type="button"
+                                className="dd-btn-action dd-btn-action--reject"
+                                onClick={() => setRejectionModalAppt(appt)}
+                                disabled={actionLoading}
+                                title="Reject appointment"
+                              >
+                                <FiX size={13} /> Reject
+                              </button>
+                            </>
+                          )}
 
-            return (
-              <li
-                key={appt._id}
-                className={`history-item ${isNow ? 'appointment-now' : ''}`}
-                style={{
-                  backgroundColor: ["confirmed", "approved", "accepted"].includes(
-                    appt.status?.toLowerCase()
-                  )
-                    ? isNow ? "#e3f2fd" : "#e8f5e8"
-                    : "#fff3e0",
-                  border: `2px solid ${
-                    isNow ? "#2196f3" :
-                    ["confirmed", "approved", "accepted"].includes(
-                      appt.status?.toLowerCase()
-                    )
-                      ? "#4caf50"
-                      : "#ff9800"
-                  }`,
-                }}
-              >
-                {isNow && (
-                  <div className="appointment-now-badge">
-                    🔴 LIVE - Appointment Time!
-                  </div>
+                          {["confirmed", "completed"].includes(appt.status?.toLowerCase()) && (
+                            <button
+                              type="button"
+                              className="dd-btn-action"
+                              onClick={() => {
+                                setPrescriptionModalAppt(appt);
+                                setTreatmentNotes(appt.treatment || appt.consultationNotes || "");
+                                setPrescriptionText(appt.prescription || "");
+                              }}
+                              title="Write / Manage Prescription"
+                            >
+                              <FiFileText size={13} /> Rx
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
-                <div style={{ marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "18px" }}>
-                    Patient: {appt.userName}
-                  </strong>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Bar */}
+          <div className="ap-pagination-bar">
+            <div>
+              Showing <strong>{paginatedAppointments.length}</strong> of <strong>{filteredAppointments.length}</strong> appointments
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>Rows:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="ap-table-search"
+                  style={{ width: "auto", padding: "4px 8px", fontSize: "12.5px" }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              <div className="ap-page-buttons">
+                <button
+                  type="button"
+                  className="ap-page-btn"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                >
+                  <FiChevronLeft />
+                </button>
+                <span style={{ fontSize: "12.5px", fontWeight: "600", padding: "0 6px" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="ap-page-btn"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  <FiChevronRight />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Appointment Details Modal ─── */}
+      {selectedAppointmentDetail && (
+        <div className="ap-modal-backdrop" onClick={() => setSelectedAppointmentDetail(null)}>
+          <div className="ap-modal-card" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setSelectedAppointmentDetail(null)}
+              style={{ position: "absolute", top: "18px", right: "18px", background: "#f1f5f9", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            >
+              <FiX size={16} />
+            </button>
+
+            <h3 className="ap-modal-title">Consultation File</h3>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px" }}>
+              ID: {selectedAppointmentDetail._id}
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13.5px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Patient:</span>
+                <strong>{selectedAppointmentDetail.userName} ({selectedAppointmentDetail.userEmail})</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Date & Time:</span>
+                <strong>{formatDate(selectedAppointmentDetail.date)} at {selectedAppointmentDetail.time}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ color: "#64748b" }}>Status:</span>
+                <span className={`dd-badge dd-badge--${selectedAppointmentDetail.status || "pending"}`}>
+                  {selectedAppointmentDetail.status}
+                </span>
+              </div>
+              {selectedAppointmentDetail.symptoms && (
+                <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                  <span style={{ fontSize: "12px", color: "#64748b", display: "block", marginBottom: "4px" }}>
+                    Patient Reported Symptoms:
+                  </span>
+                  <p style={{ margin: 0, color: "#334155" }}>{selectedAppointmentDetail.symptoms}</p>
                 </div>
-                <div style={{ marginBottom: "5px" }}>
-                  <strong>📅 Date:</strong>{" "}
-                  {new Date(appt.date).toLocaleDateString()}
+              )}
+              {selectedAppointmentDetail.treatment && (
+                <div style={{ background: "#f0fdf4", padding: "12px", borderRadius: "10px", border: "1px solid #dcfce7" }}>
+                  <span style={{ fontSize: "12px", color: "#15803d", display: "block", marginBottom: "4px" }}>
+                    Prescribed Treatment / Notes:
+                  </span>
+                  <p style={{ margin: 0, color: "#166534" }}>{selectedAppointmentDetail.treatment}</p>
                 </div>
-                <div style={{ marginBottom: "5px" }}>
-                  <strong>🕒 Time:</strong> {appt.time}
+              )}
+              {selectedAppointmentDetail.consultationNotes && (
+                <div style={{ background: "#fffbeb", padding: "12px", borderRadius: "10px", border: "1px solid #fde68a" }}>
+                  <span style={{ fontSize: "12px", color: "#92400e", display: "block", marginBottom: "4px" }}>
+                    Clinical / Cancellation Notes:
+                  </span>
+                  <p style={{ margin: 0, color: "#78350f" }}>{selectedAppointmentDetail.consultationNotes}</p>
                 </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    style={{
-                      color: 
-                        appt.status?.toLowerCase() === "cancelled" ? "#f44336" :
-                        ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase()) ? "#4caf50" : "#ff9800",
-                      fontWeight: "bold",
+              )}
+            </div>
+
+            <div style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {["confirmed", "completed"].includes(selectedAppointmentDetail.status?.toLowerCase()) && (
+                  <button
+                    type="button"
+                    className="dd-btn-action dd-btn-action--approve"
+                    onClick={() => {
+                      const apt = selectedAppointmentDetail;
+                      setSelectedAppointmentDetail(null);
+                      setSelectedForChat(apt);
                     }}
                   >
-                    {appt.status?.toLowerCase() === "cancelled" 
-                      ? "❌ Cancelled by Doctor" 
-                      : ["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase())
-                        ? "✅ Approved"
-                        : "⏳ Pending Approval"}
-                  </span>
-                </div>
-
-                {appt.status?.toLowerCase() === "cancelled" && appt.consultationNotes && (
-                  <div style={{ 
-                    marginBottom: "10px", 
-                    padding: "8px", 
-                    backgroundColor: "#ffebee", 
-                    borderRadius: "4px",
-                    fontSize: "14px"
-                  }}>
-                    <strong>Cancellation Note:</strong> {appt.consultationNotes}
-                  </div>
+                    <FiMessageSquare size={13} /> Chat
+                  </button>
                 )}
-
-                {appt.status === "pending" && (
-                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                    <button
-                      className="book-btn"
-                      style={{ 
-                        flex: 1,
-                        backgroundColor: "#4caf50",
-                        border: "none"
-                      }}
-                      onClick={() => handleApprove(appt._id)}
-                    >
-                      ✅ Approve
-                    </button>
-                    <button
-                      className="book-btn"
-                      style={{ 
-                        flex: 1,
-                        backgroundColor: "#f44336",
-                        border: "none"
-                      }}
-                      onClick={() => handleCancel(appt._id)}
-                    >
-                      ❌ Cancel
-                    </button>
-                  </div>
+                {selectedAppointmentDetail.status === "confirmed" && (
+                  <button
+                    type="button"
+                    className="dd-btn-action"
+                    onClick={() => {
+                      const apt = selectedAppointmentDetail;
+                      setSelectedAppointmentDetail(null);
+                      setSelectedForVideo(apt);
+                    }}
+                  >
+                    <FiVideo size={13} /> Video
+                  </button>
                 )}
+              </div>
 
-
-                {["confirmed", "approved", "accepted"].includes(
-                  appt.status?.toLowerCase()
-                ) && (
-                  <div className="live-features-section">
-                    <h4>Live Features</h4>
-                    <div className="live-buttons-container">
-                      <button
-                        className="live-feature-btn chat-btn"
-                        onClick={() => startLiveChat(appt)}
-                      >
-                        💬 Live Chat
-                      </button>
-                      <button
-                        className="live-feature-btn video-btn"
-                        onClick={() => startVideoCall(appt)}
-                      >
-                        📹 Video Call
-                      </button>
-                    </div>
-                    
-                    {/* Prescription Upload Section */}
-                    <PrescriptionUpload
-                      appointmentId={appt._id}
-                      doctorEmail={doctor.email}
-                      onUploadSuccess={() => fetchAppointments()}
-                    />
-                  </div>
-                )}
-                
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {showLiveChat && selectedAppointmentForLive && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <LiveChat
-              appointmentId={selectedAppointmentForLive._id}
-              currentUser={{ id: doctor.email, name: doctor.fullname }}
-              userType="doctor"
-              onClose={closeLiveFeatures}
-            />
+              <button
+                type="button"
+                className="dd-btn-action"
+                onClick={() => setSelectedAppointmentDetail(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {showVideoCall && selectedAppointmentForLive && (
-        <div className="modal-overlay video-overlay">
-          <div className="modal-content video-modal">
-            <VideoCall
-              appointmentId={selectedAppointmentForLive._id}
-              currentUser={{ id: doctor.email, name: doctor.fullname }}
-              userType="doctor"
-              onClose={closeLiveFeatures}
+      {/* ─── Prescription & Treatment Modal ─── */}
+      {prescriptionModalAppt && (
+        <div className="ap-modal-backdrop" onClick={() => setPrescriptionModalAppt(null)}>
+          <div className="ap-modal-card" style={{ maxWidth: "600px" }} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPrescriptionModalAppt(null)}
+              style={{ position: "absolute", top: "18px", right: "18px", background: "#f1f5f9", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            >
+              <FiX size={16} />
+            </button>
+
+            <h3 className="ap-modal-title">Clinical Prescription & Treatment</h3>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 18px" }}>
+              Issue treatment guidelines and prescriptions for <strong>{prescriptionModalAppt.userName}</strong>.
+            </p>
+
+            <form onSubmit={handleSaveTreatment} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+                  Clinical Diagnosis & Treatment Plan
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g., Acute viral pharyngitis with mild dehydration. Advised warm saline gargles..."
+                  value={treatmentNotes}
+                  onChange={(e) => setTreatmentNotes(e.target.value)}
+                  className="ap-table-search"
+                  style={{ width: "100%", resize: "vertical" }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+                  Medication Instructions & Dosage
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g., Tab Paracetamol 650mg TDS x 3 days, Tab Cetirizine 10mg OD HS x 5 days..."
+                  value={prescriptionText}
+                  onChange={(e) => setPrescriptionText(e.target.value)}
+                  className="ap-table-search"
+                  style={{ width: "100%", resize: "vertical" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f172a", marginBottom: "6px" }}>
+                  Upload Prescription Scan / PDF (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setPrescriptionFile(e.target.files[0] || null)}
+                  className="ap-table-search"
+                  style={{ width: "100%" }}
+                />
+              </div>
+
+              {prescriptionModalAppt.prescriptionFile && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px" }}>
+                  <span style={{ color: "#64748b" }}>Existing prescription file:</span>
+                  <a
+                    href={prescriptionModalAppt.prescriptionFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#16a34a", fontWeight: "700" }}
+                  >
+                    View Current Rx Document
+                  </a>
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  className="dd-btn-action"
+                  onClick={() => setPrescriptionModalAppt(null)}
+                  disabled={prescriptionUploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="dd-btn-action dd-btn-action--approve"
+                  disabled={prescriptionUploading}
+                >
+                  <FiUpload size={14} />{" "}
+                  {prescriptionUploading ? "Saving & Uploading..." : "Save & Issue Prescription"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Rejection Modal ─── */}
+      {rejectionModalAppt && (
+        <div className="ap-modal-backdrop" onClick={() => setRejectionModalAppt(null)}>
+          <div className="ap-modal-card" style={{ maxWidth: "460px" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="ap-modal-title">Reject Consultation Request</h3>
+            <p style={{ fontSize: "13.5px", color: "#64748b", margin: "0 0 16px" }}>
+              Are you sure you want to reject the appointment with <strong>{rejectionModalAppt.userName}</strong> on <strong>{formatDate(rejectionModalAppt.date)}</strong>?
+            </p>
+
+            <textarea
+              className="ap-table-search"
+              rows={3}
+              placeholder="Provide reason for rejection (e.g., Doctor on emergency hospital round)..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", resize: "vertical" }}
             />
+
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "18px" }}>
+              <button
+                type="button"
+                className="dd-btn-action"
+                onClick={() => setRejectionModalAppt(null)}
+                disabled={actionLoading}
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                className="dd-btn-action dd-btn-action--reject"
+                onClick={handleReject}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Processing..." : "Confirm Rejection"}
+              </button>
+            </div>
           </div>
         </div>
       )}
