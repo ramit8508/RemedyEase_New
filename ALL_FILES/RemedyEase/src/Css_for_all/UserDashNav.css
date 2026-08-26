@@ -1,97 +1,219 @@
-/* Responsive improvements for UserDashNav.css */
+/* ============================================================
+   UserDashNav.css — Authenticated Patient Navbar
+   Premium sticky navbar with RemedyEase design system
+   ============================================================ */
 
-.nav {
+/* --- Header --- */
+.udn-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.udn-header-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 62px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 15px 40px;
-  background-color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Poppins', sans-serif;
-  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.nav-logo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #388e3c;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.nav-links {
+/* --- Brand --- */
+.udn-brand {
   display: flex;
   align-items: center;
-  gap: 40px;
-  flex-wrap: wrap;
-}
-
-.nav-link {
-  color: #444444;
+  gap: 2px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #16a34a;
   text-decoration: none;
-  font-size: 1rem;
+  letter-spacing: -0.4px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.udn-brand:hover {
+  opacity: 0.85;
+}
+
+.udn-brand-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* --- Desktop Nav --- */
+.udn-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.udn-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  font-size: 13.5px;
   font-weight: 500;
-  padding: 5px 0;
-  position: relative;
-  transition: color 0.3s ease;
+  color: #4b5563;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+  line-height: 1.3;
 }
 
-.nav-link:hover {
-  color: #388e3c;
+.udn-nav-link:hover {
+  color: #111827;
+  background: #f9fafb;
 }
 
-.nav-avatar {
-  width: 45px;
-  height: 45px;
+.udn-nav-link--active {
+  color: #15803d;
+  background: #f0fdf4;
+  font-weight: 600;
+}
+
+.udn-nav-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.udn-nav-link--active .udn-nav-icon {
+  opacity: 1;
+}
+
+/* --- Actions (avatar) --- */
+.udn-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.udn-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: 2px solid #388e3c;
   object-fit: cover;
+  border: 2px solid #dcfce7;
   cursor: pointer;
-  margin-left: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.udn-avatar:hover {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+/* --- Mobile Toggle --- */
+.udn-mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.udn-mobile-toggle:hover {
+  background: #f9fafb;
+}
+
+/* --- Mobile Menu --- */
+.udn-mobile-menu {
+  display: none;
+  border-top: 1px solid #f3f4f6;
+  background: #ffffff;
+  padding: 12px 20px 20px;
+}
+
+.udn-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.udn-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.udn-mobile-link:hover {
+  background: #f9fafb;
+}
+
+.udn-mobile-link--active {
+  color: #15803d;
+  background: #f0fdf4;
+  font-weight: 600;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .udn-nav-link {
+    padding: 6px 8px;
+    font-size: 12.5px;
+    gap: 4px;
+  }
+
+  .udn-nav {
+    gap: 2px;
+  }
 }
 
 @media (max-width: 900px) {
-  .nav {
-    padding: 12px 20px;
+  .udn-nav {
+    display: none;
   }
-  .nav-logo {
-    font-size: 1.4rem;
+
+  .udn-actions {
+    display: none;
   }
-  .nav-links {
-    gap: 24px;
+
+  .udn-mobile-toggle {
+    display: flex;
+  }
+
+  .udn-mobile-menu {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .udn-header-inner {
+    padding: 0 16px;
+    height: 56px;
   }
 }
 
-@media (max-width: 600px) {
-  .nav {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 8px;
-  }
-  .nav-logo {
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-  }
-  .nav-links {
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    align-items: flex-start;
-  }
-  .nav-link {
-    font-size: 0.95rem;
-    width: 100%;
-    padding: 8px 0;
-  }
-  .nav-avatar {
-    width: 38px;
-    height: 38px;
-    margin-top: 8px;
-    margin-left: 0;
-  }
-}
-
-/* Notification Bell Styles - Green Medical Theme */
+/* ============================================================
+   NOTIFICATION STYLES (preserved from original)
+   ============================================================ */
 .notification-bell-container {
   position: relative;
   display: flex;
@@ -256,10 +378,19 @@
   font-size: 14px;
 }
 
-/* Mobile responsive */
 @media (max-width: 768px) {
   .notification-dropdown {
     width: 280px;
     right: -20px;
+  }
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .udn-nav-link,
+  .udn-mobile-link,
+  .udn-avatar,
+  .notification-bell-btn {
+    transition: none;
   }
 }

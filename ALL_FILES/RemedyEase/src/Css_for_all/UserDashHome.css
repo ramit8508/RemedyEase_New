@@ -1,330 +1,1082 @@
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .main_head, .services, .featured_doctors, .ready {
-    width: 98vw;
-    min-width: unset;
-    max-width: 100vw;
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-  .head_title, .head_para {
-    min-width: unset;
-    width: 90vw;
-  }
+/* ============================================================
+   UserDashHome.css — Authenticated Patient Dashboard Home
+   Premium healthcare SaaS dashboard aesthetic
+   RemedyEase Design System: Manrope headings, Inter body
+   ============================================================ */
+
+/* --- Base --- */
+.pdh {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #ffffff;
 }
 
-@media (max-width: 900px) {
-  .main_head, .services, .featured_doctors, .ready {
-    width: 100vw;
-    padding: 10px;
-  }
-  .service_cards, .doctor_cards {
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-  }
-  .service_card, .doctor_card {
-    width: 90vw;
-    max-width: 500px;
-  }
-  .head_title {
-    font-size: 32px;
-    width: 95vw;
-  }
-  .head_para {
-    font-size: 16px;
-    width: 95vw;
-  }
-  .service_title, .feature_title, .ready_title {
-    font-size: 22px;
-    margin-left: 0;
-  }
+/* ============================================================
+   HERO
+   ============================================================ */
+.pdh-hero {
+  background: linear-gradient(135deg, #f0fdf4 0%, #fafffe 40%, #f8fffe 100%);
+  border-bottom: 1px solid #e8ece9;
+  overflow: hidden;
 }
 
-@media (max-width: 600px) {
-  .main_head {
-    min-height: 300px;
-    border-radius: 0;
-    padding: 5px;
-  }
-  .head_title {
-    font-size: 18px;
-    margin-top: 10px;
-    width: 98vw;
-  }
-  .head_para {
-    font-size: 12px;
-    width: 98vw;
-    margin-bottom: 10px;
-  }
-  .head_btn, .ready_btn {
-    font-size: 14px;
-    padding: 8px 16px;
-    margin-left: 0;
-  }
-  .service_title, .feature_title, .ready_title {
-    font-size: 16px;
-    margin-top: 20px;
-    margin-bottom: 10px;
-  }
-  .service_card, .doctor_card {
-    padding: 10px;
-    font-size: 12px;
-  }
-  .service_name, .doctor_name {
-    font-size: 14px;
-  }
-  .service_desc, .doctor_specialty {
-    font-size: 10px;
-  }
-  .doctor_image1, .doctor_image2, .doctor_image3, .service_image1, .service_image2, .service_image3, .service_image4 {
-    width: 40px;
-    height: 40px;
-  }
-  .ready {
-    padding: 10px;
-  }
+.pdh-hero-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 60px 32px 56px;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  align-items: center;
+  gap: 48px;
 }
-.main_head {
+
+.pdh-hero-text {
+  text-align: left;
+}
+
+.pdh-hero-eyebrow {
+  display: inline-block;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.8);
+  border: 1px solid #dcfce7;
+  border-radius: 100px;
+  letter-spacing: 1.2px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.pdh-hero-h1 {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.2px;
+  color: #0f172a;
+  margin: 0 0 18px;
+}
+
+.pdh-hero-sub {
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: #6b7280;
+  margin: 0 0 32px;
+  max-width: 440px;
+  font-weight: 400;
+}
+
+.pdh-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pdh-hero-trust {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin: 22px 0 0 0;
+  flex-wrap: wrap;
+}
+
+.pdh-hero-trust svg {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.pdh-trust-dot {
+  color: #d1d5db;
+  font-size: 10px;
+}
+
+/* Hero Visual */
+.pdh-hero-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pdh-hero-img {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  border-radius: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(220, 252, 231, 0.6);
+}
+
+/* ============================================================
+   BUTTONS (shared)
+   ============================================================ */
+.pdh-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #16a34a;
+  border: none;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  line-height: 1.4;
+}
+
+.pdh-btn-primary:hover {
+  background: #15803d;
+  box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);
+}
+
+.pdh-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1.4;
+}
+
+.pdh-btn-outline:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.pdh-btn-outline--white {
+  color: #ffffff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.pdh-btn-outline--white:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Small buttons (doctor cards) */
+.pdh-btn-sm-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #16a34a;
+  border: none;
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  line-height: 1.3;
+}
+
+.pdh-btn-sm-primary:hover {
+  background: #15803d;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.pdh-btn-sm-outline {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1.3;
+}
+
+.pdh-btn-sm-outline:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* ============================================================
+   SECTIONS (shared)
+   ============================================================ */
+.pdh-section {
+  padding: 80px 32px;
+}
+
+.pdh-section--muted {
+  background: #fafcfb;
+}
+
+.pdh-section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pdh-section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.pdh-section-header--row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  text-align: left;
+  gap: 20px;
+}
+
+.pdh-section-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+  margin: 0 0 10px;
+}
+
+.pdh-section-sub {
+  font-size: 15.5px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.pdh-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #16a34a;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.pdh-section-link:hover {
+  color: #15803d;
+}
+
+/* ============================================================
+   QUICK ACTIONS
+   ============================================================ */
+.pdh-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.pdh-quick-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
+}
+
+.pdh-quick-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.pdh-quick-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.pdh-quick-icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.pdh-quick-icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.pdh-quick-icon--purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.pdh-quick-icon--teal {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
+.pdh-quick-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.1px;
+}
+
+.pdh-quick-desc {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.55;
+  margin: 0 0 16px;
+  flex: 1;
+}
+
+.pdh-quick-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  transition: color 0.15s;
+}
+
+.pdh-quick-card:hover .pdh-quick-cta {
+  color: #15803d;
+}
+
+/* ============================================================
+   FEATURED DOCTORS
+   ============================================================ */
+.pdh-doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.pdh-doctor-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pdh-doctor-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.pdh-doctor-photo-wrap {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.pdh-doctor-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.pdh-doctor-body {
+  padding: 20px 22px 22px;
+}
+
+.pdh-doctor-avail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+  margin-bottom: 10px;
+}
+
+.pdh-avail-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+}
+
+.pdh-doctor-name {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.pdh-doctor-spec {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 2px;
+}
+
+.pdh-doctor-qual {
+  font-size: 12.5px;
+  color: #9ca3af;
+  margin: 0 0 10px;
+  font-weight: 400;
+}
+
+.pdh-doctor-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.pdh-star-icon {
+  color: #f59e0b;
+  fill: #f59e0b;
+}
+
+.pdh-doctor-actions {
+  display: flex;
+  gap: 8px;
   flex-wrap: wrap;
-  top: 60px;
-  margin: 0 auto;
-  min-height: 600px;
-  width: 1200px;
-  background-image: url("../images/userdashoboardhome.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+}
+
+/* ============================================================
+   HEALTHCARE SERVICES
+   ============================================================ */
+.pdh-services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  border: 0.5px solid lightgray;
-  border-radius: 10px;
+}
+
+.pdh-service-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s;
+}
+
+.pdh-service-card:hover {
+  border-color: #d1d5db;
+}
+
+.pdh-service-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.pdh-service-icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.pdh-service-icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.pdh-service-icon--purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.pdh-service-icon--teal {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
+.pdh-service-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.pdh-service-desc {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ============================================================
+   PERSONALIZED HEALTH
+   ============================================================ */
+.pdh-personal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.pdh-personal-card {
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  padding: 26px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s;
+}
+
+.pdh-personal-card:hover {
+  border-color: #d1d5db;
+}
+
+.pdh-personal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.pdh-personal-icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.pdh-personal-icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.pdh-personal-icon--purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.pdh-personal-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 14px;
+}
+
+.pdh-personal-detail {
+  flex: 1;
+  margin-bottom: 16px;
+}
+
+.pdh-personal-doc {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 3px;
+}
+
+.pdh-personal-meta {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 8px;
+}
+
+.pdh-personal-meta--light {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.pdh-personal-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+}
+
+.pdh-personal-time svg {
+  color: #6b7280;
+}
+
+.pdh-personal-support {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.pdh-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.pdh-activity-check {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.pdh-personal-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.pdh-personal-cta:hover {
+  color: #15803d;
+}
+
+/* ============================================================
+   AI HEALTH CHECK CTA
+   ============================================================ */
+.pdh-ai-cta {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+  border-top: 1px solid #dcfce7;
+  border-bottom: 1px solid #dcfce7;
+}
+
+.pdh-ai-cta-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 72px 32px;
+}
+
+.pdh-ai-cta-content {
+  text-align: center;
+}
+
+.pdh-ai-cta-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.pdh-ai-cta-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #0f172a;
+  margin: 0 0 12px;
+}
+
+.pdh-ai-cta-text {
+  font-size: 15.5px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+.pdh-ai-disclaimer {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 20px;
+  text-align: left;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.pdh-ai-disclaimer svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #d1d5db;
+}
+
+/* ============================================================
+   FINAL CTA
+   ============================================================ */
+.pdh-final-cta {
+  background: linear-gradient(135deg, #166534 0%, #15803d 40%, #16a34a 100%);
   position: relative;
   overflow: hidden;
 }
 
-.main_head::before {
-  content: "";
+/* Subtle decorative shapes */
+.pdh-final-cta::before {
+  content: '';
   position: absolute;
-  inset: 0;
-  background: rgba(40, 80, 60, 0.45);
-  z-index: 0;
-  border-radius: 10px;
+  top: -80px;
+  right: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
 }
 
-.main_head > * {
+.pdh-final-cta::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.pdh-final-cta-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 72px 32px;
+  text-align: center;
   position: relative;
   z-index: 1;
 }
 
-.head_title {
-  font-size: 50px;
+.pdh-final-cta-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 32px;
   font-weight: 700;
-  text-align: start;
-  bottom: 60px;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  margin-left: 10px;
-  margin-top: 20px;
-  width: 70%;
-  min-width: 400px;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin: 0 0 14px;
 }
 
-.head_para {
-  font-size: 20px;
-  color: white;
-  text-align: start;
-  margin-left: 0px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
-  font-weight: 500;
-  width: 40%;
-  min-width: 400px;
-  margin-top: -20px;
-  margin-bottom: 20px;
+.pdh-final-cta-sub {
+  font-size: 15.5px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+  margin: 0 0 32px;
 }
 
-.head_btn {
-  background-color: lightgreen;
-  border: 1px solid green;
-  padding: 10px 20px;
-  border-radius: 30px;
-  color: black;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 30px;
-  margin-left: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-.head_btn:hover {
-  background-color: #388e3c;
-  color: white;
-  transform: translateY(-2px);
-}
-.services {
+.pdh-final-cta-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  margin: 50px auto;
-  width: 1200px;
-  gap: 20px;
-}
-.service_title {
-  font-size: 30px;
-  font-weight: 700;
-  color: #333;
-  margin-top: 60px;
-  margin-left: 10px;
-  margin-bottom: 20px;
-}
-
-.service_cards {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  width: 100%;
-}
-.service_card {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  flex: 1;
-  text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-.service_image1 {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 15px;
-}
-.service_image2 {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 15px;
-}
-.service_image3 {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 15px;
-}
-.service_image4 {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 15px;
-}
-.service_name {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 10px;
-}
-.service_desc {
-  font-size: 16px;
-  color: #666;
-  line-height: 1.5;
-}
-.service_card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-.featured_doctors {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  margin: 50px auto;
-  width: 1200px;
-  gap: 20px;
-}
-.feature_title {
-  font-size: 30px;
-  font-weight: 700;
-  color: #333;
-  margin-top: 60px;
-  margin-left: 150px;
-  margin-bottom: 20px;
-}
-.doctor_cards {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  width: 100%;
-}
-.doctor_card {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  flex: 1;
-  text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-.doctor_image1 {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 15px;
-}
-.doctor_image2 {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 15px;
-}
-.doctor_image3 {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 15px;
-}
-.doctor_name {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 10px;
-}
-.doctor_specialty {
-  font-size: 16px;
-  color: #666;
-  line-height: 1.5;
-}
-.doctor_card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-.ready {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 50px auto;
-  width: 1200px;
-  gap: 20px;
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.ready_title {
-  font-size: 40px;
+
+.pdh-final-cta .pdh-btn-primary {
+  background: #ffffff;
+  color: #15803d;
+}
+
+.pdh-final-cta .pdh-btn-primary:hover {
+  background: #f0fdf4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.pdh-footer {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fafcfb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pdh-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.pdh-footer-brand {
+  flex-shrink: 0;
+}
+
+.pdh-footer-name {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 18px;
   font-weight: 700;
-  color: black;
-  margin-bottom: 20px;
+  color: #15803d;
+  letter-spacing: -0.3px;
+  display: block;
+  margin-bottom: 6px;
 }
-.ready_btn {
-  background-color: lightgreen;
-  border: 1px solid green;
-  padding: 15px 30px;
-  border-radius: 30px;
-  color: black;
-  font-size: 20px;
-  font-weight: 600;
+
+.pdh-footer-tagline {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.pdh-footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pdh-footer-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.pdh-footer-link:hover {
+  color: #111827;
+}
+
+.pdh-footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pdh-footer-bottom p {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET (≤1024px)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .pdh-hero-inner {
+    gap: 36px;
+    padding: 48px 24px 44px;
+  }
+
+  .pdh-quick-grid,
+  .pdh-services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pdh-doctors-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pdh-doctors-grid .pdh-doctor-card:last-child {
+    grid-column: 1 / -1;
+    max-width: 400px;
+    justify-self: center;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — MOBILE (≤768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .pdh-hero-inner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 32px;
+    padding: 40px 20px 36px;
+  }
+
+  .pdh-hero-text {
+    text-align: center;
+    order: 1;
+  }
+
+  .pdh-hero-visual {
+    order: 2;
+  }
+
+  .pdh-hero-sub {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pdh-hero-actions {
+    justify-content: center;
+  }
+
+  .pdh-hero-trust {
+    justify-content: center;
+  }
+
+  .pdh-hero-h1 {
+    font-size: 34px;
+  }
+
+  .pdh-hero-img {
+    max-width: 440px;
+  }
+
+  .pdh-section {
+    padding: 56px 20px;
+  }
+
+  .pdh-section-title {
+    font-size: 24px;
+  }
+
+  .pdh-section-sub {
+    font-size: 14px;
+  }
+
+  .pdh-section-header--row {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .pdh-quick-grid,
+  .pdh-services-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .pdh-doctors-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .pdh-doctors-grid .pdh-doctor-card:last-child {
+    max-width: 100%;
+  }
+
+  .pdh-personal-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .pdh-ai-cta-inner {
+    padding: 56px 20px;
+  }
+
+  .pdh-ai-cta-title {
+    font-size: 24px;
+  }
+
+  .pdh-final-cta-inner {
+    padding: 56px 20px;
+  }
+
+  .pdh-final-cta-title {
+    font-size: 26px;
+  }
+
+  .pdh-footer-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 32px 20px 20px;
+  }
+
+  .pdh-footer-nav {
+    justify-content: center;
+  }
+
+  .pdh-footer-bottom {
+    text-align: center;
+    padding: 16px 20px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL MOBILE (≤540px)
+   ============================================================ */
+@media (max-width: 540px) {
+  .pdh-hero-h1 {
+    font-size: 28px;
+    letter-spacing: -0.6px;
+  }
+
+  .pdh-hero-sub {
+    font-size: 14.5px;
+  }
+
+  .pdh-hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .pdh-btn-primary,
+  .pdh-btn-outline {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pdh-quick-grid,
+  .pdh-services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdh-quick-card,
+  .pdh-service-card {
+    padding: 22px 20px;
+  }
+
+  .pdh-final-cta-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .pdh-final-cta .pdh-btn-primary,
+  .pdh-final-cta .pdh-btn-outline--white {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .pdh-quick-card,
+  .pdh-doctor-card,
+  .pdh-service-card,
+  .pdh-personal-card,
+  .pdh-btn-primary,
+  .pdh-btn-outline {
+    transition: none;
+  }
 }
