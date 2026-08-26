@@ -393,7 +393,11 @@ Respond ONLY with valid JSON, no additional text.`;
     if (error.response?.status === 429) {
       return res.status(429).json({ error: "Too many requests. Please wait a moment." });
     }
-    console.error("Groq API Error (interactive):", error.response?.status || error.message);
-    res.status(503).json({ error: "AI service is temporarily unavailable. Please try again." });
+    console.error("Groq API Error (interactive):", error.response?.data || error.message);
+    const details = error.response?.data?.error?.message || error.message;
+    res.status(503).json({ 
+      error: "AI service is temporarily unavailable. Please try again.",
+      details: process.env.NODE_ENV !== "production" ? details : undefined
+    });
   }
 };

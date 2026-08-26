@@ -97,18 +97,43 @@ const updateDoctorProfile = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, doctor, "Profile updated successfully"));
 });
 
-// --- THIS IS THE NEW FUNCTION ---
-// It finds all doctors in the database and sends them back as a list.
 const getAllDoctors = asyncHandler(async (req, res) => {
-    const doctors = await Doctor.find({}).select("-password -confirmPassword -refreshToken");
+    const { search, specialization, sort } = req.query;
 
-    if (!doctors) {
-        throw new ApiError(404, "No doctors found in the database");
+    let query = {
+        isBlocked: { $ne: true },
+        approvalStatus: { $ne: "rejected" }
+    };
+
+    if (specialization && specialization !== "All" && specialization !== "all") {
+        query.specialization = { $regex: new RegExp(`^${specialization.trim()}$`, "i") };
     }
+
+    if (search && search.trim()) {
+        const searchRegex = new RegExp(search.trim(), "i");
+        query.$or = [
+            { fullname: searchRegex },
+            { specialization: searchRegex },
+            { clinic: searchRegex },
+            { degree: searchRegex },
+            { bio: searchRegex }
+        ];
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sort === "experience") {
+        sortOption = { experience: -1 };
+    } else if (sort === "name") {
+        sortOption = { fullname: 1 };
+    }
+
+    const doctors = await Doctor.find(query)
+        .select("-password -confirmPassword -refreshToken")
+        .sort(sortOption);
 
     return res
         .status(200)
-        .json(new ApiResponse(200, doctors, "All doctors fetched successfully"));
+        .json(new ApiResponse(200, doctors || [], "All doctors fetched successfully"));
 });
 
 // Set available timeslots for a doctor
