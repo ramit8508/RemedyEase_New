@@ -31,23 +31,59 @@ const NAV_GROUPS = [
   {
     groupTitle: "MAIN",
     items: [
-      { to: "/doctor/dashboard", label: "Dashboard", icon: FiGrid, exact: true },
-      { to: "/doctor/dashboard/appointments", label: "Appointments", icon: FiCalendar },
-      { to: "/doctor/dashboard/history", label: "Patients & History", icon: FiUsers },
-      { to: "/doctor/dashboard/chat", label: "Messages & Chat", icon: FiMessageSquare },
+      {
+        to: "/doctor/dashboard",
+        aliases: ["/doctor/dashboard", "/doctor/dashboard/", "/doctor/dashboard/home"],
+        label: "Dashboard",
+        icon: FiGrid,
+        exact: true,
+      },
+      {
+        to: "/doctor/dashboard/appointments",
+        aliases: ["/doctor/dashboard/appointments"],
+        label: "Appointments",
+        icon: FiCalendar,
+      },
+      {
+        to: "/doctor/dashboard/history",
+        aliases: ["/doctor/dashboard/history", "/doctor/dashboard/patients"],
+        label: "Patients & History",
+        icon: FiUsers,
+      },
+      {
+        to: "/doctor/dashboard/chat",
+        aliases: ["/doctor/dashboard/chat", "/doctor/dashboard/messages"],
+        label: "Messages & Chat",
+        icon: FiMessageSquare,
+      },
     ],
   },
   {
     groupTitle: "CLINICAL",
     items: [
-      { to: "/doctor/dashboard/ai", label: "AI Health Assistant", icon: FiCpu },
-      { to: "/doctor/dashboard/availability", label: "Availability", icon: FiClock },
+      {
+        to: "/doctor/dashboard/ai",
+        aliases: ["/doctor/dashboard/ai", "/doctor/dashboard/ai-assistant"],
+        label: "AI Health Assistant",
+        icon: FiCpu,
+      },
+      {
+        to: "/doctor/dashboard/availability",
+        aliases: ["/doctor/dashboard/availability"],
+        label: "Availability",
+        icon: FiClock,
+      },
     ],
   },
   {
     groupTitle: "ACCOUNT",
     items: [
-      { to: "/doctor/dashboard/profile", label: "Doctor Profile", icon: FiUser },
+      {
+        to: "/doctor/dashboard/profile",
+        aliases: ["/doctor/dashboard/profile"],
+        label: "Doctor Profile",
+        icon: FiUser,
+      },
     ],
   },
 ];
@@ -106,14 +142,15 @@ export default function DoctorDashboard() {
   };
 
   const isActive = (item) => {
-    if (item.exact) {
-      return (
-        location.pathname === "/doctor/dashboard" ||
-        location.pathname === "/doctor/dashboard/" ||
-        location.pathname === "/doctor/dashboard/home"
+    const path = location.pathname.toLowerCase();
+    if (item.aliases) {
+      return item.aliases.some((alias) =>
+        alias === "/doctor/dashboard"
+          ? path === "/doctor/dashboard" || path === "/doctor/dashboard/" || path === "/doctor/dashboard/home"
+          : path.startsWith(alias)
       );
     }
-    return location.pathname.startsWith(item.to);
+    return path.startsWith(item.to);
   };
 
   const getBreadcrumbTitle = () => {
@@ -138,18 +175,18 @@ export default function DoctorDashboard() {
       {mobileOpen && (
         <div
           className="ap-modal-backdrop"
-          style={{ zIndex: 95 }}
+          style={{ zIndex: 950 }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* ─── Doctor Fixed Sidebar (264px) ─── */}
+      {/* ─── 1. FIXED DOCTOR SIDEBAR (100vh Permanently Fixed on Desktop) ─── */}
       <aside
         className={`dd-sidebar ${sidebarCollapsed ? "dd-sidebar--collapsed" : ""} ${
           mobileOpen ? "dd-sidebar--mobile-open" : ""
         }`}
       >
-        {/* Top Brand Area */}
+        {/* Brand Header */}
         <div className="dd-sidebar-header">
           <Link
             to="/doctor/dashboard"
@@ -176,7 +213,7 @@ export default function DoctorDashboard() {
           </button>
         </div>
 
-        {/* Compact Doctor Profile Box */}
+        {/* Compact Doctor Profile Card */}
         {!sidebarCollapsed && doctor && (
           <div className="dd-sidebar-profile">
             <div className="dd-profile-avatar-wrap">
@@ -205,7 +242,7 @@ export default function DoctorDashboard() {
           </div>
         )}
 
-        {/* Grouped Navigation */}
+        {/* Middle Scrollable Navigation List */}
         <nav className="dd-nav">
           {NAV_GROUPS.map((group) => (
             <div key={group.groupTitle}>
@@ -234,9 +271,8 @@ export default function DoctorDashboard() {
           ))}
         </nav>
 
-        {/* Pinned Bottom Sidebar Section */}
+        {/* Pinned Bottom Status & Sign Out */}
         <div className="dd-sidebar-bottom">
-          {/* Availability status card */}
           {!sidebarCollapsed && (
             <div
               className="dd-availability-card"
@@ -263,7 +299,6 @@ export default function DoctorDashboard() {
             </div>
           )}
 
-          {/* Sign out button */}
           <button
             type="button"
             className="dd-logout-btn"
@@ -276,9 +311,9 @@ export default function DoctorDashboard() {
         </div>
       </aside>
 
-      {/* ─── Main Content Area ─── */}
-      <main className="dd-main">
-        {/* Top Header (Height 68px) */}
+      {/* ─── 2. INDEPENDENTLY SCROLLING MAIN CONTENT (Margin-Left matches Sidebar) ─── */}
+      <main className={`dd-main ${sidebarCollapsed ? "dd-main--collapsed" : ""}`}>
+        {/* Top Header (Height 64px, Sticky at top of Main Content) */}
         <header className="dd-topbar">
           <div className="dd-topbar-left">
             <button
@@ -423,16 +458,19 @@ export default function DoctorDashboard() {
           </div>
         </header>
 
-        {/* Viewport content */}
+        {/* Viewport Content */}
         <div className="dd-content-container">
           <Routes>
             <Route index element={<DoctorHome />} />
             <Route path="home" element={<DoctorHome />} />
             <Route path="appointments" element={<DoctorAppointments />} />
             <Route path="history" element={<DoctorHistory />} />
+            <Route path="patients" element={<DoctorHistory />} />
             <Route path="chat" element={<DoctorChat />} />
+            <Route path="messages" element={<DoctorChat />} />
             <Route path="availability" element={<DoctorAvailability />} />
             <Route path="ai" element={<DoctorAi />} />
+            <Route path="ai-assistant" element={<DoctorAi />} />
             <Route path="profile" element={<DoctorProfile />} />
             <Route path="*" element={<Navigate to="/doctor/dashboard" replace />} />
           </Routes>
