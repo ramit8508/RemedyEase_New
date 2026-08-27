@@ -18,7 +18,6 @@ import {
   FiActivity,
   FiFileText,
 } from "react-icons/fi";
-import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorDashboard.css";
 
@@ -50,7 +49,6 @@ export default function DoctorHome() {
   });
 
   // Active Modals state
-  const [selectedAppointmentForChat, setSelectedAppointmentForChat] = useState(null);
   const [selectedAppointmentForVideo, setSelectedAppointmentForVideo] = useState(null);
   const [selectedPatientModal, setSelectedPatientModal] = useState(null);
 
@@ -342,15 +340,6 @@ export default function DoctorHome() {
         </div>
       )}
 
-      {/* Live Chat Modal View */}
-      {selectedAppointmentForChat && (
-        <LiveChat
-          appointmentId={selectedAppointmentForChat._id}
-          currentUser={doctor}
-          userType="doctor"
-          onClose={() => setSelectedAppointmentForChat(null)}
-        />
-      )}
 
       {/* Page Header */}
       <div className="dd-page-header">
@@ -543,8 +532,12 @@ export default function DoctorHome() {
                         <button
                           type="button"
                           className="dd-btn-action"
-                          onClick={() => setSelectedAppointmentForChat(appt)}
-                          title="Start clinical chat session"
+                          onClick={() =>
+                            navigate(`/doctor/dashboard/chat?appointmentId=${appt._id}`, {
+                              state: { activeAppointmentId: appt._id, patientName: appt.userName },
+                            })
+                          }
+                          title="Open messages & chat with patient"
                         >
                           <FiMessageSquare size={13} /> Chat
                         </button>
@@ -829,10 +822,12 @@ export default function DoctorHome() {
                 onClick={() => {
                   const apt = selectedPatientModal;
                   setSelectedPatientModal(null);
-                  setSelectedAppointmentForChat(apt);
+                  navigate(`/doctor/dashboard/chat?appointmentId=${apt._id}`, {
+                    state: { activeAppointmentId: apt._id, patientName: apt.userName },
+                  });
                 }}
               >
-                <FiMessageSquare size={13} /> Open Live Chat
+                <FiMessageSquare size={13} /> Open Messages & Chat
               </button>
               <button
                 type="button"

@@ -21,9 +21,7 @@ import {
   FiUser,
   FiActivity,
   FiList,
-  FiGrid,
 } from "react-icons/fi";
-import LiveChat from "../../components/LiveChat";
 import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorDashboard.css";
 
@@ -65,7 +63,6 @@ export default function DoctorAppointments() {
 
   // Modal states
   const [selectedAppointmentDetail, setSelectedAppointmentDetail] = useState(null);
-  const [selectedForChat, setSelectedForChat] = useState(null);
   const [selectedForVideo, setSelectedForVideo] = useState(null);
   const [prescriptionModalAppt, setPrescriptionModalAppt] = useState(null);
   const [rejectionModalAppt, setRejectionModalAppt] = useState(null);
@@ -488,16 +485,6 @@ export default function DoctorAppointments() {
         </div>
       )}
 
-      {/* Live Chat Modal View */}
-      {selectedForChat && (
-        <LiveChat
-          appointmentId={selectedForChat._id}
-          currentUser={doctor}
-          userType="doctor"
-          onClose={() => setSelectedForChat(null)}
-        />
-      )}
-
       {/* Video Call Modal View */}
       {selectedForVideo && (
         <VideoCall
@@ -731,7 +718,12 @@ export default function DoctorAppointments() {
                       <button
                         type="button"
                         className="dd-btn-action dd-btn-action--approve"
-                        onClick={() => setSelectedForChat(appt)}
+                        onClick={() =>
+                          navigate(`/doctor/dashboard/chat?appointmentId=${appt._id}`, {
+                            state: { activeAppointmentId: appt._id, patientName: appt.userName },
+                          })
+                        }
+                        title="Open messages & chat with patient"
                       >
                         <FiMessageSquare size={13} /> Chat
                       </button>
@@ -950,8 +942,12 @@ export default function DoctorAppointments() {
                             <button
                               type="button"
                               className="dd-btn-action dd-btn-action--approve"
-                              onClick={() => setSelectedForChat(appt)}
-                              title="Open chat consultation"
+                              onClick={() =>
+                                navigate(`/doctor/dashboard/chat?appointmentId=${appt._id}`, {
+                                  state: { activeAppointmentId: appt._id, patientName: appt.userName },
+                                })
+                              }
+                              title="Open messages & chat"
                             >
                               <FiMessageSquare size={13} /> Chat
                             </button>
@@ -968,8 +964,12 @@ export default function DoctorAppointments() {
                           <button
                             type="button"
                             className="dd-btn-action"
-                            onClick={() => setSelectedForChat(appt)}
-                            title="View chat history"
+                            onClick={() =>
+                              navigate(`/doctor/dashboard/chat?appointmentId=${appt._id}`, {
+                                state: { activeAppointmentId: appt._id, patientName: appt.userName },
+                              })
+                            }
+                            title="View chat messages"
                           >
                             <FiMessageSquare size={13} /> Chat Log
                           </button>
@@ -1349,15 +1349,6 @@ export default function DoctorAppointments() {
         </div>
       )}
 
-      {/* ─── Live Chat Modal ─── */}
-      {selectedForChat && (
-        <LiveChat
-          appointmentId={selectedForChat._id}
-          currentUser={doctor}
-          userType="doctor"
-          onClose={() => setSelectedForChat(null)}
-        />
-      )}
 
       {/* ─── Video Consultation Modal ─── */}
       {selectedForVideo && (

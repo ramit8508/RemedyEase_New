@@ -113,16 +113,31 @@ export default function DoctorChat() {
         }
       }
 
-      setConversations(convList);
-
       if (targetAptId) {
-        const found = convList.find((c) => c.appointmentId === targetAptId);
+        let found = convList.find((c) => c.appointmentId === targetAptId);
+        if (!found && location.state?.patientName) {
+          found = {
+            appointmentId: targetAptId,
+            userName: location.state.patientName,
+            userEmail: location.state.userEmail || "",
+            doctorEmail: doctorEmail,
+            doctorName: doctor?.fullname || "Doctor",
+            status: "confirmed",
+            symptoms: "",
+            lastMessage: null,
+            unreadCount: 0,
+          };
+          convList = [found, ...convList];
+        }
         if (found) {
           setActiveConv(found);
           setMobileView("chat");
+          setConversations(convList);
           return;
         }
       }
+
+      setConversations(convList);
 
       if (!activeConvRef.current && convList.length > 0) {
         setActiveConv(convList[0]);
@@ -132,11 +147,27 @@ export default function DoctorChat() {
     } finally {
       if (!silent) setLoadingConv(false);
     }
-  }, [doctorEmail, location.search, location.state]);
+  }, [doctor, doctorEmail, location.search, location.state]);
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  // Fast sync when location state or search changes and conversations are already loaded
+  useEffect(() => {
+    const targetAptId =
+      location.state?.activeAppointmentId ||
+      location.state?.appointmentId ||
+      new URLSearchParams(location.search).get("appointmentId");
+
+    if (targetAptId && conversations.length > 0) {
+      const found = conversations.find((c) => c.appointmentId === targetAptId);
+      if (found) {
+        setActiveConv(found);
+        setMobileView("chat");
+      }
+    }
+  }, [location.search, location.state, conversations]);
 
   // Fetch messages for active conversation
   const fetchMessages = useCallback(async (aptId) => {
