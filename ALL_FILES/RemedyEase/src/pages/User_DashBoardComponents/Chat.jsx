@@ -46,6 +46,8 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [failedMessage, setFailedMessage] = useState("");
   const [error, setError] = useState("");
   const [showVideoCall, setShowVideoCall] = useState(false);
 
@@ -139,6 +141,7 @@ export default function Chat() {
   const fetchMessages = useCallback(async (appointmentId) => {
     if (!appointmentId) return;
     setLoadingMessages(true);
+    setSendError("");
 
     try {
       const res = await fetch(`/api/v1/live/chat/history/${appointmentId}`);
@@ -181,7 +184,7 @@ export default function Chat() {
       return;
     }
 
-    const { appointmentId, chatRoomId } = selectedConversation;
+    const { appointmentId, chatRoomId, callRoomId } = selectedConversation;
 
     // Load message history
     fetchMessages(appointmentId);
@@ -200,14 +203,16 @@ export default function Chat() {
         socket.emit("join-appointment-room", {
           appointmentId,
           chatRoomId,
-          callRoomId: selectedConversation.callRoomId,
+          callRoomId,
+          userId: userEmail,
+          userName: user.fullname || user.email || "Patient",
+          userType: "user",
         });
       });
 
       socket.on("receive-chat-message", (incomingMsg) => {
         if (incomingMsg.appointmentId === appointmentId) {
           setMessages((prev) => {
-            // Avoid duplicate messages
             const exists = prev.some(
               (m) =>
                 (m._id && m._id === incomingMsg._id) ||
@@ -218,6 +223,25 @@ export default function Chat() {
           });
           markAsRead(appointmentId);
         }
+
+        // Update preview in conversation list
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.appointmentId === incomingMsg.appointmentId) {
+              const isCurrent = appointmentId === incomingMsg.appointmentId;
+              return {
+                ...c,
+                lastMessage: incomingMsg,
+                unreadCount: isCurrent ? 0 : (c.unreadCount || 0) + 1,
+              };
+            }
+            return c;
+          })
+        );
+      });
+
+      socket.on("unread-count-changed", () => {
+        fetchConversations(true);
       });
     } catch (err) {
       console.warn("Socket initialization error:", err);
@@ -232,10 +256,11 @@ export default function Chat() {
       clearInterval(pollInterval);
       if (socketRef.current) {
         socketRef.current.off("receive-chat-message");
+        socketRef.current.off("unread-count-changed");
         socketRef.current.disconnect();
       }
     };
-  }, [selectedConversation, fetchMessages, markAsRead]);
+  }, [selectedConversation, fetchMessages, markAsRead, userEmail, user.fullname, user.email, fetchConversations]);
 
   // Auto-scroll to bottom of message list
   useEffect(() => {
@@ -243,9 +268,9 @@ export default function Chat() {
   }, [messages]);
 
   // 5. Send Message Handler (with instant optimistic render + HTTP fallback)
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e, retryText = null) => {
     e?.preventDefault();
-    const text = newMessage.trim();
+    const text = (retryText !== null ? retryText : newMessage).trim();
     if (!text || !selectedConversation || sendingMessage) return;
 
     const currentSenderName = user.fullname || user.name || "Patient";
@@ -267,8 +292,9 @@ export default function Chat() {
 
     // Optimistically append message
     setMessages((prev) => [...prev, optimisticMessage]);
-    setNewMessage("");
+    if (retryText === null) setNewMessage("");
     setSendingMessage(true);
+    setSendError("");
 
     // Update conversation preview snippet in sidebar
     setConversations((prev) =>
@@ -306,11 +332,14 @@ export default function Chat() {
         }),
       });
 
-      if (!res.ok) {
-        console.warn("Message REST sync issue:", await res.text());
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Message delivery failed");
       }
     } catch (err) {
       console.error("Message send error:", err);
+      setSendError("Message could not be sent. Please try again.");
+      setFailedMessage(text);
     } finally {
       if (isMountedRef.current) {
         setSendingMessage(false);
@@ -526,11 +555,11 @@ export default function Chat() {
 
                   <div className="pc-chat-doctor-title">
                     <h3>
-                      Dr. {selectedConversation.doctorName}
+                      Chat with Dr. {selectedConversation.doctorName}
                       <FiUserCheck size={14} color="#16a34a" title="Verified Practitioner" />
                     </h3>
                     <p>
-                      {selectedConversation.doctorSpecialization} •{" "}
+                      <strong style={{ color: "#16a34a" }}>● Active Consultation</strong> • {selectedConversation.doctorSpecialization} •{" "}
                       {selectedConversation.doctorOnline ? "🟢 Online" : "🟡 In Clinic"}
                     </p>
                   </div>
@@ -542,7 +571,7 @@ export default function Chat() {
                     className="pc-btn-header-action"
                     style={{ background: "#16a34a", color: "#ffffff", borderColor: "#16a34a" }}
                     onClick={() => setShowVideoCall(true)}
-                    title="Launch Video Consultation"
+                    title="Return to Video Consultation"
                   >
                     <FiVideo size={14} /> Video Call
                   </button>
@@ -620,6 +649,45 @@ export default function Chat() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Inline Send Error Banner */}
+              {sendError && (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "8px",
+                    padding: "8px 14px",
+                    margin: "0 16px 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    color: "#b91c1c",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <FiAlertCircle size={14} />
+                    <span>{sendError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage(null, failedMessage)}
+                    style={{
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
 
               {/* Input Bar */}
               <div className="pc-input-bar">

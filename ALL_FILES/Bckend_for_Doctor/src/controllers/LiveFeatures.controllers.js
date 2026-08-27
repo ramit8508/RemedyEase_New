@@ -51,10 +51,48 @@ export const sendChatMessage = asyncHandler(async (req, res) => {
   // Emit to Socket.io if available
   const io = req.app.get('io');
   if (io) {
-    io.to(appointment.chatRoomId).emit('receive-chat-message', {
+    const msgPayload = {
       ...chatMessage.toObject(),
       timestamp: chatMessage.createdAt
-    });
+    };
+    io.to(appointment.chatRoomId).emit('receive-chat-message', msgPayload);
+    io.to(`appointment_${appointmentId}`).emit('receive-chat-message', msgPayload);
+  }
+
+  // If patient sent message to doctor, create a notification in DB for doctor bell!
+  if (senderType === 'user' && appointment.doctorEmail) {
+    try {
+      const doctor = await Doctor.findOne({ email: appointment.doctorEmail.toLowerCase() });
+      if (doctor) {
+        const notif = await Notification.create({
+          recipientDoctorId: doctor._id,
+          recipientDoctorEmail: appointment.doctorEmail.toLowerCase(),
+          type: "NEW_MESSAGE",
+          title: "New Message",
+          message: `${senderName}: ${message.length > 50 ? message.substring(0, 47) + '...' : message}`,
+          patientName: senderName,
+          patientEmail: appointment.userEmail,
+          appointmentId: appointment._id,
+          date: appointment.date,
+          time: appointment.time,
+          isRead: false
+        });
+
+        if (io) {
+          io.emit("new-notification", {
+            notification: notif,
+            recipientDoctorEmail: appointment.doctorEmail.toLowerCase(),
+            recipientDoctorId: doctor._id,
+            type: "NEW_MESSAGE",
+            appointmentId: appointment._id
+          });
+          io.to(`doctor_${appointment.doctorEmail.toLowerCase()}`).emit("new-notification", notif);
+          io.emit("unread-count-changed", { doctorEmail: appointment.doctorEmail.toLowerCase() });
+        }
+      }
+    } catch (notifErr) {
+      console.warn("[LiveFeatures] Error creating message notification:", notifErr.message);
+    }
   }
 
   return res.status(201).json(new ApiResponse(201, chatMessage, "Message sent successfully"));
@@ -405,6 +443,23 @@ export const markMessagesAsRead = asyncHandler(async (req, res) => {
     { appointmentId, senderType: senderTypeToMark, isRead: false },
     { $set: { isRead: true, readAt: new Date() } }
   );
+
+  // If doctor read messages, mark matching notifications as read
+  if (readerType === 'doctor') {
+    try {
+      await Notification.updateMany(
+        { appointmentId, type: "NEW_MESSAGE", isRead: false },
+        { $set: { isRead: true } }
+      );
+    } catch (notifErr) {
+      console.warn("[LiveFeatures] Error marking notifications as read:", notifErr.message);
+    }
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('unread-count-changed', { appointmentId, readerType });
+  }
 
   return res.status(200).json(new ApiResponse(200, {}, "Messages marked as read"));
 });

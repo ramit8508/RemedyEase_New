@@ -828,15 +828,24 @@ export default function Appointments() {
                           <>
                             <button
                               className="apt-btn-live-chat"
-                              onClick={() => startLiveChat(appt)}
+                              onClick={() => {
+                                navigate(`/user/dashboard/chat?appointmentId=${appt._id}`, {
+                                  state: { activeAppointmentId: appt._id, doctorEmail: appt.doctorEmail },
+                                });
+                              }}
                               type="button"
+                              title="Open Live Chat with doctor"
                             >
                               <FiMessageCircle size={14} /> Live Chat
                             </button>
                             <button
                               className="apt-btn-live-video"
-                              onClick={() => startVideoCall(appt)}
+                              onClick={() => {
+                                setSelectedAppointmentForLive(appt);
+                                setShowVideoCall(true);
+                              }}
                               type="button"
+                              title="Launch Video Consultation"
                             >
                               <FiVideo size={14} /> Video Call
                             </button>

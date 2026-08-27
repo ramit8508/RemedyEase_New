@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FiCalendar,
   FiClock,
@@ -31,6 +31,7 @@ const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function DoctorAppointments() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   let doctor = null;
   try {
@@ -1011,14 +1012,28 @@ export default function DoctorAppointments() {
                           )}
 
                           {appt.status?.toLowerCase() === "confirmed" && (
-                            <button
-                              type="button"
-                              className="dd-btn-action dd-btn-action--approve"
-                              onClick={() => setSelectedForVideo(appt)}
-                              title="Start Video Consultation"
-                            >
-                              <FiVideo size={13} /> Call
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="dd-btn-action dd-btn-action--approve"
+                                onClick={() => setSelectedForVideo(appt)}
+                                title="Start Video Consultation"
+                              >
+                                <FiVideo size={13} /> Call
+                              </button>
+                              <button
+                                type="button"
+                                className="dd-btn-action"
+                                onClick={() =>
+                                  navigate(`/doctor/dashboard/chat?appointmentId=${appt._id}`, {
+                                    state: { activeAppointmentId: appt._id, patientName: appt.userName },
+                                  })
+                                }
+                                title="Open clinical chat with patient"
+                              >
+                                <FiMessageSquare size={13} /> Chat
+                              </button>
+                            </>
                           )}
 
                           {["confirmed", "completed"].includes(appt.status?.toLowerCase()) && (
@@ -1162,7 +1177,9 @@ export default function DoctorAppointments() {
                     onClick={() => {
                       const apt = selectedAppointmentDetail;
                       setSelectedAppointmentDetail(null);
-                      setSelectedForChat(apt);
+                      navigate(`/doctor/dashboard/chat?appointmentId=${apt._id}`, {
+                        state: { activeAppointmentId: apt._id, patientName: apt.userName },
+                      });
                     }}
                   >
                     <FiMessageSquare size={13} /> Chat

@@ -23,6 +23,7 @@ const NotificationSchema = new mongoose.Schema(
         "APPOINTMENT_CANCELLED",
         "APPOINTMENT_CONFIRMED",
         "LIVE_SESSION",
+        "NEW_MESSAGE",
         "GENERAL",
       ],
       default: "APPOINTMENT_REQUEST",

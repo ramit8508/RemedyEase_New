@@ -222,12 +222,14 @@ export default function DoctorDashboard() {
       socket.on("new-notification", handleIncomingNotification);
       socket.on("new-appointment-request", handleIncomingNotification);
       socket.on("new-appointment-notification", handleIncomingNotification);
+      socket.on("unread-count-changed", () => fetchNotifications());
 
       return () => {
         if (socket) {
           socket.off("new-notification", handleIncomingNotification);
           socket.off("new-appointment-request", handleIncomingNotification);
           socket.off("new-appointment-notification", handleIncomingNotification);
+          socket.off("unread-count-changed");
           socket.disconnect();
         }
       };
@@ -293,8 +295,12 @@ export default function DoctorDashboard() {
       }
     }
 
-    // Navigate to appointment if appointmentId exists
-    if (n.appointmentId) {
+    // Navigate to Chat or Appointments depending on notification type
+    if (n.type === "NEW_MESSAGE" && n.appointmentId) {
+      navigate(`/doctor/dashboard/chat?appointmentId=${n.appointmentId}`, {
+        state: { activeAppointmentId: n.appointmentId, patientName: n.patientName },
+      });
+    } else if (n.appointmentId) {
       navigate(`/doctor/dashboard/appointments?highlight=${n.appointmentId}`, {
         state: { highlightId: n.appointmentId },
       });

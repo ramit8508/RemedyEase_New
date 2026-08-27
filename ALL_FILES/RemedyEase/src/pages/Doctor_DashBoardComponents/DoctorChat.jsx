@@ -43,6 +43,8 @@ export default function DoctorChat() {
   const [loadingConv, setLoadingConv] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [failedMessage, setFailedMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
@@ -68,7 +70,7 @@ export default function DoctorChat() {
   }, [messages]);
 
   // Fetch all doctor conversations
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (silent = false) => {
     if (!doctorEmail) {
       setLoadingConv(false);
       return;
@@ -78,6 +80,8 @@ export default function DoctorChat() {
       location.state?.activeAppointmentId ||
       location.state?.appointmentId ||
       new URLSearchParams(location.search).get("appointmentId");
+
+    if (!silent) setLoadingConv(true);
 
     try {
       const res = await fetch(`/api/v1/live/chat/doctor-conversations/${doctorEmail}`);
@@ -94,6 +98,7 @@ export default function DoctorChat() {
           convList = apptData.data.map((a) => ({
             appointmentId: a._id,
             chatRoomId: a.chatRoomId,
+            callRoomId: a.callRoomId,
             userName: a.userName || a.userEmail?.split("@")[0] || "Patient",
             userEmail: a.userEmail,
             doctorEmail: a.doctorEmail,
@@ -125,7 +130,7 @@ export default function DoctorChat() {
     } catch (err) {
       console.error("Doctor conversations fetch error:", err);
     } finally {
-      setLoadingConv(false);
+      if (!silent) setLoadingConv(false);
     }
   }, [doctorEmail, location.search, location.state]);
 
@@ -137,6 +142,7 @@ export default function DoctorChat() {
   const fetchMessages = useCallback(async (aptId) => {
     if (!aptId) return;
     setLoadingMessages(true);
+    setSendError("");
 
     try {
       const res = await fetch(`/api/v1/live/chat/history/${aptId}`);
@@ -153,6 +159,11 @@ export default function DoctorChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ readerType: "doctor" }),
       }).catch(() => {});
+
+      // Clear local unread count for this conversation
+      setConversations((prev) =>
+        prev.map((c) => (c.appointmentId === aptId ? { ...c, unreadCount: 0 } : c))
+      );
     } catch (err) {
       console.error("Fetch messages error:", err);
     } finally {
@@ -178,8 +189,15 @@ export default function DoctorChat() {
 
     socket.on("connect", () => {
       setSocketConnected(true);
-      if (activeConvRef.current?.chatRoomId) {
-        socket.emit("join-chat-room", activeConvRef.current.chatRoomId);
+      if (activeConvRef.current) {
+        socket.emit("join-appointment-room", {
+          appointmentId: activeConvRef.current.appointmentId,
+          chatRoomId: activeConvRef.current.chatRoomId,
+          callRoomId: activeConvRef.current.callRoomId,
+          userId: doctorEmail,
+          userName: `Dr. ${doctor?.fullname || "Doctor"}`,
+          userType: "doctor",
+        });
       }
     });
 
@@ -188,59 +206,74 @@ export default function DoctorChat() {
     });
 
     socket.on("receive-chat-message", (newMsg) => {
-      if (
-        activeConvRef.current &&
-        newMsg.appointmentId === activeConvRef.current.appointmentId
-      ) {
+      const currentActive = activeConvRef.current;
+      if (currentActive && newMsg.appointmentId === currentActive.appointmentId) {
         setMessages((prev) => {
           if (prev.some((m) => m._id === newMsg._id)) return prev;
           return [...prev, newMsg];
         });
+
+        // Mark as read immediately since conversation is open
+        fetch(`/api/v1/live/chat/read/${currentActive.appointmentId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ readerType: "doctor" }),
+        }).catch(() => {});
       }
+
+      // Update conversations list with latest message and unread count
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.appointmentId === newMsg.appointmentId) {
+            const isCurrent = currentActive?.appointmentId === newMsg.appointmentId;
+            return {
+              ...c,
+              lastMessage: newMsg,
+              unreadCount: isCurrent ? 0 : (c.unreadCount || 0) + 1,
+            };
+          }
+          return c;
+        })
+      );
+    });
+
+    socket.on("unread-count-changed", () => {
+      fetchConversations(true);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [doctor?.fullname, doctorEmail, fetchConversations]);
 
   // Join room when active conversation changes
   useEffect(() => {
-    if (socketRef.current && activeConv?.chatRoomId) {
-      socketRef.current.emit("join-chat-room", activeConv.chatRoomId);
+    if (socketRef.current && activeConv) {
+      socketRef.current.emit("join-appointment-room", {
+        appointmentId: activeConv.appointmentId,
+        chatRoomId: activeConv.chatRoomId,
+        callRoomId: activeConv.callRoomId,
+        userId: doctorEmail,
+        userName: `Dr. ${doctor?.fullname || "Doctor"}`,
+        userType: "doctor",
+      });
     }
-  }, [activeConv?.chatRoomId]);
-
-  // Polling fallback
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeConv?.appointmentId) {
-        fetch(`/api/v1/live/chat/history/${activeConv.appointmentId}`)
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.success && Array.isArray(data.data)) {
-              setMessages((prev) => (data.data.length !== prev.length ? data.data : prev));
-            }
-          })
-          .catch(() => {});
-      }
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [activeConv?.appointmentId]);
+  }, [activeConv, doctor?.fullname, doctorEmail]);
 
   // Send Message
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e, retryText = null) => {
     if (e) e.preventDefault();
-    if (!inputValue.trim() || !activeConv || sendingMessage) return;
+    const text = (retryText !== null ? retryText : inputValue).trim();
+    if (!text || !activeConv || sendingMessage) return;
 
-    const text = inputValue.trim();
-    setInputValue("");
+    if (retryText === null) setInputValue("");
     setSendingMessage(true);
+    setSendError("");
 
     const tempMsg = {
       _id: `temp-${Date.now()}`,
       appointmentId: activeConv.appointmentId,
+      chatRoomId: activeConv.chatRoomId,
       senderId: doctorEmail,
       senderName: `Dr. ${doctor?.fullname || "Doctor"}`,
       senderType: "doctor",
@@ -250,6 +283,19 @@ export default function DoctorChat() {
     };
 
     setMessages((prev) => [...prev, tempMsg]);
+
+    // Emit over socket immediately
+    if (socketRef.current) {
+      socketRef.current.emit("send-chat-message", {
+        chatRoomId: activeConv.chatRoomId,
+        appointmentId: activeConv.appointmentId,
+        senderId: doctorEmail,
+        senderName: `Dr. ${doctor?.fullname || "Doctor"}`,
+        senderType: "doctor",
+        message: text,
+        createdAt: new Date().toISOString(),
+      });
+    }
 
     try {
       const res = await fetch("/api/v1/live/chat/send", {
@@ -269,9 +315,21 @@ export default function DoctorChat() {
         setMessages((prev) =>
           prev.map((m) => (m._id === tempMsg._id ? data.data : m))
         );
+        // Update conversation last message in list
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.appointmentId === activeConv.appointmentId
+              ? { ...c, lastMessage: data.data }
+              : c
+          )
+        );
+      } else {
+        throw new Error(data.message || "Sending failed");
       }
     } catch (err) {
       console.error("Error sending message:", err);
+      setSendError("Message could not be sent. Please try again.");
+      setFailedMessage(text);
     } finally {
       setSendingMessage(false);
     }
@@ -416,9 +474,9 @@ export default function DoctorChat() {
                   </div>
 
                   <div className="dc-chat-doc-info">
-                    <h3>{activeConv.userName}</h3>
+                    <h3>Chat with {activeConv.userName}</h3>
                     <span>
-                      Confirmed Consultation • {activeConv.appointmentDate} at {activeConv.appointmentTime}
+                      <strong style={{ color: "#16a34a" }}>● Active Consultation</strong> • {activeConv.appointmentDate} at {activeConv.appointmentTime}
                     </span>
                   </div>
                 </div>
@@ -431,7 +489,7 @@ export default function DoctorChat() {
                     type="button"
                     className="dd-btn-action dd-btn-action--approve"
                     onClick={() => setShowVideoCall(true)}
-                    title="Start Video Consultation"
+                    title="Return to Video Consultation"
                   >
                     <FiVideo size={13} /> Video Call
                   </button>
@@ -507,6 +565,45 @@ export default function DoctorChat() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Inline Send Error Banner */}
+              {sendError && (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "8px",
+                    padding: "8px 14px",
+                    margin: "0 16px 8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    color: "#b91c1c",
+                    fontSize: "12.5px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <FiAlertCircle size={14} />
+                    <span>{sendError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage(null, failedMessage)}
+                    style={{
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
 
               {/* Message Composer */}
               <div className="dc-composer-wrapper">
