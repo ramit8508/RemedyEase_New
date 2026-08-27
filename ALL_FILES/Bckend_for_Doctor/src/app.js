@@ -44,8 +44,11 @@ import aiRouter from "./routes/Ai.routes.js";
 import appointmentRouter from "./routes/Appointment.routes.js";
 import liveFeaturesRouter from "./routes/LiveFeatures.routes.js";
 import adminRouter from "./routes/Admin.routes.js";
+import notificationRouter from "./routes/Notification.routes.js";
 
 // --- Route Declarations ---
+app.use("/api/v1/doctors/notifications", notificationRouter);
+app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/doctors", doctorRouter);
 app.use("/api/v1/doctor-ai", aiRouter);
 app.use("/api/v1/appointments", appointmentRouter);

@@ -1,13 +1,15 @@
 import mongoose from "mongoose";
 
 const AppointmentSchema = new mongoose.Schema({
-  doctorEmail: { type: String, required: true },
+  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "doctors", index: true },
+  doctorEmail: { type: String, required: true, index: true },
   doctorName: { type: String, required: true },
-  userEmail: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  userEmail: { type: String, required: true, index: true },
   userName: { type: String, required: true },
-  date: { type: String, required: true },
+  date: { type: String, required: true, index: true },
   time: { type: String, required: true },
-  status: { type: String, default: "pending" },
+  status: { type: String, default: "pending", index: true },
   // Live Features
   callRoomId: { type: String, unique: true },
   chatRoomId: { type: String, unique: true },

@@ -181,25 +181,48 @@ export default function DoctorHome() {
     };
   }, [appointments, todayAppointments, conversations]);
 
+  const token =
+    localStorage.getItem("doctorAccessToken") ||
+    localStorage.getItem("doctorToken") ||
+    localStorage.getItem("token") ||
+    "";
+
   // Appointment Accept action
   const handleAcceptAppointment = async (apptId) => {
     setActionLoading(true);
     try {
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Doctor-Email": doctorEmail || "",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`/api/v1/appointments/confirm/${apptId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        body: JSON.stringify({ doctorEmail }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
+        const updatedAppt = data.data || { _id: apptId, status: "confirmed" };
         setAppointments((prev) =>
-          prev.map((a) => (a._id === apptId ? { ...a, status: "confirmed" } : a))
+          prev.map((a) => (a._id === apptId ? { ...a, ...updatedAppt, status: "confirmed" } : a))
         );
         showToast("✓ Appointment confirmed successfully!");
       } else {
-        alert(data.message || "Failed to confirm appointment");
+        const errMsg =
+          res.status === 404
+            ? "Appointment could not be found."
+            : res.status === 403
+            ? "You are not authorized to manage this appointment."
+            : res.status === 409
+            ? (data.message || "This appointment has already been processed.")
+            : (data.message || "Failed to confirm appointment");
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Accept error:", err);
+      alert("Unable to connect to server. Please check your connection.");
     } finally {
       setActionLoading(false);
     }
@@ -212,22 +235,44 @@ export default function DoctorHome() {
 
     setActionLoading(true);
     try {
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Doctor-Email": doctorEmail || "",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`/api/v1/appointments/cancel/${apptId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason || "Doctor unavailable" }),
+        headers,
+        body: JSON.stringify({
+          doctorEmail,
+          reason: reason || "Doctor unavailable",
+        }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
         setAppointments((prev) =>
-          prev.map((a) => (a._id === apptId ? { ...a, status: "cancelled" } : a))
+          prev.map((a) =>
+            a._id === apptId
+              ? { ...a, status: "cancelled", consultationNotes: reason }
+              : a
+          )
         );
-        showToast("Appointment rejected.");
+        showToast("Appointment rejected and timeslot released.");
       } else {
-        alert(data.message || "Failed to reject appointment");
+        const errMsg =
+          res.status === 404
+            ? "Appointment could not be found."
+            : res.status === 403
+            ? "You are not authorized to manage this appointment."
+            : res.status === 409
+            ? (data.message || "This appointment has already been processed.")
+            : (data.message || "Failed to reject appointment");
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Reject error:", err);
+      alert("Unable to connect to server. Please check your connection.");
     } finally {
       setActionLoading(false);
     }

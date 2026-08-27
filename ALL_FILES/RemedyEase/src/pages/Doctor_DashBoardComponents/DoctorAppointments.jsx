@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FiCalendar,
   FiClock,
@@ -29,6 +30,8 @@ import "../../Css_for_all/DoctorDashboard.css";
 const apiBase = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function DoctorAppointments() {
+  const location = useLocation();
+
   let doctor = null;
   try {
     doctor = JSON.parse(localStorage.getItem("doctor"));
@@ -42,6 +45,7 @@ export default function DoctorAppointments() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [successToast, setSuccessToast] = useState("");
+  const [highlightedApptId, setHighlightedApptId] = useState(null);
 
   // Filters & View states
   const [viewMode, setViewMode] = useState("list"); // 'list' or 'calendar'
@@ -107,6 +111,27 @@ export default function DoctorAppointments() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // Deep-linking: Automatically highlight and open appointment when navigated from notification
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const targetId = params.get("highlight") || location.state?.highlightId;
+    if (targetId && appointments.length > 0) {
+      const found = appointments.find((a) => a._id === targetId);
+      if (found) {
+        setHighlightedApptId(targetId);
+        setSelectedAppointmentDetail(found);
+        if (found.status === "pending") {
+          setStatusTab("pending");
+        } else {
+          setStatusTab("all");
+        }
+        showToast(`✓ Viewing appointment request from ${found.userName || "patient"}`);
+        const timer = setTimeout(() => setHighlightedApptId(null), 8000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.search, location.state, appointments]);
+
   // Today string YYYY-MM-DD
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
@@ -138,29 +163,51 @@ export default function DoctorAppointments() {
     return dateStr;
   };
 
+  const token =
+    localStorage.getItem("doctorAccessToken") ||
+    localStorage.getItem("doctorToken") ||
+    localStorage.getItem("token") ||
+    "";
+
   // Accept Appointment
   const handleAccept = async (apptId) => {
     setActionLoading(true);
     try {
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Doctor-Email": doctorEmail || "",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`/api/v1/appointments/confirm/${apptId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        body: JSON.stringify({ doctorEmail }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
+        const updatedAppt = data.data || { _id: apptId, status: "confirmed" };
         setAppointments((prev) =>
-          prev.map((a) => (a._id === apptId ? { ...a, status: "confirmed" } : a))
+          prev.map((a) => (a._id === apptId ? { ...a, ...updatedAppt, status: "confirmed" } : a))
         );
         if (selectedAppointmentDetail?._id === apptId) {
-          setSelectedAppointmentDetail((prev) => ({ ...prev, status: "confirmed" }));
+          setSelectedAppointmentDetail((prev) => ({ ...prev, ...updatedAppt, status: "confirmed" }));
         }
         showToast("✓ Appointment confirmed successfully!");
       } else {
-        alert(data.message || "Failed to confirm appointment");
+        const errMsg =
+          res.status === 404
+            ? "Appointment could not be found."
+            : res.status === 403
+            ? "You are not authorized to manage this appointment."
+            : res.status === 409
+            ? (data.message || "This appointment has already been processed.")
+            : (data.message || "Unable to confirm appointment. Please try again.");
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Accept error:", err);
-      alert("Network error while confirming appointment.");
+      alert("Unable to connect to server. Please check your connection.");
     } finally {
       setActionLoading(false);
     }
@@ -171,13 +218,22 @@ export default function DoctorAppointments() {
     if (!rejectionModalAppt) return;
     setActionLoading(true);
     try {
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Doctor-Email": doctorEmail || "",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`/api/v1/appointments/cancel/${rejectionModalAppt._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: rejectionReason || "Doctor unavailable" }),
+        headers,
+        body: JSON.stringify({
+          doctorEmail,
+          reason: rejectionReason || "Doctor unavailable",
+        }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success) {
         setAppointments((prev) =>
           prev.map((a) =>
             a._id === rejectionModalAppt._id
@@ -192,11 +248,19 @@ export default function DoctorAppointments() {
         setRejectionReason("");
         showToast("Appointment rejected and timeslot released.");
       } else {
-        alert(data.message || "Failed to reject appointment");
+        const errMsg =
+          res.status === 404
+            ? "Appointment could not be found."
+            : res.status === 403
+            ? "You are not authorized to manage this appointment."
+            : res.status === 409
+            ? (data.message || "This appointment has already been processed.")
+            : (data.message || "Unable to reject appointment. Please try again.");
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Reject error:", err);
-      alert("Network error while rejecting appointment.");
+      alert("Unable to connect to server. Please check your connection.");
     } finally {
       setActionLoading(false);
     }
@@ -832,8 +896,22 @@ export default function DoctorAppointments() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedAppointments.map((appt) => (
-                    <tr key={appt._id}>
+                  paginatedAppointments.map((appt) => {
+                    const isRowHighlighted = highlightedApptId === appt._id;
+                    return (
+                    <tr
+                      key={appt._id}
+                      className={isRowHighlighted ? "dd-appt-row--highlighted" : ""}
+                      style={
+                        isRowHighlighted
+                          ? {
+                              background: "#f0fdf4",
+                              boxShadow: "0 0 0 2px #16a34a inset",
+                              transition: "all 0.3s ease",
+                            }
+                          : undefined
+                      }
+                    >
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <div className="dd-patient-avatar" style={{ width: "36px", height: "36px", fontSize: "13px" }}>
@@ -949,7 +1027,8 @@ export default function DoctorAppointments() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

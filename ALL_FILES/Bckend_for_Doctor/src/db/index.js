@@ -11,8 +11,18 @@ const connectdb = async () => {
       socketTimeoutMS: 45000 // Socket timeout
     };
 
+    const baseUri =
+      process.env.MONGO_URL ||
+      process.env.DATABASE_URI ||
+      process.env.MONGODB_URI ||
+      "mongodb://127.0.0.1:27017";
+
+    const connectionString = baseUri.includes(DB_NAME)
+      ? baseUri
+      : `${baseUri.replace(/\/+$/, "")}/${DB_NAME}`;
+
     const connectionCheck = await mongoose.connect(
-      `${process.env.MONGO_URL}/${DB_NAME}`,
+      connectionString,
       connectionOptions
     );
     

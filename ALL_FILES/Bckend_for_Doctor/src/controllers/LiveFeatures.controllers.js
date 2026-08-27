@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ChatMessage } from "../models/ChatMessage.models.js";
 import { Appointment } from "../models/Appointments.models.js";
 import { Doctor } from "../models/Doctor.models.js";
+import { Notification } from "../models/Notification.models.js";
 
 // Send chat message
 export const sendChatMessage = asyncHandler(async (req, res) => {
@@ -419,17 +420,43 @@ export const notifyDoctor = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing required fields");
   }
 
-  // Create notification object
+  // Find doctor to get _id if possible
+  const doctor = await Doctor.findOne({ email: doctorEmail.toLowerCase() });
+
+  // Store in database
+  let dbNotification = null;
+  if (doctor) {
+    try {
+      dbNotification = await Notification.create({
+        recipientDoctorId: doctor._id,
+        recipientDoctorEmail: doctorEmail.toLowerCase(),
+        type: "LIVE_SESSION",
+        title: `Live ${sessionType === "video" ? "Video Call" : "Chat"} Session`,
+        message: `${patientName} started a live ${sessionType} session.`,
+        patientName,
+        appointmentId,
+        isRead: false,
+      });
+    } catch (dbErr) {
+      console.error("Failed to save live session notification in DB:", dbErr.message);
+    }
+  }
+
+  // Create notification object for memory and response
   const notification = {
-    id: `${appointmentId}-${Date.now()}`,
+    id: dbNotification ? dbNotification._id.toString() : `${appointmentId}-${Date.now()}`,
+    _id: dbNotification?._id,
     appointmentId,
     patientName,
     sessionType, // 'chat' or 'video'
     timestamp: timestamp || new Date().toISOString(),
-    read: false
+    read: false,
+    type: "LIVE_SESSION",
+    title: `Live ${sessionType === "video" ? "Video Call" : "Chat"} Session`,
+    message: `${patientName} started a live ${sessionType} session.`,
   };
 
-  // Store notification for doctor
+  // Store notification in memory cache for doctor
   if (!patientNotifications.has(doctorEmail)) {
     patientNotifications.set(doctorEmail, []);
   }
@@ -437,12 +464,22 @@ export const notifyDoctor = asyncHandler(async (req, res) => {
   const doctorNotifs = patientNotifications.get(doctorEmail);
   doctorNotifs.push(notification);
 
-  // Keep only last 50 notifications per doctor
   if (doctorNotifs.length > 50) {
     doctorNotifs.shift();
   }
 
   console.log(`📢 Patient ${patientName} is starting ${sessionType} session - notifying doctor ${doctorEmail}`);
+
+  // Emit Socket.io event if available
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('new-notification', {
+      notification,
+      recipientDoctorEmail: doctorEmail.toLowerCase(),
+      patientName,
+      sessionType
+    });
+  }
 
   return res.status(200).json(new ApiResponse(200, notification, "Doctor notified successfully"));
 });
@@ -455,15 +492,26 @@ export const getDoctorNotifications = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Doctor email required");
   }
 
-  const notifications = patientNotifications.get(doctorEmail) || [];
-  
-  // Return only unread notifications
-  const unreadNotifications = notifications.filter(n => !n.read);
+  // Query DB notifications for doctor
+  try {
+    const dbNotifs = await Notification.find({
+      recipientDoctorEmail: doctorEmail.toLowerCase(),
+      isRead: false,
+    }).sort({ createdAt: -1 }).lean();
 
-  return res.status(200).json(new ApiResponse(200, {
-    notifications: unreadNotifications,
-    count: unreadNotifications.length
-  }, "Notifications fetched"));
+    return res.status(200).json(new ApiResponse(200, {
+      notifications: dbNotifs,
+      count: dbNotifs.length
+    }, "Notifications fetched"));
+  } catch (err) {
+    const memoryNotifications = patientNotifications.get(doctorEmail) || [];
+    const unreadNotifications = memoryNotifications.filter(n => !n.read);
+
+    return res.status(200).json(new ApiResponse(200, {
+      notifications: unreadNotifications,
+      count: unreadNotifications.length
+    }, "Notifications fetched from memory"));
+  }
 });
 
 // Mark notification as read
@@ -474,9 +522,17 @@ export const markNotificationRead = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Missing required fields");
   }
 
+  // Mark in DB
+  try {
+    await Notification.findOneAndUpdate(
+      { _id: notificationId, recipientDoctorEmail: doctorEmail.toLowerCase() },
+      { $set: { isRead: true } }
+    );
+  } catch (err) {}
+
   const notifications = patientNotifications.get(doctorEmail);
   if (notifications) {
-    const notification = notifications.find(n => n.id === notificationId);
+    const notification = notifications.find(n => n.id === notificationId || (n._id && n._id.toString() === notificationId));
     if (notification) {
       notification.read = true;
     }
@@ -492,6 +548,13 @@ export const clearDoctorNotifications = asyncHandler(async (req, res) => {
   if (!doctorEmail) {
     throw new ApiError(400, "Doctor email required");
   }
+
+  try {
+    await Notification.updateMany(
+      { recipientDoctorEmail: doctorEmail.toLowerCase(), isRead: false },
+      { $set: { isRead: true } }
+    );
+  } catch (err) {}
 
   patientNotifications.set(doctorEmail, []);
 

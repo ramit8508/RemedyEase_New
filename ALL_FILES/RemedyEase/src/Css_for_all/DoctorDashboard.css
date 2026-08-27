@@ -576,13 +576,213 @@
   position: absolute;
   top: 48px;
   right: 0;
-  width: 320px;
+  width: 370px;
+  max-width: 90vw;
   background: #ffffff;
-  border: 1px solid var(--dd-border);
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
   padding: 16px;
-  z-index: 1000;
+  z-index: 1050;
+  animation: ddNotifFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ddNotifFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dd-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.dd-notif-header-badge {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.dd-notif-markall-btn {
+  background: none;
+  border: none;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.dd-notif-markall-btn:hover {
+  background: #f0fdf4;
+  color: #15803d;
+  text-decoration: underline;
+}
+
+.dd-notif-close-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dd-notif-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.dd-notif-body {
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  padding-right: 2px;
+}
+
+.dd-notif-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dd-notif-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dd-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dd-notif-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.dd-notif-item--unread {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.06);
+}
+
+.dd-notif-item--unread:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.dd-notif-item--read {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  opacity: 0.88;
+}
+
+.dd-notif-item--read:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.dd-notif-item-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dd-notif-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dd-notif-dot--active {
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25);
+  animation: ddPulseDot 2s infinite;
+}
+
+@keyframes ddPulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(22, 163, 74, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+.dd-notif-dot--read {
+  background: #cbd5e1;
+}
+
+.dd-notif-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.dd-notif-item-message {
+  font-size: 12.5px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.dd-notif-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.dd-notif-time {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.dd-notif-unread-pill {
+  font-size: 10px;
+  font-weight: 800;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dd-notif-empty-state {
+  text-align: center;
+  padding: 30px 16px;
 }
 
 /* ============================================================
