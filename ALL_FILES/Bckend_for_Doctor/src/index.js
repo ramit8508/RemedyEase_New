@@ -55,26 +55,78 @@ io.on('connection', (socket) => {
   });
 
   // Join appointment-specific rooms for communication
-  socket.on('join-appointment-room', ({ appointmentId, chatRoomId, callRoomId }) => {
-    console.log(`🏠 User ${socket.userName} joining appointment room: ${appointmentId}`);
+  socket.on('join-appointment-room', ({ appointmentId, chatRoomId, callRoomId, userId, userName, userType }) => {
+    if (userId) socket.userId = userId;
+    if (userName) socket.userName = userName;
+    if (userType) socket.userType = userType;
+
+    console.log(`🏠 User ${socket.userName || socket.id} (${socket.userType || 'guest'}) joining appointment room: ${appointmentId}`);
     
-    // Join both chat and call rooms
-    socket.join(chatRoomId);
-    socket.join(callRoomId);
-    socket.join(`appointment_${appointmentId}`);
+    // Join rooms
+    if (chatRoomId) socket.join(chatRoomId);
+    if (callRoomId) socket.join(callRoomId);
+    if (appointmentId) socket.join(`appointment_${appointmentId}`);
     
     // Track room membership
-    if (!activeRooms.has(chatRoomId)) {
-      activeRooms.set(chatRoomId, new Set());
+    const trackingRooms = [chatRoomId, callRoomId].filter(Boolean);
+    trackingRooms.forEach((rId) => {
+      if (!activeRooms.has(rId)) {
+        activeRooms.set(rId, new Set());
+      }
+      activeRooms.get(rId).add(socket.id);
+    });
+
+    // Collect list of existing users currently in the callRoomId
+    const existingParticipants = [];
+    if (callRoomId && activeRooms.has(callRoomId)) {
+      activeRooms.get(callRoomId).forEach((sId) => {
+        if (sId !== socket.id) {
+          const peerSocket = io.sockets.sockets.get(sId);
+          existingParticipants.push({
+            socketId: sId,
+            userId: peerSocket?.userId || sId,
+            userName: peerSocket?.userName || "Participant",
+            userType: peerSocket?.userType || "user"
+          });
+        }
+      });
     }
-    activeRooms.get(chatRoomId).add(socket.id);
+
+    // Send existing participants to the joining client
+    socket.emit('existing-room-users', {
+      callRoomId,
+      users: existingParticipants
+    });
     
-    // Notify others in the room
-    socket.to(chatRoomId).emit('user-joined-room', {
+    // Notify others in both chat and call rooms
+    const joinPayload = {
+      socketId: socket.id,
       userId: socket.userId,
       userName: socket.userName,
-      userType: socket.userType
-    });
+      userType: socket.userType,
+      callRoomId
+    };
+
+    if (chatRoomId) socket.to(chatRoomId).emit('user-joined-room', joinPayload);
+    if (callRoomId) socket.to(callRoomId).emit('user-joined-room', joinPayload);
+  });
+
+  // Explicit leave room handler
+  socket.on('leave-appointment-room', ({ chatRoomId, callRoomId, appointmentId }) => {
+    console.log(`🚪 User ${socket.userName || socket.id} leaving appointment rooms`);
+    if (chatRoomId) {
+      socket.leave(chatRoomId);
+      if (activeRooms.has(chatRoomId)) activeRooms.get(chatRoomId).delete(socket.id);
+      socket.to(chatRoomId).emit('user-left-room', { socketId: socket.id, userId: socket.userId, userName: socket.userName });
+    }
+    if (callRoomId) {
+      socket.leave(callRoomId);
+      if (activeRooms.has(callRoomId)) activeRooms.get(callRoomId).delete(socket.id);
+      socket.to(callRoomId).emit('user-left-room', { socketId: socket.id, userId: socket.userId, userName: socket.userName });
+    }
+    if (appointmentId) {
+      socket.leave(`appointment_${appointmentId}`);
+    }
   });
 
   // Chat message handling
@@ -122,6 +174,7 @@ io.on('connection', (socket) => {
     console.log(`📞 Call request from ${socket.userName} to ${to}`);
     socket.to(callRoomId).emit('incoming-call', {
       from: socket.userId,
+      fromSocketId: socket.id,
       fromName: socket.userName,
       fromType: socket.userType,
       callRoomId
@@ -132,6 +185,7 @@ io.on('connection', (socket) => {
     console.log(`✅ Call accepted in room ${callRoomId}`);
     socket.to(callRoomId).emit('call-accepted', {
       by: socket.userId,
+      bySocketId: socket.id,
       byName: socket.userName
     });
   });
@@ -140,6 +194,7 @@ io.on('connection', (socket) => {
     console.log(`❌ Call rejected in room ${callRoomId}`);
     socket.to(callRoomId).emit('call-rejected', {
       by: socket.userId,
+      bySocketId: socket.id,
       byName: socket.userName
     });
   });
@@ -148,49 +203,96 @@ io.on('connection', (socket) => {
     console.log(`📴 Call ended in room ${callRoomId}`);
     socket.to(callRoomId).emit('call-ended', {
       by: socket.userId,
+      bySocketId: socket.id,
       byName: socket.userName
     });
   });
 
-  // WebRTC signaling
-  socket.on('webrtc-offer', ({ callRoomId, offer }) => {
-    socket.to(callRoomId).emit('webrtc-offer', {
+  // WebRTC targeted / broadcast signaling
+  socket.on('webrtc-offer', ({ callRoomId, offer, targetSocketId, to }) => {
+    const dest = targetSocketId || to;
+    const payload = {
       offer,
-      from: socket.userId
-    });
+      from: socket.userId,
+      fromSocketId: socket.id,
+      fromName: socket.userName,
+      fromType: socket.userType,
+      callRoomId
+    };
+    if (dest) {
+      io.to(dest).emit('webrtc-offer', payload);
+    } else if (callRoomId) {
+      socket.to(callRoomId).emit('webrtc-offer', payload);
+    }
   });
 
-  socket.on('webrtc-answer', ({ callRoomId, answer }) => {
-    socket.to(callRoomId).emit('webrtc-answer', {
+  socket.on('webrtc-answer', ({ callRoomId, answer, targetSocketId, to }) => {
+    const dest = targetSocketId || to;
+    const payload = {
       answer,
-      from: socket.userId
-    });
+      from: socket.userId,
+      fromSocketId: socket.id,
+      fromName: socket.userName,
+      fromType: socket.userType,
+      callRoomId
+    };
+    if (dest) {
+      io.to(dest).emit('webrtc-answer', payload);
+    } else if (callRoomId) {
+      socket.to(callRoomId).emit('webrtc-answer', payload);
+    }
   });
 
-  socket.on('webrtc-ice-candidate', ({ callRoomId, candidate }) => {
-    socket.to(callRoomId).emit('webrtc-ice-candidate', {
+  socket.on('webrtc-ice-candidate', ({ callRoomId, candidate, targetSocketId, to }) => {
+    const dest = targetSocketId || to;
+    const payload = {
       candidate,
-      from: socket.userId
-    });
+      from: socket.userId,
+      fromSocketId: socket.id,
+      callRoomId
+    };
+    if (dest) {
+      io.to(dest).emit('webrtc-ice-candidate', payload);
+    } else if (callRoomId) {
+      socket.to(callRoomId).emit('webrtc-ice-candidate', payload);
+    }
+  });
+
+  // Media mute/unmute state broadcast
+  socket.on('media-state-change', ({ callRoomId, isAudioMuted, isVideoMuted }) => {
+    if (callRoomId) {
+      socket.to(callRoomId).emit('user-media-state-change', {
+        socketId: socket.id,
+        userId: socket.userId,
+        userName: socket.userName,
+        isAudioMuted,
+        isVideoMuted
+      });
+    }
   });
 
   // Disconnect handling
   socket.on('disconnect', () => {
-    console.log(`🔌 User disconnected: ${socket.id}`);
+    console.log(`🔌 User disconnected: ${socket.id} (${socket.userName || 'unknown'})`);
     
+    // Clean up rooms & notify peers
+    for (const [roomId, socketIds] of activeRooms.entries()) {
+      if (socketIds.has(socket.id)) {
+        socketIds.delete(socket.id);
+        socket.to(roomId).emit('user-left-room', {
+          socketId: socket.id,
+          userId: socket.userId,
+          userName: socket.userName
+        });
+        if (socketIds.size === 0) {
+          activeRooms.delete(roomId);
+        }
+      }
+    }
+
     if (socket.userId) {
       // Remove from active users
       activeUsers.delete(socket.userId);
-      
-      // Clean up rooms
-      for (const [roomId, socketIds] of activeRooms.entries()) {
-        if (socketIds.has(socket.id)) {
-          socketIds.delete(socket.id);
-          if (socketIds.size === 0) {
-            activeRooms.delete(roomId);
-          }
-        }
-      }
       
       // Clean up typing indicators
       for (const [roomId, userIds] of typingUsers.entries()) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FiSend,
   FiSearch,
@@ -18,6 +18,7 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
+import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorChat.css";
 import "../../Css_for_all/DoctorDashboard.css";
 
@@ -25,6 +26,7 @@ const DOCTOR_BACKEND_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function DoctorChat() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   let doctor = null;
   try {
@@ -43,6 +45,7 @@ export default function DoctorChat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   // Mobile state: 'list' or 'chat'
   const [mobileView, setMobileView] = useState("list");
@@ -71,21 +74,24 @@ export default function DoctorChat() {
       return;
     }
 
+    const targetAptId =
+      location.state?.activeAppointmentId ||
+      location.state?.appointmentId ||
+      new URLSearchParams(location.search).get("appointmentId");
+
     try {
       const res = await fetch(`/api/v1/live/chat/doctor-conversations/${doctorEmail}`);
       const data = await res.json();
 
+      let convList = [];
       if (data.success && Array.isArray(data.data)) {
-        setConversations(data.data);
-        if (!activeConvRef.current && data.data.length > 0) {
-          setActiveConv(data.data[0]);
-        }
+        convList = data.data;
       } else {
         // Fallback: fetch doctor appointments
         const apptRes = await fetch(`/api/v1/appointments/doctor/${doctorEmail}`);
         const apptData = await apptRes.json();
         if (apptData.success && Array.isArray(apptData.data)) {
-          const mapped = apptData.data.map((a) => ({
+          convList = apptData.data.map((a) => ({
             appointmentId: a._id,
             chatRoomId: a.chatRoomId,
             userName: a.userName || a.userEmail?.split("@")[0] || "Patient",
@@ -99,18 +105,29 @@ export default function DoctorChat() {
             lastMessage: null,
             unreadCount: 0,
           }));
-          setConversations(mapped);
-          if (!activeConvRef.current && mapped.length > 0) {
-            setActiveConv(mapped[0]);
-          }
         }
+      }
+
+      setConversations(convList);
+
+      if (targetAptId) {
+        const found = convList.find((c) => c.appointmentId === targetAptId);
+        if (found) {
+          setActiveConv(found);
+          setMobileView("chat");
+          return;
+        }
+      }
+
+      if (!activeConvRef.current && convList.length > 0) {
+        setActiveConv(convList[0]);
       }
     } catch (err) {
       console.error("Doctor conversations fetch error:", err);
     } finally {
       setLoadingConv(false);
     }
-  }, [doctorEmail]);
+  }, [doctorEmail, location.search, location.state]);
 
   useEffect(() => {
     fetchConversations();
@@ -410,6 +427,14 @@ export default function DoctorChat() {
                   <span className={`dd-badge dd-badge--${activeConv.status || "confirmed"}`}>
                     {activeConv.status || "confirmed"}
                   </span>
+                  <button
+                    type="button"
+                    className="dd-btn-action dd-btn-action--approve"
+                    onClick={() => setShowVideoCall(true)}
+                    title="Start Video Consultation"
+                  >
+                    <FiVideo size={13} /> Video Call
+                  </button>
                   <Link
                     to="/doctor/dashboard/history"
                     className="dd-btn-action"
@@ -567,6 +592,16 @@ export default function DoctorChat() {
           </aside>
         )}
       </div>
+
+      {/* Video Consultation Modal */}
+      {showVideoCall && activeConv && (
+        <VideoCall
+          appointmentId={activeConv.appointmentId}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setShowVideoCall(false)}
+        />
+      )}
     </div>
   );
 }

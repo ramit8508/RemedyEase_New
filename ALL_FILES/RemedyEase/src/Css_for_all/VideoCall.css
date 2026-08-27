@@ -1,387 +1,752 @@
-/* VideoCall Component Styles */
-/* Professional video calling interface - FULLSCREEN MODE */
+/* ==========================================================================
+   RemedyEase Telemedicine Video Consultation System Stylesheet
+   Modern, production-grade medical video interface matching RemedyEase aesthetics
+   ========================================================================== */
 
-.video-call-container {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  background: #000000;
-  border-radius: 0 !important;
-  overflow: hidden;
+.vc-telemedicine-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: #090d16;
+  color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   flex-direction: column;
-  box-shadow: none !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  z-index: 10000 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  box-sizing: border-box;
 }
 
-.video-call-header {
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 16px 20px;
+/* ─── Top Telemedicine App Header ─── */
+.vc-header {
+  height: 68px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 20;
+  flex-shrink: 0;
 }
 
-.call-info h3 {
-  margin: 0 0 4px 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
+.vc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-.call-status {
-  font-size: 14px;
-  color: #2ecc71;
-  opacity: 0.9;
+.vc-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vc-brand-icon {
+  font-size: 22px;
+  background: rgba(22, 163, 74, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-brand-meta h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
+}
+
+.vc-appt-pill {
+  font-size: 11.5px;
+  color: #94a3b8;
   font-weight: 500;
+  display: block;
+  margin-top: 2px;
 }
 
-.close-call-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-  width: 36px;
-  height: 36px;
+.vc-header-center {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.vc-duration-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.vc-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
   border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: vc-pulse-green 1.8s infinite;
 }
 
-.close-call-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.call-error {
-  background: rgba(255, 59, 48, 0.9);
-  color: white;
-  padding: 12px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-}
-
-.call-error button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.video-container {
-  flex: 1;
-  position: relative;
-  background: #000;
-  overflow: hidden;
-}
-
-.remote-video-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.remote-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #000;
-}
-
-.no-remote-video {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1e5631 0%, #27ae60 100%);
-  color: white;
-}
-
-.avatar-placeholder {
-  text-align: center;
-  padding: 40px;
-}
-
-.connecting-animation {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.spinner {
-  width: 100%;
-  max-width: 1100px;
-  height: 850px;
-  border-top: 3px solid #00ff88;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.waiting-message {
-  font-size: 18px;
-  line-height: 1.6;
-}
-
-.waiting-message small {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-}
-
-.local-video-wrapper {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 200px;
-  height: 150px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  z-index: 10;
-}
-
-.local-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* Mirror effect for local video */
-}
-
-.video-muted-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.call-controls {
-  background: rgba(0, 0, 0, 0.9);
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  backdrop-filter: blur(10px);
-}
-
-.control-btn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.control-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.control-btn:hover::before {
-  opacity: 1;
-}
-
-.audio-btn {
-  background: #4a5568;
-  color: white;
-}
-
-.audio-btn.muted {
-  background: #e53e3e;
-  animation: pulse-red 2s infinite;
-}
-
-.video-btn {
-  background: #4a5568;
-  color: white;
-}
-
-.video-btn.muted {
-  background: #e53e3e;
-  animation: pulse-red 2s infinite;
-}
-
-.end-call-btn {
-  background: #e53e3e;
-  color: white;
-  transform: rotate(135deg);
-}
-
-.end-call-btn:hover {
-  background: #c53030;
-  transform: rotate(135deg) scale(1.1);
-}
-
-@keyframes pulse-red {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+@keyframes vc-pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
   }
-  50% {
-    box-shadow: 0 0 0 10px rgba(229, 62, 62, 0);
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
   }
 }
 
-/* Connection quality indicator */
-.connection-quality {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px 12px;
+.vc-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
+  font-weight: 600;
+}
+
+.vc-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.vc-status-connected {
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+.vc-status-connected .vc-status-dot {
+  background: #22c55e;
+}
+
+.vc-status-connecting {
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #facc15;
+}
+.vc-status-connecting .vc-status-dot {
+  background: #eab308;
+  animation: vc-blink 1s infinite;
+}
+
+.vc-status-reconnecting {
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #fb923c;
+}
+.vc-status-reconnecting .vc-status-dot {
+  background: #f97316;
+  animation: vc-blink 0.8s infinite;
+}
+
+.vc-status-failed {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+.vc-status-failed .vc-status-dot {
+  background: #ef4444;
+}
+
+@keyframes vc-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.vc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vc-head-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
-  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.quality-indicator {
-  width: 8px;
-  height: 8px;
+.vc-head-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.vc-head-close-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vc-head-close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* ─── Non-blocking Error Banner ─── */
+.vc-error-banner {
+  background: rgba(239, 68, 68, 0.92);
+  color: #ffffff;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+.vc-error-content {
+  flex: 1;
+}
+.vc-error-content p {
+  margin: 0;
+}
+
+.vc-retry-btn {
+  background: #ffffff;
+  color: #b91c1c;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.vc-retry-btn:hover {
+  background: #f1f5f9;
+}
+
+/* ─── Main Viewport Area ─── */
+.vc-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #111827 0%, #080d1a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* ─── Waiting Stage ─── */
+.vc-waiting-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vc-waiting-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 40px 36px;
+  border-radius: 20px;
+  text-align: center;
+  max-width: 480px;
+  width: 90%;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.vc-waiting-avatar-ring {
+  width: 86px;
+  height: 86px;
+  margin: 0 auto 20px;
   border-radius: 50%;
-  background: #2ecc71;
+  border: 2px dashed rgba(34, 197, 94, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: vc-rotate 20s linear infinite;
 }
 
-.quality-indicator.poor {
-  background: #ff4444;
+@keyframes vc-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.quality-indicator.fair {
-  background: #ffaa00;
+.vc-waiting-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #16a34a 0%, #0d9488 100%);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Responsive adjustments */
+.vc-waiting-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 10px;
+  letter-spacing: -0.3px;
+}
+
+.vc-waiting-sub {
+  font-size: 13.5px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.vc-waiting-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.vc-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: vc-spin 0.9s linear infinite;
+}
+
+@keyframes vc-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Video Grid & Adaptive Layouts ─── */
+.vc-video-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: 16px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Single Remote Focus Layout */
+.vc-grid-single-focus {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* Dual Participants Layout */
+.vc-grid-dual {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+}
+
+/* 3-4 Participants Layout */
+.vc-grid-multi,
+.vc-grid-auto-3,
+.vc-grid-auto-4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+/* 5+ Participants Layout */
+.vc-grid-auto-5,
+.vc-grid-auto-6 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+/* ─── Remote Participant Video Tile ─── */
+.vc-remote-tile {
+  position: relative;
+  background: #020617;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000000;
+  display: block;
+}
+
+.vc-video-hidden {
+  display: none !important;
+}
+
+/* Fallback Avatar when camera is off */
+.vc-remote-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+.vc-avatar-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+.vc-avatar-circle--lg {
+  width: 90px;
+  height: 90px;
+  font-size: 32px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #16a34a 0%, #0d9488 100%);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35);
+}
+
+.vc-fallback-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 4px;
+}
+
+.vc-fallback-sub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ─── Local Video Tile (PiP or Grid Mode) ─── */
+.vc-local-tile {
+  background: #0f172a;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  position: relative;
+  z-index: 15;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Picture-in-Picture mode */
+.vc-local-tile--pip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  width: 220px;
+  height: 145px;
+  border-radius: 14px;
+}
+
+/* Embedded Grid mode */
+.vc-local-tile--grid {
+  border-radius: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.vc-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror view for self preview */
+  background: #000000;
+}
+
+.vc-local-muted-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1e293b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* ─── Video Tile Name Badges ─── */
+.vc-tile-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.vc-badge-mute {
+  font-size: 11px;
+}
+
+.vc-badge-share {
+  background: rgba(37, 99, 235, 0.3);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+/* ─── Bottom Floating Telemedicine Controls ─── */
+.vc-controls-bar {
+  padding: 16px 24px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to top, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.6) 70%, transparent 100%);
+  z-index: 25;
+  flex-shrink: 0;
+}
+
+.vc-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 50px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.vc-ctrl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 60px;
+  height: 58px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 4px 8px;
+}
+
+.vc-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.vc-ctrl-btn:active {
+  transform: translateY(0);
+}
+
+.vc-ctrl-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.vc-ctrl-btn--active {
+  color: #f8fafc;
+}
+
+.vc-ctrl-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.vc-ctrl-btn--danger:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.vc-ctrl-btn--highlight {
+  background: rgba(37, 99, 235, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+.vc-ctrl-btn--chat {
+  color: #38bdf8;
+}
+.vc-ctrl-btn--chat:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.vc-ctrl-btn--hangup {
+  background: #ef4444;
+  color: #ffffff;
+  min-width: 80px;
+  border-radius: 30px;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.vc-ctrl-btn--hangup:hover {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.5);
+  transform: translateY(-2px);
+}
+
+/* ─── Responsive Adjustments (Mobile & Tablet) ─── */
 @media (max-width: 768px) {
-  .video-call-container {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
+  .vc-header {
+    height: 60px;
+    padding: 0 14px;
   }
-  
-  .local-video-wrapper {
+
+  .vc-brand-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .vc-brand-meta h2 {
+    font-size: 13.5px;
+  }
+
+  .vc-appt-pill {
+    display: none;
+  }
+
+  .vc-btn-label {
+    display: none;
+  }
+
+  .vc-local-tile--pip {
     width: 120px;
     height: 90px;
-    bottom: 100px;
-    right: 10px;
+    bottom: 90px;
+    right: 14px;
+    border-radius: 10px;
   }
-  
-  .call-controls {
-    padding: 15px;
-    gap: 15px;
+
+  .vc-controls-bar {
+    padding: 10px 14px 16px;
   }
-  
-  .control-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
+
+  .vc-controls-group {
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 30px;
   }
-  
-  .video-call-header {
-    padding: 12px 16px;
+
+  .vc-ctrl-btn {
+    min-width: 48px;
+    height: 48px;
+    padding: 2px 4px;
   }
-  
-  .call-info h3 {
-    font-size: 16px;
+
+  .vc-ctrl-btn svg {
+    width: 17px;
+    height: 17px;
   }
-  
-  .call-status {
-    font-size: 12px;
+
+  .vc-ctrl-label {
+    font-size: 9px;
+  }
+
+  .vc-ctrl-btn--hangup {
+    min-width: 60px;
   }
 }
 
 @media (max-width: 480px) {
-  .local-video-wrapper {
-    width: 100px;
+  .vc-status-badge {
+    display: none;
+  }
+
+  .vc-duration-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .vc-local-tile--pip {
+    width: 95px;
     height: 75px;
-    bottom: 90px;
-    right: 8px;
+    bottom: 85px;
+    right: 10px;
   }
-  
-  .call-controls {
-    padding: 12px;
-    gap: 12px;
-  }
-  
-  .control-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 18px;
-  }
-}
-
-/* Dark theme enhancements */
-.video-call-container {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Accessibility improvements */
-.control-btn:focus {
-  outline: 2px solid #00ff88;
-  outline-offset: 2px;
-}
-
-.control-btn:focus::before {
-  opacity: 1;
-}
-
-/* Loading states */
-.video-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  text-align: center;
-}
-
-.video-loading .spinner {
-  margin: 0 auto 16px;
 }

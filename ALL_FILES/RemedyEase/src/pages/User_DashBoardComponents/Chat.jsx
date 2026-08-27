@@ -16,6 +16,7 @@ import {
   FiRefreshCw,
   FiMessageSquare,
 } from "react-icons/fi";
+import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/Chat.css";
 
 const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
@@ -46,6 +47,7 @@ export default function Chat() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState("");
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   // Mobile View state: 'sidebar' or 'chat'
   const [mobileView, setMobileView] = useState("sidebar");
@@ -73,6 +75,11 @@ export default function Chat() {
     if (!silent) setLoading(true);
     setError("");
 
+    const targetAptId =
+      location.state?.activeAppointmentId ||
+      location.state?.appointmentId ||
+      new URLSearchParams(location.search).get("appointmentId");
+
     try {
       const res = await fetch(`/api/v1/live/chat/conversations/${userEmail}`);
       const data = await res.json();
@@ -81,6 +88,15 @@ export default function Chat() {
         if (res.ok && data.success) {
           const list = Array.isArray(data.data) ? data.data : [];
           setConversations(list);
+
+          if (targetAptId) {
+            const found = list.find((c) => c.appointmentId === targetAptId);
+            if (found) {
+              setSelectedConversation(found);
+              setMobileView("chat");
+              return;
+            }
+          }
 
           // If no conversation selected and on desktop, default to the first conversation
           setSelectedConversation((prev) => {
@@ -107,22 +123,17 @@ export default function Chat() {
         setLoading(false);
       }
     }
-  }, [userEmail]);
+  }, [location.search, location.state, userEmail]);
 
   // Initial conversations load
   useEffect(() => {
     isMountedRef.current = true;
     fetchConversations();
 
-    // Check if an appointment was passed in navigation state
-    if (location.state?.appointmentId) {
-      // Find or set appointment
-    }
-
     return () => {
       isMountedRef.current = false;
     };
-  }, [fetchConversations, location.state]);
+  }, [fetchConversations]);
 
   // 2. Fetch Messages for Selected Conversation
   const fetchMessages = useCallback(async (appointmentId) => {
@@ -526,6 +537,15 @@ export default function Chat() {
                 </div>
 
                 <div className="pc-chat-actions">
+                  <button
+                    type="button"
+                    className="pc-btn-header-action"
+                    style={{ background: "#16a34a", color: "#ffffff", borderColor: "#16a34a" }}
+                    onClick={() => setShowVideoCall(true)}
+                    title="Launch Video Consultation"
+                  >
+                    <FiVideo size={14} /> Video Call
+                  </button>
                   <Link
                     to="/user/dashboard/Appointments"
                     className="pc-btn-header-action"
@@ -641,6 +661,16 @@ export default function Chat() {
           )}
         </main>
       </div>
+
+      {/* Video Consultation Modal */}
+      {showVideoCall && selectedConversation && (
+        <VideoCall
+          appointmentId={selectedConversation.appointmentId}
+          currentUser={user}
+          userType="patient"
+          onClose={() => setShowVideoCall(false)}
+        />
+      )}
     </div>
   );
 }

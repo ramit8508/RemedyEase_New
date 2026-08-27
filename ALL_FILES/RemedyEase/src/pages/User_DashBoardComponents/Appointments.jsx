@@ -892,18 +892,15 @@ export default function Appointments() {
       )}
 
       {showVideoCall && selectedAppointmentForLive && (
-        <div className="modal-overlay video-overlay">
-          <div className="modal-content video-modal">
-            <VideoCall
-              roomId={selectedAppointmentForLive.callRoomId || selectedAppointmentForLive._id}
-              userType="patient"
-              userId={user.email}
-              userName={user.fullname || user.email}
-              appointmentId={selectedAppointmentForLive._id}
-              onClose={() => setShowVideoCall(false)}
-            />
-          </div>
-        </div>
+        <VideoCall
+          roomId={selectedAppointmentForLive.callRoomId || selectedAppointmentForLive._id}
+          userType="patient"
+          userId={user.email}
+          userName={user.fullname || user.email}
+          currentUser={user}
+          appointmentId={selectedAppointmentForLive._id}
+          onClose={() => setShowVideoCall(false)}
+        />
       )}
 
       {viewPrescriptionUrl && (

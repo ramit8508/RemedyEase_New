@@ -1010,6 +1010,17 @@ export default function DoctorAppointments() {
                             </>
                           )}
 
+                          {appt.status?.toLowerCase() === "confirmed" && (
+                            <button
+                              type="button"
+                              className="dd-btn-action dd-btn-action--approve"
+                              onClick={() => setSelectedForVideo(appt)}
+                              title="Start Video Consultation"
+                            >
+                              <FiVideo size={13} /> Call
+                            </button>
+                          )}
+
                           {["confirmed", "completed"].includes(appt.status?.toLowerCase()) && (
                             <button
                               type="button"
@@ -1319,6 +1330,26 @@ export default function DoctorAppointments() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── Live Chat Modal ─── */}
+      {selectedForChat && (
+        <LiveChat
+          appointmentId={selectedForChat._id}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setSelectedForChat(null)}
+        />
+      )}
+
+      {/* ─── Video Consultation Modal ─── */}
+      {selectedForVideo && (
+        <VideoCall
+          appointmentId={selectedForVideo._id}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setSelectedForVideo(null)}
+        />
       )}
     </div>
   );

@@ -19,6 +19,7 @@ import {
   FiFileText,
 } from "react-icons/fi";
 import LiveChat from "../../components/LiveChat";
+import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorDashboard.css";
 
 export default function DoctorHome() {
@@ -48,8 +49,9 @@ export default function DoctorHome() {
     return new Date().toISOString().split("T")[0];
   });
 
-  // Active LiveChat Modal state
+  // Active Modals state
   const [selectedAppointmentForChat, setSelectedAppointmentForChat] = useState(null);
+  const [selectedAppointmentForVideo, setSelectedAppointmentForVideo] = useState(null);
   const [selectedPatientModal, setSelectedPatientModal] = useState(null);
 
   const getGreeting = () => {
@@ -529,14 +531,24 @@ export default function DoctorHome() {
                     )}
 
                     {["confirmed", "approved", "accepted"].includes(appt.status?.toLowerCase()) && (
-                      <button
-                        type="button"
-                        className="dd-btn-action dd-btn-action--approve"
-                        onClick={() => setSelectedAppointmentForChat(appt)}
-                        title="Start clinical chat session"
-                      >
-                        <FiMessageSquare size={13} /> Start Consultation
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="dd-btn-action dd-btn-action--approve"
+                          onClick={() => setSelectedAppointmentForVideo(appt)}
+                          title="Start video consultation"
+                        >
+                          <FiVideo size={13} /> Video
+                        </button>
+                        <button
+                          type="button"
+                          className="dd-btn-action"
+                          onClick={() => setSelectedAppointmentForChat(appt)}
+                          title="Start clinical chat session"
+                        >
+                          <FiMessageSquare size={13} /> Chat
+                        </button>
+                      </>
                     )}
 
                     <button
@@ -832,6 +844,16 @@ export default function DoctorHome() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── Video Consultation Modal ─── */}
+      {selectedAppointmentForVideo && (
+        <VideoCall
+          appointmentId={selectedAppointmentForVideo._id}
+          currentUser={doctor}
+          userType="doctor"
+          onClose={() => setSelectedAppointmentForVideo(null)}
+        />
       )}
     </div>
   );
