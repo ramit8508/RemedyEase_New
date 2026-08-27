@@ -9,7 +9,7 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 // Book appointment (user)
 export const bookAppointment = asyncHandler(async (req, res) => {
   const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId } = req.body;
-  console.log('[BOOK] Incoming booking:', { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId });
+  console.log('[BOOK] Incoming booking request:', { doctorEmail, doctorName, date, time, userEmail, userName, hasDoctorId: !!doctorId });
   
   if (!doctorEmail || !date || !time || !userEmail || !userName) {
     throw new ApiError(400, "All fields (doctor, date, time, patient information) are required");
@@ -60,7 +60,13 @@ export const bookAppointment = asyncHandler(async (req, res) => {
         };
       }
       
-      await timeslotDoc.save();
+      try {
+        await timeslotDoc.save();
+        console.log('[BOOK] Timeslot reserved successfully for:', time);
+      } catch (slotErr) {
+        console.error('[BOOK] Failed to reserve timeslot:', slotErr.message);
+        throw new ApiError(500, "Unable to reserve the selected time slot. Please try again.");
+      }
     }
   }
 
@@ -78,19 +84,28 @@ export const bookAppointment = asyncHandler(async (req, res) => {
   }
 
   // 4. Create the appointment
-  const appointment = await Appointment.create({
-    doctorEmail,
-    doctorName: effectiveDoctorName,
-    userEmail,
-    userName,
-    date,
-    time,
-    symptoms: symptoms?.trim() || "General Consultation",
-    status: "pending"
-  });
-  
-  console.log('[BOOK] Appointment created successfully:', appointment._id);
-  return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
+  try {
+    const appointment = await Appointment.create({
+      doctorEmail,
+      doctorName: effectiveDoctorName,
+      userEmail,
+      userName,
+      date,
+      time,
+      symptoms: symptoms?.trim() || "General Consultation",
+      status: "pending"
+    });
+    
+    console.log('[BOOK] Appointment created successfully:', appointment._id);
+    return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
+  } catch (createErr) {
+    console.error('[BOOK] Failed to create appointment:', createErr.message);
+    if (createErr.name === 'ValidationError') {
+      const messages = Object.values(createErr.errors).map(e => e.message).join(', ');
+      throw new ApiError(400, `Validation error: ${messages}`);
+    }
+    throw new ApiError(500, "Unable to book the appointment right now. Please try again.");
+  }
 });
 
 // Get appointments for doctor by email

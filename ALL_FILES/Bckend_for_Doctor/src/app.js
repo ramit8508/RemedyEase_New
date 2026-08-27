@@ -67,11 +67,29 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Handle Mongoose CastError (e.g., invalid ObjectId)
+  if (err.name === 'CastError') {
+    console.error("MONGOOSE CAST ERROR:", err.message);
+    return res.status(400).json({
+      success: false,
+      message: `Invalid data format: ${err.path} received an invalid value.`,
+    });
+  }
+
+  // Handle Mongoose ValidationError
+  if (err.name === 'ValidationError') {
+    console.error("MONGOOSE VALIDATION ERROR:", err.message);
+    const messages = Object.values(err.errors).map(e => e.message).join(', ');
+    return res.status(400).json({
+      success: false,
+      message: `Validation failed: ${messages}`,
+    });
+  }
 
   console.error("UNEXPECTED DOCTOR BACKEND ERROR:", err);
   return res.status(500).json({
     success: false,
-    message: "An internal server error occurred on the doctor service.",
+    message: "An internal server error occurred. Please try again later.",
   });
 });
 

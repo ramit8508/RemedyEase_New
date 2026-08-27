@@ -293,10 +293,18 @@ export default function Appointments() {
         // Re-fetch doctor timeslots so the booked slot immediately shows as Booked
         fetchDoctorTimeslots(selectedDoctor._id);
       } else {
-        setBookingError(data.message || "Failed to book appointment. Please choose another slot.");
+        // Surface specific backend error messages
+        if (res.status === 400) {
+          // Validation, slot-already-booked, duplicate appointment errors
+          setBookingError(data.message || "Invalid booking request. Please check your selection.");
+        } else if (res.status === 401 || res.status === 403) {
+          setBookingError("Your session has expired. Please log in again.");
+        } else {
+          setBookingError(data.message || "Unable to book the appointment right now. Please try again.");
+        }
       }
     } catch (err) {
-      setBookingError("Unable to connect to the appointment service. Please try again.");
+      setBookingError("Unable to connect to the appointment service. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }

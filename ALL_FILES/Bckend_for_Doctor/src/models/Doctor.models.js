@@ -107,9 +107,9 @@ DoctorSchema.methods.generateAccessToken = function () {
       degree: this.degree,
       specialization: this.specialization,
     },
-    process.env.ACCESS_TOKEN_SECRET,
+    process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "remedyease-doctor-access-fallback",
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d",
     }
   );
 };
@@ -118,9 +118,9 @@ DoctorSchema.methods.generateRefreshToken = function () {
     {
       _id: this.id,
     },
-    process.env.REFRESH_TOKEN_SECRET,
+    process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || "remedyease-doctor-refresh-fallback",
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
     }
   );
 };

@@ -6,12 +6,12 @@
 :root {
   --dd-primary: #16a34a;
   --dd-primary-hover: #15803d;
-  --dd-primary-light: rgba(22, 163, 74, 0.14);
+  --dd-primary-light: rgba(34, 197, 94, 0.10);
   --dd-primary-border: #dcfce7;
-  --dd-sidebar-bg: #0b1220;
-  --dd-sidebar-card: rgba(255, 255, 255, 0.04);
-  --dd-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --dd-sidebar-border: rgba(255, 255, 255, 0.08);
+  --dd-sidebar-bg: #111827;
+  --dd-sidebar-card: rgba(255, 255, 255, 0.035);
+  --dd-sidebar-hover: #182233;
+  --dd-sidebar-border: #1F2937;
   --dd-dark: #0f172a;
   --dd-slate: #334155;
   --dd-muted: #64748b;
@@ -50,7 +50,7 @@
   height: 100vh;
   z-index: 1000;
   border-right: 1px solid var(--dd-sidebar-border);
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.12);
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease;
   box-sizing: border-box;
 }
@@ -67,7 +67,7 @@
   justify-content: space-between;
   border-bottom: 1px solid var(--dd-sidebar-border);
   flex-shrink: 0;
-  background: var(--dd-sidebar-bg);
+  background: transparent;
 }
 
 .dd-brand-wrapper {
@@ -136,8 +136,8 @@
 .dd-sidebar-profile {
   padding: 12px 14px;
   margin: 12px 12px 4px;
-  background: var(--dd-sidebar-card);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -223,12 +223,12 @@
 }
 
 .dd-nav-group-title {
-  font-size: 10px;
-  font-weight: 800;
-  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  padding: 12px 12px 4px;
+  letter-spacing: 0.08em;
+  padding: 14px 12px 6px;
 }
 
 .dd-nav-link {
@@ -237,11 +237,11 @@
   gap: 12px;
   height: 42px;
   padding: 0 12px;
-  color: #cbd5e1;
+  color: #94A3B8;
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
   transition: all 0.15s ease-in-out;
   white-space: nowrap;
   position: relative;
@@ -249,16 +249,28 @@
 }
 
 .dd-nav-link:hover {
-  color: #ffffff;
+  color: #E5E7EB;
   background: var(--dd-sidebar-hover);
 }
 
-/* Active State: Refined Green Accent (No Giant Solid Rectangle) */
+/* Active State: Subtle green tint with thin left indicator */
 .dd-nav-link--active {
-  color: #22c55e !important;
-  background: var(--dd-primary-light) !important;
-  font-weight: 700;
-  border-left: 3px solid #16a34a;
+  color: #22C55E !important;
+  background: rgba(34, 197, 94, 0.10) !important;
+  font-weight: 500;
+}
+
+/* Thin green left-edge indicator for active nav item */
+.dd-nav-link--active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #22C55E;
+  border-radius: 0 4px 4px 0;
 }
 
 .dd-nav-icon-container {
@@ -268,18 +280,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
   transition: all 0.15s;
-  color: #94a3b8;
+  color: #64748B;
 }
 
 .dd-nav-link:hover .dd-nav-icon-container {
-  color: #ffffff;
+  color: #E5E7EB;
 }
 
 .dd-nav-link--active .dd-nav-icon-container {
-  color: #22c55e;
+  color: #22C55E;
 }
 
 .dd-nav-badge {
@@ -300,7 +312,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--dd-sidebar-bg);
+  background: transparent;
   flex-shrink: 0;
   margin-top: auto;
 }
@@ -308,7 +320,7 @@
 /* Availability Status Card */
 .dd-availability-card {
   padding: 9px 12px;
-  background: var(--dd-sidebar-card);
+  background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   display: flex;
@@ -375,8 +387,8 @@
 }
 
 .dd-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  color: #F87171;
 }
 
 /* ============================================================

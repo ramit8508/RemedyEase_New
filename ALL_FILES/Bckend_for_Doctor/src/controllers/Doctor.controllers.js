@@ -69,8 +69,20 @@ const loginDoctor = asyncHandler(async (req, res) => {
     if (!isPasswordCorrect) {
         throw new ApiError(401, "Incorrect password");
     }
-    const loggedInDoctor = await Doctor.findById(doctor._id).select("-password -confirmPassword");
-    return res.status(200).json(new ApiResponse(200, { doctor: loggedInDoctor }, "Doctor logged in successfully"));
+
+    // Generate JWT tokens
+    const accessToken = doctor.generateAccessToken();
+    const refreshToken = doctor.generateRefreshToken();
+
+    const loggedInDoctor = await Doctor.findById(doctor._id).select("-password -confirmPassword -refreshToken");
+    
+    console.log('[AUTH] Doctor logged in successfully:', loggedInDoctor.email);
+    
+    return res.status(200).json(new ApiResponse(200, { 
+        doctor: loggedInDoctor, 
+        accessToken,
+        refreshToken 
+    }, "Doctor logged in successfully"));
 });
 
 const getDoctorProfile = asyncHandler(async (req, res) => {

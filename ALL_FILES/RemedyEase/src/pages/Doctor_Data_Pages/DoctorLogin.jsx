@@ -25,12 +25,28 @@ export default function DoctorLogin() {
       if (res.ok) {
         localStorage.setItem("doctorEmail", email);
         localStorage.setItem("doctor", JSON.stringify(data.data.doctor));
+        // Store JWT access token for authenticated API calls
+        if (data.data.accessToken) {
+          localStorage.setItem("doctorAccessToken", data.data.accessToken);
+        }
+        if (data.data.refreshToken) {
+          localStorage.setItem("doctorRefreshToken", data.data.refreshToken);
+        }
         setMessage("Login successful! Redirecting...");
         setTimeout(() => {
           navigate("/doctor/dashboard/home");
         }, 1200);
       } else {
-        setMessage(data.message || "Login failed.");
+        // Show specific messages for different error types
+        if (res.status === 403) {
+          setMessage(data.message || "Your account access is restricted. Please contact support.");
+        } else if (res.status === 401) {
+          setMessage("Incorrect password. Please try again.");
+        } else if (res.status === 404) {
+          setMessage("No doctor account found with this email address.");
+        } else {
+          setMessage(data.message || "Login failed. Please try again.");
+        }
       }
     } catch (err) {
       setMessage("Cannot connect to server. Please try again.");

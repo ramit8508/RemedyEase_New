@@ -8,7 +8,7 @@ const TimeslotSchema = new mongoose.Schema({
     {
       time: { type: String, required: true }, // e.g. '10:00 AM - 10:30 AM'
       booked: { type: Boolean, default: false },
-      bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+      bookedBy: { type: String, default: null }
     }
   ]
 });
