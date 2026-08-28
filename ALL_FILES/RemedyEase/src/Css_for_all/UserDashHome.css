@@ -368,44 +368,61 @@
 }
 
 /* ============================================================
-   FEATURED DOCTORS
+   FEATURED DOCTORS ("Meet our doctors")
    ============================================================ */
 .pdh-doctors-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 28px;
+  align-items: stretch;
 }
 
 .pdh-doctor-card {
   background: #ffffff;
-  border: 1px solid #e8ece9;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.03);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.03);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .pdh-doctor-card:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+  transform: translateY(-4px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
 }
 
 .pdh-doctor-photo-wrap {
   width: 100%;
-  height: 200px;
+  aspect-ratio: 16 / 9;
+  max-height: 220px;
   overflow: hidden;
-  background: #f9fafb;
+  background: #f1f5f9;
+  border-radius: 16px 16px 0 0;
+  position: relative;
 }
 
 .pdh-doctor-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: center top;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.pdh-doctor-card:hover .pdh-doctor-photo {
+  transform: scale(1.03);
 }
 
 .pdh-doctor-body {
   padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .pdh-doctor-avail {
@@ -414,60 +431,411 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+.pdh-doctor-avail--available {
   color: #16a34a;
-  margin-bottom: 10px;
+}
+
+.pdh-doctor-avail--unavailable {
+  color: #64748b;
 }
 
 .pdh-avail-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #16a34a;
   flex-shrink: 0;
+}
+
+.pdh-avail-dot--green {
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+}
+
+.pdh-avail-dot--gray {
+  background: #94a3b8;
 }
 
 .pdh-doctor-name {
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 4px;
+  line-height: 1.3;
+  letter-spacing: -0.2px;
 }
 
 .pdh-doctor-spec {
   font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  margin: 0 0 2px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 3px;
+  line-height: 1.4;
 }
 
 .pdh-doctor-qual {
-  font-size: 12.5px;
-  color: #9ca3af;
-  margin: 0 0 10px;
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px;
   font-weight: 400;
+  line-height: 1.4;
 }
 
 .pdh-doctor-rating {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 16px;
+  color: #0f172a;
+  margin-bottom: 18px;
 }
 
 .pdh-star-icon {
   color: #f59e0b;
   fill: #f59e0b;
+  flex-shrink: 0;
+}
+
+.pdh-rating-val {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pdh-rating-reviews {
+  color: #64748b;
+  font-weight: 400;
+  font-size: 12.5px;
 }
 
 .pdh-doctor-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 6px;
 }
+
+.pdh-btn-card-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background: #16a34a;
+  border: 1px solid #16a34a;
+  border-radius: 10px;
+  cursor: pointer;
+  height: 42px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.pdh-btn-card-primary:hover {
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.pdh-btn-card-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  cursor: pointer;
+  height: 42px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.pdh-btn-card-secondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* Skeletons & States */
+.pdh-doctor-card--skeleton {
+  pointer-events: none;
+}
+
+.pdh-skeleton-photo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: pdhShimmer 1.5s infinite;
+}
+
+.pdh-skeleton-pill {
+  width: 90px;
+  height: 16px;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: pdhShimmer 1.5s infinite;
+  margin-bottom: 12px;
+}
+
+.pdh-skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: pdhShimmer 1.5s infinite;
+  margin-bottom: 8px;
+}
+
+.pdh-skeleton-line--title {
+  width: 70%;
+  height: 20px;
+  margin-bottom: 6px;
+}
+
+.pdh-skeleton-line--subtitle {
+  width: 50%;
+  height: 14px;
+  margin-bottom: 4px;
+}
+
+.pdh-skeleton-line--qual {
+  width: 60%;
+  height: 12px;
+  margin-bottom: 14px;
+}
+
+.pdh-skeleton-line--rating {
+  width: 35%;
+  height: 14px;
+  margin-bottom: 18px;
+}
+
+.pdh-skeleton-btn {
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: pdhShimmer 1.5s infinite;
+}
+
+@keyframes pdhShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.pdh-doctors-empty,
+.pdh-doctors-error {
+  text-align: center;
+  padding: 40px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.pdh-doctors-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.pdh-retry-btn {
+  background: #ffffff;
+  border: 1px solid #d97706;
+  color: #b45309;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pdh-retry-btn:hover {
+  background: #fef3c7;
+}
+
+/* ============================================================
+   DOCTOR PROFILE PREVIEW MODAL
+   ============================================================ */
+.pdh-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: pdhFadeIn 0.2s ease-out;
+}
+
+@keyframes pdhFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pdh-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 580px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  animation: pdhSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pdhSlideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.pdh-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.pdh-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.pdh-modal-top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pdh-modal-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 16px;
+  object-fit: cover;
+  object-position: center top;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.pdh-modal-meta {
+  flex: 1;
+}
+
+.pdh-modal-name {
+  font-family: 'Manrope', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.pdh-modal-spec {
+  font-size: 14px;
+  font-weight: 600;
+  color: #16a34a;
+  margin: 0 0 6px;
+}
+
+.pdh-modal-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pdh-modal-body {
+  padding: 24px 28px;
+}
+
+.pdh-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pdh-modal-item {
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+}
+
+.pdh-modal-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.pdh-modal-val {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pdh-modal-bio {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.pdh-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
 
 /* ============================================================
    HEALTHCARE SERVICES
