@@ -14,25 +14,26 @@ import {
   markNotificationRead,
   clearDoctorNotifications
 } from "../controllers/LiveFeatures.controllers.js";
+import { verifyDoctor, verifyAppointmentParticipant } from "../middleware/auth.middleware.js";
 
 const router = new Router();
 
 // Chat routes
 router.post("/chat/send", sendChatMessage);
-router.get("/chat/history/:appointmentId", getChatHistory);
+router.get("/chat/history/:appointmentId", verifyAppointmentParticipant, getChatHistory);
 router.get("/chat/conversations/:userEmail", getUserChatConversations);
 router.get("/chat/doctor-conversations/:doctorEmail", getDoctorChatConversations);
 router.post("/chat/read/:appointmentId", markMessagesAsRead);
 
-// Video call routes
-router.post("/call/start/:appointmentId", startVideoCall);
-router.post("/call/end/:appointmentId", endVideoCall);
+// Video call routes (Participant-protected)
+router.post("/call/start/:appointmentId", verifyAppointmentParticipant, startVideoCall);
+router.post("/call/end/:appointmentId", verifyAppointmentParticipant, endVideoCall);
 
-// Status routes
-router.post("/status/:appointmentId", updateOnlineStatus);
-router.get("/status/:appointmentId", getAppointmentLiveStatus);
+// Status routes (Participant-protected)
+router.post("/status/:appointmentId", verifyAppointmentParticipant, updateOnlineStatus);
+router.get("/status/:appointmentId", verifyAppointmentParticipant, getAppointmentLiveStatus);
 
-// Doctor notification routes (when patient starts session)
+// Doctor notification routes
 router.post("/notify-doctor", notifyDoctor);
 router.get("/notifications/:doctorEmail", getDoctorNotifications);
 router.post("/notifications/read", markNotificationRead);

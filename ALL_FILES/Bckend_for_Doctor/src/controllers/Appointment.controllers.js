@@ -8,77 +8,88 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { createDoctorNotification } from "./Notification.controllers.js";
 
-// Book appointment (user)
+function sanitizeString(str, maxLen = 300) {
+  if (typeof str !== "string") return "";
+  return str.replace(/<[^>]*>/g, "").trim().slice(0, maxLen);
+}
+
+// 1. Book appointment (Patient)
 export const bookAppointment = asyncHandler(async (req, res) => {
   const { doctorEmail, doctorName, date, time, userEmail, userName, symptoms, doctorId } = req.body;
-  console.log('[BOOK] Incoming booking request:', { doctorEmail, doctorName, date, time, userEmail, userName, hasDoctorId: !!doctorId });
-  
+
   if (!doctorEmail || !date || !time || !userEmail || !userName) {
     throw new ApiError(400, "All fields (doctor, date, time, patient information) are required");
   }
+
+  const cleanDocEmail = doctorEmail.trim().toLowerCase();
+  const cleanUserEmail = userEmail.trim().toLowerCase();
+  const cleanDate = sanitizeString(date, 20);
+  const cleanTime = sanitizeString(time, 20);
+  const cleanUserName = sanitizeString(userName, 100);
+  const cleanSymptoms = sanitizeString(symptoms || "General Consultation", 500);
 
   // 1. Identify the doctor
   let doctorDoc = null;
   if (doctorId) {
     doctorDoc = await Doctor.findById(doctorId);
   }
-  if (!doctorDoc && doctorEmail) {
-    doctorDoc = await Doctor.findOne({ email: doctorEmail.toLowerCase() });
+  if (!doctorDoc && cleanDocEmail) {
+    doctorDoc = await Doctor.findOne({ email: cleanDocEmail });
   }
 
-  const effectiveDoctorId = doctorDoc?._id || doctorId;
-  const effectiveDoctorName = doctorDoc?.fullname || doctorName || "Doctor";
+  if (!doctorDoc) {
+    throw new ApiError(404, "Selected doctor could not be found.");
+  }
+
+  if (doctorDoc.isBlocked || doctorDoc.approvalStatus !== "approved") {
+    throw new ApiError(400, "Selected doctor is currently not accepting appointments.");
+  }
+
+  const effectiveDoctorId = doctorDoc._id;
+  const effectiveDoctorName = doctorDoc.fullname || doctorName || "Doctor";
 
   // 2. Validate and reserve the doctor-published timeslot
-  if (effectiveDoctorId) {
-    const timeslotDoc = await Timeslot.findOne({ 
-      doctor: effectiveDoctorId, 
-      date: date 
-    });
+  const timeslotDoc = await Timeslot.findOne({
+    doctor: effectiveDoctorId,
+    date: cleanDate,
+  });
 
-    if (timeslotDoc && Array.isArray(timeslotDoc.slots) && timeslotDoc.slots.length > 0) {
-      const slotIndex = timeslotDoc.slots.findIndex(s => s.time === time || s === time);
-      
-      if (slotIndex === -1) {
-        throw new ApiError(400, "The selected time slot was not published by this doctor.");
-      }
+  if (timeslotDoc && Array.isArray(timeslotDoc.slots) && timeslotDoc.slots.length > 0) {
+    const slotIndex = timeslotDoc.slots.findIndex((s) => s.time === cleanTime || s === cleanTime);
 
-      const slot = timeslotDoc.slots[slotIndex];
-      const isAlreadyBooked = typeof slot === "object" ? slot.booked : false;
-
-      if (isAlreadyBooked) {
-        throw new ApiError(400, "This time slot is already booked. Please choose another available slot.");
-      }
-
-      // Mark slot as booked
-      if (typeof slot === "object") {
-        timeslotDoc.slots[slotIndex].booked = true;
-        timeslotDoc.slots[slotIndex].bookedBy = userEmail;
-      } else {
-        timeslotDoc.slots[slotIndex] = {
-          time: slot,
-          booked: true,
-          bookedBy: userEmail
-        };
-      }
-      
-      try {
-        await timeslotDoc.save();
-        console.log('[BOOK] Timeslot reserved successfully for:', time);
-      } catch (slotErr) {
-        console.error('[BOOK] Failed to reserve timeslot:', slotErr.message);
-        throw new ApiError(500, "Unable to reserve the selected time slot. Please try again.");
-      }
+    if (slotIndex === -1) {
+      throw new ApiError(400, "The selected time slot was not published by this doctor.");
     }
+
+    const slot = timeslotDoc.slots[slotIndex];
+    const isAlreadyBooked = typeof slot === "object" ? slot.booked : false;
+
+    if (isAlreadyBooked) {
+      throw new ApiError(400, "This time slot is already booked. Please choose another available slot.");
+    }
+
+    // Atomically mark slot as booked
+    if (typeof slot === "object") {
+      timeslotDoc.slots[slotIndex].booked = true;
+      timeslotDoc.slots[slotIndex].bookedBy = cleanUserEmail;
+    } else {
+      timeslotDoc.slots[slotIndex] = {
+        time: slot,
+        booked: true,
+        bookedBy: cleanUserEmail,
+      };
+    }
+
+    await timeslotDoc.save();
   }
 
-  // 3. Prevent duplicate active appointments for same user, doctor, date, time
+  // 3. Prevent duplicate active appointments
   const existingAppt = await Appointment.findOne({
-    doctorEmail: doctorEmail.toLowerCase(),
-    userEmail: userEmail.toLowerCase(),
-    date,
-    time,
-    status: { $in: ["pending", "confirmed", "approved"] }
+    doctorEmail: cleanDocEmail,
+    userEmail: cleanUserEmail,
+    date: cleanDate,
+    time: cleanTime,
+    status: { $in: ["pending", "confirmed", "approved"] },
   });
 
   if (existingAppt) {
@@ -86,101 +97,92 @@ export const bookAppointment = asyncHandler(async (req, res) => {
   }
 
   // 4. Create the appointment
-  let appointment;
+  const appointment = await Appointment.create({
+    doctorId: effectiveDoctorId,
+    doctorEmail: cleanDocEmail,
+    doctorName: effectiveDoctorName,
+    userEmail: cleanUserEmail,
+    userName: cleanUserName,
+    date: cleanDate,
+    time: cleanTime,
+    symptoms: cleanSymptoms,
+    status: "pending",
+  });
+
+  // 5. Create notification for the doctor
   try {
-    appointment = await Appointment.create({
-      doctorId: effectiveDoctorId || undefined,
-      doctorEmail: doctorEmail.toLowerCase(),
-      doctorName: effectiveDoctorName,
-      userEmail: userEmail.toLowerCase(),
-      userName,
-      date,
-      time,
-      symptoms: symptoms?.trim() || "General Consultation",
-      status: "pending"
+    const notification = await createDoctorNotification({
+      recipientDoctorId: effectiveDoctorId,
+      recipientDoctorEmail: cleanDocEmail,
+      type: "APPOINTMENT_REQUEST",
+      title: "New Appointment Request",
+      message: `${cleanUserName} requested an appointment for ${cleanDate} at ${cleanTime}.`,
+      patientName: cleanUserName,
+      patientEmail: cleanUserEmail,
+      appointmentId: appointment._id,
+      date: cleanDate,
+      time: cleanTime,
     });
-    
-    console.log('[BOOK] Appointment created successfully:', appointment._id);
-  } catch (createErr) {
-    console.error('[BOOK] Failed to create appointment:', createErr.message);
-    if (createErr.name === 'ValidationError') {
-      const messages = Object.values(createErr.errors).map(e => e.message).join(', ');
-      throw new ApiError(400, `Validation error: ${messages}`);
-    }
-    throw new ApiError(500, "Unable to book the appointment right now. Please try again.");
-  }
 
-  // 5. Create persistent notification for the doctor ONLY AFTER appointment is saved
-  let notification = null;
-  if (effectiveDoctorId && appointment) {
-    try {
-      notification = await createDoctorNotification({
-        recipientDoctorId: effectiveDoctorId,
-        recipientDoctorEmail: doctorEmail.toLowerCase(),
-        type: "APPOINTMENT_REQUEST",
-        title: "New Appointment Request",
-        message: `${userName} requested an appointment for ${date} at ${time}.`,
-        patientName: userName,
-        patientEmail: userEmail,
+    const io = req.app.get("io");
+    if (io) {
+      const notifPayload = {
+        notification,
         appointmentId: appointment._id,
-        date,
-        time,
-      });
-
-      // Real-time broadcast via Socket.io
-      const io = req.app.get("io");
-      if (io) {
-        const notifPayload = {
-          notification,
-          appointmentId: appointment._id,
-          recipientDoctorEmail: doctorEmail.toLowerCase(),
-          recipientDoctorId: effectiveDoctorId,
-          patientName: userName,
-          date,
-          time,
-        };
-        io.emit("new-notification", notifPayload);
-        io.emit("new-appointment-request", notifPayload);
-        io.to(`doctor_${doctorEmail.toLowerCase()}`).emit("new-notification", notifPayload);
-      }
-    } catch (notifErr) {
-      console.error("[BOOK] Error creating doctor notification:", notifErr.message);
+        recipientDoctorEmail: cleanDocEmail,
+        recipientDoctorId: effectiveDoctorId,
+        patientName: cleanUserName,
+        date: cleanDate,
+        time: cleanTime,
+      };
+      io.emit("new-notification", notifPayload);
+      io.emit("new-appointment-request", notifPayload);
+      io.to(`doctor_${cleanDocEmail}`).emit("new-notification", notifPayload);
     }
+  } catch (notifErr) {
+    console.warn("[Appointment Controller] Notification creation warning:", notifErr.message);
   }
 
   return res.status(201).json(new ApiResponse(201, appointment, "Appointment booked successfully"));
 });
 
-// Get appointments for doctor by email or authenticated doctor
+// 2. Get appointments for doctor (Protected by verifyDoctor)
 export const getDoctorAppointments = asyncHandler(async (req, res) => {
-  const doctorEmail = req.doctor?.email || req.params.doctorEmail || req.query.doctorEmail;
-  if (!doctorEmail) {
-    throw new ApiError(400, "Doctor email or authentication is required");
+  const authenticatedDoctor = req.doctor;
+  const requestedEmail = req.params.doctorEmail?.toLowerCase()?.trim();
+
+  // IDOR Protection: Doctor can only access their own appointments
+  if (authenticatedDoctor && requestedEmail && authenticatedDoctor.email.toLowerCase() !== requestedEmail) {
+    throw new ApiError(403, "Access denied: You cannot view appointments of another doctor.");
+  }
+
+  const effectiveDoctorEmail = authenticatedDoctor?.email?.toLowerCase() || requestedEmail;
+  if (!effectiveDoctorEmail) {
+    throw new ApiError(400, "Doctor authentication is required");
   }
 
   const query = {
     $or: [
-      { doctorEmail: doctorEmail.toLowerCase() },
-      ...(req.doctor?._id ? [{ doctorId: req.doctor._id }] : [])
-    ]
+      { doctorEmail: effectiveDoctorEmail },
+      ...(authenticatedDoctor?._id ? [{ doctorId: authenticatedDoctor._id }] : []),
+    ],
   };
 
   const appointments = await Appointment.find(query).sort({ date: -1, time: -1 });
   return res.status(200).json(new ApiResponse(200, appointments, "Doctor appointments fetched successfully"));
 });
 
-// Get single appointment by ID
+// 3. Get single appointment by ID (Protected by verifyAppointmentParticipant)
 export const getAppointmentById = asyncHandler(async (req, res) => {
-  const { appointmentId } = req.params;
-  const appointment = await Appointment.findById(appointmentId);
+  const appointment = req.appointment;
   if (!appointment) {
     throw new ApiError(404, "Appointment could not be found.");
   }
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment fetched successfully"));
 });
 
-// Helper to verify doctor authorization for an appointment
-const verifyDoctorAppointmentOwnership = (appointment, doctor, fallbackEmail) => {
+// Helper to check doctor ownership
+const isDoctorOwner = (appointment, doctor, fallbackEmail) => {
   if (doctor) {
     const emailMatches = doctor.email && appointment.doctorEmail && doctor.email.toLowerCase() === appointment.doctorEmail.toLowerCase();
     const idMatches = doctor._id && appointment.doctorId && doctor._id.toString() === appointment.doctorId.toString();
@@ -192,31 +194,22 @@ const verifyDoctorAppointmentOwnership = (appointment, doctor, fallbackEmail) =>
   return false;
 };
 
-// Confirm appointment (Doctor accepts pending appointment)
+// 4. Confirm appointment (Doctor accepts pending appointment)
 export const confirmAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
   const authenticatedDoctor = req.doctor;
   const clientDoctorEmail = req.body?.doctorEmail || req.header("X-Doctor-Email");
 
-  console.log('[CONFIRM] Processing appointment confirmation:', {
-    appointmentId,
-    authDoctorEmail: authenticatedDoctor?.email,
-    authDoctorId: authenticatedDoctor?._id
-  });
-
-  // 1. Find the target appointment
   const appointment = await Appointment.findById(appointmentId);
   if (!appointment) {
     throw new ApiError(404, "Appointment could not be found.");
   }
 
-  // 2. Enforce authorization: Authenticated doctor must own this appointment
-  const isAuthorized = verifyDoctorAppointmentOwnership(appointment, authenticatedDoctor, clientDoctorEmail);
-  if (!isAuthorized && authenticatedDoctor) {
-    throw new ApiError(403, "You are not authorized to manage this appointment.");
+  // Enforce doctor ownership
+  if (!isDoctorOwner(appointment, authenticatedDoctor, clientDoctorEmail)) {
+    throw new ApiError(403, "Access denied: You are not authorized to manage this appointment.");
   }
 
-  // 3. Validate state transitions
   if (appointment.status === "cancelled") {
     throw new ApiError(409, "Cannot confirm a cancelled appointment.");
   }
@@ -224,42 +217,37 @@ export const confirmAppointment = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Cannot confirm an already completed appointment.");
   }
   if (appointment.status === "confirmed" || appointment.status === "approved") {
-    // Idempotent: If already confirmed, return success without duplicate changes
     return res.status(200).json(new ApiResponse(200, appointment, "Appointment is already confirmed."));
   }
 
-  // 4. Update status to confirmed
   appointment.status = "confirmed";
   if (!appointment.doctorId && authenticatedDoctor?._id) {
     appointment.doctorId = authenticatedDoctor._id;
   }
   await appointment.save();
 
-  // 5. Ensure timeslot remains reserved for this appointment
+  // Mark timeslot as booked
   try {
     const docQuery = appointment.doctorId ? { _id: appointment.doctorId } : { email: appointment.doctorEmail.toLowerCase() };
     const doctorDoc = await Doctor.findOne(docQuery);
     if (doctorDoc) {
       await Timeslot.updateOne(
         { doctor: doctorDoc._id, date: appointment.date, "slots.time": appointment.time },
-        { "$set": { "slots.$.booked": true, "slots.$.bookedBy": appointment.userEmail } }
+        { $set: { "slots.$.booked": true, "slots.$.bookedBy": appointment.userEmail } }
       );
     }
   } catch (slotErr) {
-    console.warn("[CONFIRM] Timeslot sync warning:", slotErr.message);
+    console.warn("[Appointment Controller] Timeslot sync warning:", slotErr.message);
   }
 
-  // 6. Resolve / mark existing appointment-request notifications as read for this doctor
+  // Mark notification read
   try {
-    await Notification.updateMany(
-      { appointmentId: appointment._id },
-      { $set: { isRead: true } }
-    );
+    await Notification.updateMany({ appointmentId: appointment._id }, { $set: { isRead: true } });
   } catch (notifErr) {
-    console.warn("[CONFIRM] Notification update warning:", notifErr.message);
+    // Ignore
   }
 
-  // 7. Emit real-time Socket.io event for real-time dashboard and patient synchronization
+  // Broadcast real-time Socket.io event
   const io = req.app.get("io");
   if (io) {
     const statusPayload = {
@@ -268,47 +256,35 @@ export const confirmAppointment = asyncHandler(async (req, res) => {
       doctorEmail: appointment.doctorEmail,
       userEmail: appointment.userEmail,
       date: appointment.date,
-      time: appointment.time
+      time: appointment.time,
     };
     io.emit("appointment-status-updated", statusPayload);
     io.to(`appointment_${appointment._id}`).emit("appointment-confirmed", statusPayload);
   }
 
-  console.log('[CONFIRM] Appointment confirmed successfully:', appointment._id);
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment confirmed successfully"));
 });
 
-// Approve appointment (Alias for confirmation)
 export const approveAppointment = confirmAppointment;
 
-// Cancel appointment (Doctor or Patient rejects/cancels appointment)
+// 5. Cancel appointment (Doctor or Patient)
 export const cancelAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
   const authenticatedDoctor = req.doctor;
   const { doctorEmail, userEmail, reason } = req.body;
 
-  console.log('[CANCEL] Processing cancellation for:', {
-    appointmentId,
-    authDoctorEmail: authenticatedDoctor?.email,
-    bodyUserEmail: userEmail,
-    reason
-  });
-
-  // 1. Find the target appointment
   const appointment = await Appointment.findById(appointmentId);
   if (!appointment) {
     throw new ApiError(404, "Appointment could not be found.");
   }
 
-  // 2. Enforce authorization
-  const isDoctor = verifyDoctorAppointmentOwnership(appointment, authenticatedDoctor, doctorEmail);
-  const isPatient = userEmail && appointment.userEmail && userEmail.toLowerCase() === appointment.userEmail.toLowerCase();
+  const isDoc = isDoctorOwner(appointment, authenticatedDoctor, doctorEmail);
+  const isPat = userEmail && appointment.userEmail && userEmail.toLowerCase() === appointment.userEmail.toLowerCase();
 
-  if (!isDoctor && !isPatient && authenticatedDoctor) {
-    throw new ApiError(403, "You are not authorized to cancel this appointment.");
+  if (!isDoc && !isPat) {
+    throw new ApiError(403, "Access denied: You are not authorized to cancel this appointment.");
   }
 
-  // 3. Validate state transitions
   if (appointment.status === "completed") {
     throw new ApiError(400, "Cannot cancel an already completed appointment.");
   }
@@ -316,39 +292,36 @@ export const cancelAppointment = asyncHandler(async (req, res) => {
     throw new ApiError(409, "This appointment is already cancelled.");
   }
 
-  // 4. Update status to cancelled
   appointment.status = "cancelled";
-  appointment.consultationNotes = reason 
-    ? `Cancelled: ${reason}` 
-    : (isPatient ? "Cancelled by patient" : "Cancelled by doctor");
+  appointment.consultationNotes = reason
+    ? `Cancelled: ${sanitizeString(reason, 200)}`
+    : isPat
+    ? "Cancelled by patient"
+    : "Cancelled by doctor";
   await appointment.save();
 
-  // 5. Free the reserved timeslot so other patients can re-book it
+  // Free the timeslot
   try {
     const docQuery = appointment.doctorId ? { _id: appointment.doctorId } : { email: appointment.doctorEmail.toLowerCase() };
     const doctorDoc = await Doctor.findOne(docQuery);
     if (doctorDoc) {
       await Timeslot.updateOne(
         { doctor: doctorDoc._id, date: appointment.date, "slots.time": appointment.time },
-        { "$set": { "slots.$.booked": false, "slots.$.bookedBy": null } }
+        { $set: { "slots.$.booked": false, "slots.$.bookedBy": null } }
       );
-      console.log('[CANCEL] Timeslot released for re-booking:', appointment.date, appointment.time);
     }
   } catch (err) {
-    console.error("Failed to free timeslot on cancellation:", err);
+    console.error("Failed to free timeslot on cancellation:", err.message);
   }
 
-  // 6. Resolve notifications
+  // Resolve notifications
   try {
-    await Notification.updateMany(
-      { appointmentId: appointment._id },
-      { $set: { isRead: true } }
-    );
+    await Notification.updateMany({ appointmentId: appointment._id }, { $set: { isRead: true } });
   } catch (notifErr) {
-    console.warn("[CANCEL] Notification update warning:", notifErr.message);
+    // Ignore
   }
 
-  // 7. Emit real-time Socket.io event
+  // Socket.io event
   const io = req.app.get("io");
   if (io) {
     const statusPayload = {
@@ -356,163 +329,145 @@ export const cancelAppointment = asyncHandler(async (req, res) => {
       status: "cancelled",
       doctorEmail: appointment.doctorEmail,
       userEmail: appointment.userEmail,
-      reason: appointment.consultationNotes
+      reason: appointment.consultationNotes,
     };
     io.emit("appointment-status-updated", statusPayload);
     io.to(`appointment_${appointment._id}`).emit("appointment-cancelled", statusPayload);
   }
 
-  console.log('[CANCEL] Appointment cancelled successfully:', appointmentId);
   return res.status(200).json(new ApiResponse(200, appointment, "Appointment cancelled successfully"));
 });
 
-// Get appointments for user by email
+// 6. Get appointments for user by email
 export const getUserAppointments = asyncHandler(async (req, res) => {
   const { userEmail } = req.params;
-  console.log('[FETCH] Fetching appointments for user:', userEmail);
-  const appointments = await Appointment.find({ userEmail }).sort({
+  const cleanEmail = userEmail?.trim()?.toLowerCase();
+
+  const appointments = await Appointment.find({ userEmail: cleanEmail }).sort({
     date: -1,
     time: -1,
   });
-  console.log('[FETCH] Found appointments:', appointments);
+
   return res.status(200).json(new ApiResponse(200, appointments, "User appointments fetched"));
 });
 
-// Get consultation history for doctor
+// 7. Get consultation history for doctor (Protected by verifyDoctor)
 export const getDoctorConsultationHistory = asyncHandler(async (req, res) => {
   const { doctorEmail } = req.params;
-  
-  try {
-    const consultations = await Appointment.find({ 
-      doctorEmail: doctorEmail 
-    }).sort({ createdAt: -1 });
-    
-    return res.status(200).json(new ApiResponse(200, consultations, "Consultation history fetched successfully"));
-  } catch (error) {
-    throw new ApiError(500, "Failed to fetch consultation history");
+  const authenticatedDoctor = req.doctor;
+
+  const targetEmail = (authenticatedDoctor?.email || doctorEmail)?.toLowerCase()?.trim();
+  if (!targetEmail) {
+    throw new ApiError(400, "Doctor email is required");
   }
+
+  const consultations = await Appointment.find({
+    doctorEmail: targetEmail,
+  }).sort({ createdAt: -1 });
+
+  return res.status(200).json(new ApiResponse(200, consultations, "Consultation history fetched successfully"));
 });
 
-// Add treatment details to appointment
+// 8. Add treatment details to appointment
 export const addTreatmentDetails = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
+  const authenticatedDoctor = req.doctor;
   const { treatment, treatedBy, treatmentDate, prescription, followUpRequired, followUpDate, consultationNotes } = req.body;
-  
-  try {
-    const appointment = await Appointment.findById(appointmentId);
-    
-    if (!appointment) {
-      throw new ApiError(404, "Appointment not found");
-    }
-    
-    // Update appointment with treatment details
-    appointment.treatment = treatment;
-    appointment.treatedBy = treatedBy;
-    appointment.treatmentDate = treatmentDate || new Date();
-    appointment.prescription = prescription;
-    appointment.followUpRequired = followUpRequired || false;
-    appointment.followUpDate = followUpDate;
-    appointment.consultationNotes = consultationNotes;
-    appointment.status = "completed";
-    
-    await appointment.save();
-    
-    return res.status(200).json(new ApiResponse(200, appointment, "Treatment details added successfully"));
-  } catch (error) {
-    throw new ApiError(500, "Failed to add treatment details");
+
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found");
   }
+
+  if (authenticatedDoctor && !isDoctorOwner(appointment, authenticatedDoctor)) {
+    throw new ApiError(403, "Access denied: You are not the assigned doctor for this appointment.");
+  }
+
+  appointment.treatment = sanitizeString(treatment || "", 500);
+  appointment.treatedBy = sanitizeString(treatedBy || authenticatedDoctor?.fullname || appointment.doctorName, 100);
+  appointment.treatmentDate = treatmentDate || new Date().toISOString();
+  if (prescription) appointment.prescription = sanitizeString(prescription, 500);
+  appointment.followUpRequired = Boolean(followUpRequired);
+  if (followUpDate) appointment.followUpDate = sanitizeString(followUpDate, 30);
+  if (consultationNotes) appointment.consultationNotes = sanitizeString(consultationNotes, 1000);
+  appointment.status = "completed";
+
+  await appointment.save();
+  return res.status(200).json(new ApiResponse(200, appointment, "Treatment details recorded successfully"));
 });
 
-// Update appointment with symptoms (for better history tracking)
+// 9. Add symptoms to appointment
 export const addSymptomsToAppointment = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
   const { symptoms } = req.body;
-  
-  try {
-    const appointment = await Appointment.findById(appointmentId);
-    
-    if (!appointment) {
-      throw new ApiError(404, "Appointment not found");
-    }
-    
-    appointment.symptoms = symptoms;
-    await appointment.save();
-    
-    return res.status(200).json(new ApiResponse(200, appointment, "Symptoms added successfully"));
-  } catch (error) {
-    throw new ApiError(500, "Failed to add symptoms");
+
+  if (!symptoms) {
+    throw new ApiError(400, "Symptoms text is required");
   }
+
+  const appointment = await Appointment.findByIdAndUpdate(
+    appointmentId,
+    { symptoms: sanitizeString(symptoms, 500) },
+    { new: true }
+  );
+
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, appointment, "Symptoms updated successfully"));
 });
 
-// Upload prescription file for appointment
+// 10. Upload Prescription (Protected by verifyDoctor)
 export const uploadPrescription = asyncHandler(async (req, res) => {
   const { appointmentId } = req.params;
-  const { doctorEmail } = req.body;
-  
-  try {
-    // Check if file was uploaded
-    if (!req.file) {
-      throw new ApiError(400, "No prescription file uploaded");
-    }
-    
-    // Find the appointment
-    const appointment = await Appointment.findById(appointmentId);
-    
-    if (!appointment) {
-      throw new ApiError(404, "Appointment not found");
-    }
-    
-    // Verify doctor owns this appointment
-    if (appointment.doctorEmail !== doctorEmail) {
-      throw new ApiError(403, "Unauthorized to upload prescription for this appointment");
-    }
-    
-    // Upload file to Cloudinary
-    const uploadResult = await uploadOnCloudinary(req.file.buffer);
-    
-    if (!uploadResult || !uploadResult.secure_url) {
-      throw new ApiError(500, "Failed to upload prescription file");
-    }
-    
-    // Update appointment with prescription file URL
-    appointment.prescriptionFile = uploadResult.secure_url;
-    appointment.prescriptionUploadedAt = new Date();
-    appointment.prescriptionUploadedBy = doctorEmail;
-    
-    await appointment.save();
-    
-    return res.status(200).json(
-      new ApiResponse(200, appointment, "Prescription uploaded successfully")
-    );
-  } catch (error) {
-    console.error("Prescription upload error:", error);
-    throw new ApiError(500, error.message || "Failed to upload prescription");
+  const authenticatedDoctor = req.doctor;
+
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found");
   }
+
+  if (authenticatedDoctor && !isDoctorOwner(appointment, authenticatedDoctor)) {
+    throw new ApiError(403, "Access denied: Only the attending doctor can upload prescriptions.");
+  }
+
+  if (!req.file || !req.file.buffer) {
+    throw new ApiError(400, "Prescription document or image file is required");
+  }
+
+  const cloudinaryResponse = await uploadOnCloudinary(req.file.buffer);
+  if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+    throw new ApiError(500, "Prescription upload failed. Please try again.");
+  }
+
+  appointment.prescription = cloudinaryResponse.secure_url;
+  appointment.prescriptionFile = cloudinaryResponse.secure_url;
+  appointment.prescriptionUploadedAt = new Date();
+  await appointment.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, { prescriptionUrl: cloudinaryResponse.secure_url }, "Prescription uploaded successfully")
+  );
 });
 
-// Get prescription for appointment
+// 11. Get Prescription (Protected by verifyAppointmentParticipant)
 export const getPrescription = asyncHandler(async (req, res) => {
-  const { appointmentId } = req.params;
-  
-  try {
-    const appointment = await Appointment.findById(appointmentId);
-    
-    if (!appointment) {
-      throw new ApiError(404, "Appointment not found");
-    }
-    
-    if (!appointment.prescriptionFile) {
-      throw new ApiError(404, "No prescription found for this appointment");
-    }
-    
-    return res.status(200).json(
-      new ApiResponse(200, {
-        prescriptionFile: appointment.prescriptionFile,
-        uploadedAt: appointment.prescriptionUploadedAt,
-        uploadedBy: appointment.prescriptionUploadedBy
-      }, "Prescription fetched successfully")
-    );
-  } catch (error) {
-    throw new ApiError(500, "Failed to fetch prescription");
+  const appointment = req.appointment;
+  if (!appointment || (!appointment.prescription && !appointment.prescriptionFile)) {
+    throw new ApiError(404, "Prescription not found for this appointment.");
   }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        prescriptionUrl: appointment.prescription || appointment.prescriptionFile,
+        appointmentId: appointment._id,
+        doctorName: appointment.doctorName,
+        date: appointment.date,
+      },
+      "Prescription fetched successfully"
+    )
+  );
 });

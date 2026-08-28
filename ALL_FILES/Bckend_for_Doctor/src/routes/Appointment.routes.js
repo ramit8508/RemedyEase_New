@@ -14,36 +14,35 @@ import {
 } from "../controllers/Appointment.controllers.js";
 import { Router } from "express";
 import { upload } from "../middleware/multer.middleware.js";
-import { verifyDoctor } from "../middleware/auth.middleware.js";
+import { verifyDoctor, verifyAppointmentParticipant, optionalDoctorOrUserAuth } from "../middleware/auth.middleware.js";
 
 const router = new Router();
 
-// Public / User booking
-router.post("/book", bookAppointment);
+// Public / Patient booking & user listing
+router.post("/book", optionalDoctorOrUserAuth, bookAppointment);
 router.get("/user/:userEmail", getUserAppointments);
 
-// Doctor appointments retrieval
-router.get("/doctor/:doctorEmail", getDoctorAppointments);
+// Doctor appointments retrieval (Protected by verifyDoctor)
+router.get("/doctor/:doctorEmail", verifyDoctor, getDoctorAppointments);
 router.get("/doctor/:doctorEmail/history", verifyDoctor, getDoctorConsultationHistory);
 
-// Confirmation & Approval routes (supporting both /confirm/:id and /:id/confirm)
+// Confirmation & Approval routes (Protected by verifyDoctor)
 router.put("/confirm/:appointmentId", verifyDoctor, confirmAppointment);
 router.put("/:appointmentId/confirm", verifyDoctor, confirmAppointment);
 router.put("/approve/:appointmentId", verifyDoctor, approveAppointment);
 router.put("/:appointmentId/approve", verifyDoctor, approveAppointment);
 
-// Cancellation routes (supporting both /cancel/:id and /:id/cancel)
+// Cancellation routes (Doctor or Patient)
 router.put("/cancel/:appointmentId", cancelAppointment);
 router.put("/:appointmentId/cancel", cancelAppointment);
 
-// Treatment & Prescription routes
+// Treatment & Prescription routes (Doctor-protected)
 router.put("/treatment/:appointmentId", verifyDoctor, addTreatmentDetails);
 router.put("/symptoms/:appointmentId", addSymptomsToAppointment);
-// Prescription routes
-router.post("/prescription/:appointmentId", upload.single("prescription"), uploadPrescription);
-router.get("/prescription/:appointmentId", getPrescription);
+router.post("/prescription/:appointmentId", verifyDoctor, upload.single("prescription"), uploadPrescription);
+router.get("/prescription/:appointmentId", verifyAppointmentParticipant, getPrescription);
 
-// Get single appointment by ID
-router.get("/:appointmentId", getAppointmentById);
+// Get single appointment by ID (Participant-protected)
+router.get("/:appointmentId", verifyAppointmentParticipant, getAppointmentById);
 
 export default router;

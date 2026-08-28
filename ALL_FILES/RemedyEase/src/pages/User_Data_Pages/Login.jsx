@@ -27,6 +27,10 @@ export default function Login() {
       
       const data = await res.json();
       if (res.ok) {
+        if (data.data?.accessToken) {
+          localStorage.setItem("accessToken", data.data.accessToken);
+          localStorage.setItem("userAccessToken", data.data.accessToken);
+        }
         localStorage.setItem("user", JSON.stringify(data.data.user));
         localStorage.setItem("userEmail", email);
         setMessage("Login successful! Redirecting...");

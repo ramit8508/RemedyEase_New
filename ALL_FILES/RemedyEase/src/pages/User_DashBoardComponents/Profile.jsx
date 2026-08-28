@@ -77,9 +77,10 @@ export default function Profile() {
   // Fetch profile once on mount (to get latest data)
   useEffect(() => {
     isMountedRef.current = true;
-    if (!email) { setLoading(false); return; }
+    const token = localStorage.getItem("accessToken") || localStorage.getItem("userAccessToken") || "";
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    fetch(`/api/v1/users/profile?email=${email}`)
+    fetch(`/api/v1/users/profile?email=${email}`, { headers })
       .then((r) => r.json())
       .then((data) => {
         if (!isMountedRef.current) return;
@@ -160,10 +161,16 @@ export default function Profile() {
     const stored = JSON.parse(localStorage.getItem("user") || "{}");
     localStorage.setItem("user", JSON.stringify({ ...stored, ...form }));
 
+    const token = localStorage.getItem("accessToken") || localStorage.getItem("userAccessToken") || "";
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
     try {
       const res = await fetch("/api/v1/users/profile/update", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ email, ...form }),
       });
       const data = await res.json();
@@ -200,12 +207,14 @@ export default function Profile() {
     setAvatarUploading(true);
 
     try {
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("userAccessToken") || "";
       const formData = new FormData();
       formData.append("avatar", file);
       formData.append("email", email);
 
       const res = await fetch("/api/v1/users/profile/avatar", {
         method: "PUT",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
       const data = await res.json();

@@ -5,12 +5,13 @@ import {
   getOrderById,
   cancelOrder,
 } from "../controllers/Order.controllers.js";
+import { verifyUser, optionalUserAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.route("/").post(createOrder);
-router.route("/user/:userEmail").get(getUserOrders);
-router.route("/:orderId").get(getOrderById);
-router.route("/:orderId/cancel").put(cancelOrder);
+router.route("/").post(optionalUserAuth, createOrder);
+router.route("/user/:userEmail").get(verifyUser, getUserOrders);
+router.route("/:orderId").get(optionalUserAuth, getOrderById);
+router.route("/:orderId/cancel").put(optionalUserAuth, cancelOrder);
 
 export default router;

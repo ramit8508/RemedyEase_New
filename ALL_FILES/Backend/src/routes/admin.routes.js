@@ -1,18 +1,24 @@
 import { Router } from "express";
 import { 
   adminLogin, 
+  adminLogout,
   getAllUsers, 
   toggleUserBlock,
   getAdminStats,
   changeAdminPassword
 } from "../controllers/admin.controller.js";
+import { verifyAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
+// Public Admin Login
 router.post("/login", adminLogin);
-router.post("/change-password", changeAdminPassword);
-router.get("/users", getAllUsers);
-router.put("/users/:userId/block", toggleUserBlock);
-router.get("/stats", getAdminStats);
+
+// Protected Admin Actions
+router.post("/logout", verifyAdmin, adminLogout);
+router.post("/change-password", verifyAdmin, changeAdminPassword);
+router.get("/users", verifyAdmin, getAllUsers);
+router.put("/users/:userId/block", verifyAdmin, toggleUserBlock);
+router.get("/stats", verifyAdmin, getAdminStats);
 
 export default router;
