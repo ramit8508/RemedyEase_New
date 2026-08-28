@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
+import { createSocketClient } from "../utils/socketService";
 import {
   FiMic,
   FiMicOff,
@@ -283,8 +282,7 @@ export default function VideoCall({
       const callRoomId = appt?.callRoomId || roomId || `call_${appointmentId}`;
       const chatRoomId = appt?.chatRoomId || `chat_${appointmentId}`;
 
-      socketRef.current = io(SOCKET_URL, {
-        transports: ["websocket", "polling"],
+      socketRef.current = createSocketClient({
         query: {
           appointmentId,
           userId: effectiveUserId,

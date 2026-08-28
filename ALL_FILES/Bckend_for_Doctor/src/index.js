@@ -11,13 +11,38 @@ import http from "http";
 // Create HTTP server
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "https://remedy-ease-new.vercel.app",
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 // Initialize Socket.io for real-time chat and video calls
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (allowed === "*") return true;
+        return (
+          allowed.toLowerCase() === origin.toLowerCase() ||
+          origin.toLowerCase().endsWith(".vercel.app")
+        );
+      });
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error("Socket origin not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
-    credentials: true
-  }
+    credentials: true,
+  },
+  pingTimeout: 30000,
+  pingInterval: 15000,
 });
 
 // In-memory storage for active connections

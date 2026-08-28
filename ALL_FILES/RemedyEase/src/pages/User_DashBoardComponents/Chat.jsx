@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import io from "socket.io-client";
+import { createSocketClient } from "../../utils/socketService";
 import {
   FiSearch,
   FiSend,
@@ -192,10 +192,7 @@ export default function Chat() {
 
     // Initialize Socket
     try {
-      socketRef.current = io(SOCKET_URL, {
-        transports: ["websocket", "polling"],
-        reconnectionAttempts: 5,
-      });
+      socketRef.current = createSocketClient();
 
       const socket = socketRef.current;
 

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { createSocketClient } from '../utils/socketService';
 import '../Css_for_all/LiveChat.css';
 
 // Get the backend URL from environment variables
-const SOCKET_URL = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 const API_BASE = import.meta.env.VITE_DOCTOR_BACKEND_URL || "";
 
 export default function LiveChat({ appointmentId, currentUser, userType, onClose }) {
@@ -40,10 +39,7 @@ export default function LiveChat({ appointmentId, currentUser, userType, onClose
 
     // We create the socket connection INSIDE useEffect.
     // This ensures it only connects when the component is actually on the screen.
-    socketRef.current = io(SOCKET_URL, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 5,
-    });
+    socketRef.current = createSocketClient();
 
     const socket = socketRef.current;
 

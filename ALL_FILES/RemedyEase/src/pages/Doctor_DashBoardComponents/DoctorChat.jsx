@@ -18,7 +18,7 @@ import {
   FiInfo,
   FiAlertCircle,
 } from "react-icons/fi";
-import { io } from "socket.io-client";
+import { createSocketClient } from "../../utils/socketService";
 import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorChat.css";
 import "../../Css_for_all/DoctorDashboard.css";
@@ -211,27 +211,24 @@ export default function DoctorChat() {
 
   // Socket.IO Connection
   useEffect(() => {
-    const socketUrl = DOCTOR_BACKEND_URL || window.location.origin;
-    const socket = io(socketUrl, {
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 5,
-    });
+    let socket = null;
+    try {
+      socket = createSocketClient();
+      socketRef.current = socket;
 
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      setSocketConnected(true);
-      if (activeConvRef.current) {
-        socket.emit("join-appointment-room", {
-          appointmentId: activeConvRef.current.appointmentId,
-          chatRoomId: activeConvRef.current.chatRoomId,
-          callRoomId: activeConvRef.current.callRoomId,
-          userId: doctorEmail,
-          userName: `Dr. ${doctor?.fullname || "Doctor"}`,
-          userType: "doctor",
-        });
-      }
-    });
+      socket.on("connect", () => {
+        setSocketConnected(true);
+        if (activeConvRef.current) {
+          socket.emit("join-appointment-room", {
+            appointmentId: activeConvRef.current.appointmentId,
+            chatRoomId: activeConvRef.current.chatRoomId,
+            callRoomId: activeConvRef.current.callRoomId,
+            userId: doctorEmail,
+            userName: `Dr. ${doctor?.fullname || "Doctor"}`,
+            userType: "doctor",
+          });
+        }
+      });
 
     socket.on("disconnect", () => {
       setSocketConnected(false);
@@ -269,12 +266,19 @@ export default function DoctorChat() {
       );
     });
 
-    socket.on("unread-count-changed", () => {
-      fetchConversations(true);
-    });
+      socket.on("unread-count-changed", () => {
+        fetchConversations(true);
+      });
+    } catch (err) {
+      console.warn("Doctor chat socket error:", err);
+    }
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.off("receive-chat-message");
+        socket.off("unread-count-changed");
+        socket.disconnect();
+      }
     };
   }, [doctor?.fullname, doctorEmail, fetchConversations]);
 

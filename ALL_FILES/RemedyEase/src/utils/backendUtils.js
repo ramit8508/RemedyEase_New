@@ -1,47 +1,48 @@
-// This is the only function needed. It "wakes up" the backends on page load.
+import { getSocketServerUrl } from "./socketService";
+
+// Health monitoring and keep-alive for backend services
 export const startHealthMonitoring = () => {
-  // Get the full backend URLs from the environment variables.
-  // On Vercel, these come from your project settings.
-  // On your local machine, they come from your .env file.
   const userApiUrl = import.meta.env.VITE_USER_BACKEND_URL;
   const doctorApiUrl = import.meta.env.VITE_DOCTOR_BACKEND_URL;
+  const socketUrl = getSocketServerUrl();
 
-  const checkHealth = (url, name) => {
-    // Only run the check if the URL is defined.
+  const checkHealth = (url, name, isSocket = false) => {
     if (!url) {
-      console.warn(`⚠️ ${name} backend URL is not defined in environment variables. Skipping health check.`);
+      console.warn(`⚠️ ${name} service URL is not defined in environment variables.`);
       return;
     }
 
-    // We use the FULL, absolute URL for the health check (root endpoint returns JSON status)
-    fetch(url, {
+    const checkEndpoint = isSocket ? `${url.replace(/\/$/, '')}/socket.io/?EIO=4&transport=polling` : url;
+
+    fetch(checkEndpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
     })
       .then(res => {
-        if (res.ok) {
-          console.log(`💚 ${name} backend is responsive. Status: ${res.status}`);
+        if (res.ok || res.status === 200 || res.status === 400) {
+          // Status 200 or 400 (from Socket.IO handshake without sid) indicates server is up and listening
+          console.log(`💚 ${name} ${isSocket ? 'Real-time Socket.io' : 'HTTP Backend'} is responsive (${url})`);
         } else {
-          console.warn(`⚠️ ${name} backend responded with status: ${res.status}`);
+          console.warn(`⚠️ ${name} service responded with status: ${res.status}`);
         }
       })
-      .catch(err => console.error(`💔 ${name} backend health check failed:`, err.message));
+      .catch(err => {
+        // Log clean notice rather than crashing
+        console.warn(`ℹ️ ${name} ${isSocket ? 'Real-time signaling' : 'Backend'} status check:`, err.message);
+      });
   };
 
-  console.log('🏥 Performing initial backend health check...');
-  checkHealth(userApiUrl, 'User');
-  checkHealth(doctorApiUrl, 'Doctor');
+  console.log('🏥 Performing initial RemedyEase service health checks...');
+  if (userApiUrl) checkHealth(userApiUrl, 'User');
+  if (doctorApiUrl) checkHealth(doctorApiUrl, 'Doctor');
+  if (socketUrl) checkHealth(socketUrl, 'Doctor', true);
   
-  // An interval is good for keeping free Render services from sleeping.
+  // Keep-alive check every 5 minutes for active deployments
   const intervalId = setInterval(() => {
-    console.log('🏃 Running periodic health check...');
-    checkHealth(userApiUrl, 'User');
-    checkHealth(doctorApiUrl, 'Doctor');
-  }, 5 * 60 * 1000); // Checks every 5 minutes
+    if (userApiUrl) checkHealth(userApiUrl, 'User');
+    if (doctorApiUrl) checkHealth(doctorApiUrl, 'Doctor');
+    if (socketUrl) checkHealth(socketUrl, 'Doctor', true);
+  }, 5 * 60 * 1000);
 
-  // This returns a "cleanup" function that React will run when the App component unmounts.
   return () => {
     clearInterval(intervalId);
     console.log('🛑 Stopped health monitoring.');

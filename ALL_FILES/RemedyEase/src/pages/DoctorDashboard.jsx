@@ -17,7 +17,7 @@ import {
   FiCheckCircle,
   FiCheck,
 } from "react-icons/fi";
-import { io } from "socket.io-client";
+import { createSocketClient } from "../utils/socketService";
 import { toast } from "react-toastify";
 import "../Css_for_all/DoctorDashboard.css";
 
@@ -181,9 +181,7 @@ export default function DoctorDashboard() {
 
     let socket = null;
     try {
-      socket = io({
-        transports: ["websocket", "polling"],
-      });
+      socket = createSocketClient();
 
       socket.on("connect", () => {
         socket.emit("user-online", {
