@@ -682,9 +682,14 @@ export default function SymptomChecker() {
               <div className="sc-error">
                 <FiAlertTriangle size={32} />
                 <p>{analysis.message}</p>
-                <button className="sc-btn-outline" onClick={resetAnalysis}>
-                  <FiRefreshCw size={16} /> {t(locale, "result.newBtn")}
-                </button>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "12px" }}>
+                  <button className="sc-btn-primary" onClick={handleAnalyze} style={{ padding: "8px 16px", fontSize: "13px" }}>
+                    <FiRefreshCw size={14} /> Retry Analysis
+                  </button>
+                  <button className="sc-btn-outline" onClick={resetAnalysis} style={{ padding: "8px 16px", fontSize: "13px" }}>
+                    {t(locale, "result.newBtn")}
+                  </button>
+                </div>
               </div>
             ) : (
               /* Analysis Result */
