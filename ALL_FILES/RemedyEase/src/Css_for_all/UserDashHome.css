@@ -383,35 +383,39 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.03);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .pdh-doctor-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
   border-color: #cbd5e1;
-  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.09), 0 6px 12px -2px rgba(0, 0, 0, 0.04);
 }
 
 .pdh-doctor-photo-wrap {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: 220px;
+  aspect-ratio: 4 / 3;
+  min-height: 250px;
+  max-height: 280px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
   border-radius: 16px 16px 0 0;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pdh-doctor-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center 15%;
   display: block;
-  transition: transform 0.35s ease;
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pdh-doctor-card:hover .pdh-doctor-photo {
@@ -419,7 +423,7 @@
 }
 
 .pdh-doctor-body {
-  padding: 20px 22px 22px;
+  padding: 22px 22px 24px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -429,31 +433,38 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
   margin-bottom: 12px;
   width: fit-content;
+  padding: 4px 10px;
+  border-radius: 9999px;
 }
 
 .pdh-doctor-avail--available {
-  color: #16a34a;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
 }
 
 .pdh-doctor-avail--unavailable {
   color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .pdh-avail-dot {
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .pdh-avail-dot--green {
   background: #16a34a;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 0 0 2.5px rgba(22, 163, 74, 0.22);
 }
 
 .pdh-avail-dot--gray {
@@ -461,28 +472,30 @@
 }
 
 .pdh-doctor-name {
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 18px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 19px;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 4px;
-  line-height: 1.3;
-  letter-spacing: -0.2px;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
 }
 
 .pdh-doctor-spec {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #334155;
+  color: #0284c7;
   margin: 0 0 3px;
   line-height: 1.4;
 }
 
 .pdh-doctor-qual {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   color: #64748b;
   margin: 0 0 12px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.4;
 }
 
@@ -490,7 +503,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13.5px;
   font-weight: 600;
   color: #0f172a;
   margin-bottom: 18px;
@@ -511,6 +525,7 @@
   color: #64748b;
   font-weight: 400;
   font-size: 12.5px;
+  margin-left: 2px;
 }
 
 .pdh-doctor-actions {
@@ -528,7 +543,7 @@
   padding: 10px 14px;
   font-size: 13.5px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
   background: #16a34a;
   border: 1px solid #16a34a;
@@ -536,14 +551,15 @@
   cursor: pointer;
   height: 42px;
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.18s ease;
   white-space: nowrap;
 }
 
 .pdh-btn-card-primary:hover {
   background: #15803d;
   border-color: #15803d;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.26);
+  transform: translateY(-1px);
 }
 
 .pdh-btn-card-secondary {
@@ -553,15 +569,15 @@
   padding: 10px 14px;
   font-size: 13.5px;
   font-weight: 600;
-  font-family: inherit;
-  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   cursor: pointer;
   height: 42px;
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: all 0.18s ease;
   white-space: nowrap;
 }
 
@@ -569,6 +585,7 @@
   background: #f8fafc;
   border-color: #94a3b8;
   color: #0f172a;
+  transform: translateY(-1px);
 }
 
 /* Skeletons & States */
@@ -578,7 +595,8 @@
 
 .pdh-skeleton-photo {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
+  min-height: 250px;
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: pdhShimmer 1.5s infinite;
@@ -748,12 +766,13 @@
 }
 
 .pdh-modal-avatar {
-  width: 76px;
-  height: 76px;
-  border-radius: 16px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
   object-fit: cover;
-  object-position: center top;
-  border: 2px solid #e2e8f0;
+  object-position: center 15%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   background: #f8fafc;
 }
 

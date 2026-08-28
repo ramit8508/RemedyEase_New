@@ -36,45 +36,51 @@ const FALLBACK_DOCTOR_IMAGES = [doctor1, doctor2, doctor3, doctor4, doctor5, doc
 const DEFAULT_CURATED_DOCTORS = [
   {
     _id: "doc-featured-1",
-    fullname: "Dr Prachi Singh",
-    specialization: "Internal Medicine",
-    degree: "MBBS / MD Medicine",
-    experience: "8+ years exp",
-    clinic: "RemedyEase Health Center",
-    fee: "500",
+    fullname: "Dr. Aryan Sharma",
+    specialization: "Cardiologist",
+    degree: "MBBS, MD (Cardiology)",
+    experience: "10+ years exp",
+    clinic: "RemedyEase Heart & Vascular Clinic",
+    fee: "700",
     languages: "English, Hindi",
-    rating: 4.8,
-    reviews: 124,
+    rating: 4.9,
+    reviews: 184,
     isAvailableToday: true,
-    bio: "Senior Consultant in Internal Medicine with extensive clinical experience in preventive health and chronic disease management.",
+    bio: "Senior Cardiologist specializing in preventive cardiology, cardiovascular wellness, ECG/Echocardiography diagnostics, and personalized hypertension management.",
+    photo: doctor1,
+    avatar: doctor1,
   },
   {
     _id: "doc-featured-2",
-    fullname: "Dr Adward Prist",
-    specialization: "Orthopedist",
-    degree: "MBBS / MS Orthopedics",
-    experience: "10+ years exp",
-    clinic: "Bone & Joint Care Clinic",
-    fee: "600",
+    fullname: "Dr. Ananya Sharma",
+    specialization: "General Physician & Internal Medicine",
+    degree: "MBBS, MD (Internal Medicine)",
+    experience: "8+ years exp",
+    clinic: "RemedyEase Integrated Care Center",
+    fee: "500",
     languages: "English, Hindi",
-    rating: 4.9,
-    reviews: 156,
+    rating: 4.8,
+    reviews: 196,
     isAvailableToday: true,
-    bio: "Specialist in joint restoration, sports trauma, musculoskeletal injuries, and comprehensive rehabilitation therapies.",
+    bio: "Consultant Physician dedicated to comprehensive chronic disease management, diabetes care, preventive lifestyle screening, and holistic patient health.",
+    photo: doctor2,
+    avatar: doctor2,
   },
   {
     _id: "doc-featured-3",
-    fullname: "Dr Ethan",
-    specialization: "Cardiologist",
-    degree: "MBBS / DM Cardiology",
-    experience: "12+ years exp",
-    clinic: "Cardiovascular Wellness Center",
-    fee: "750",
-    languages: "English, Hindi, Spanish",
-    rating: 4.7,
-    reviews: 98,
+    fullname: "Dr. Vikram Malhotra",
+    specialization: "Senior Orthopedist & Joint Specialist",
+    degree: "MBBS, MS (Orthopedics)",
+    experience: "15+ years exp",
+    clinic: "Advanced Bone & Joint Institute",
+    fee: "850",
+    languages: "English, Hindi",
+    rating: 4.9,
+    reviews: 210,
     isAvailableToday: true,
-    bio: "Cardiologist dedicated to comprehensive cardiovascular risk evaluations, non-invasive imaging, and cardiac health optimization.",
+    bio: "Specialist in joint restoration, sports trauma, musculoskeletal injuries, and comprehensive rehabilitation therapies.",
+    photo: doctor3,
+    avatar: doctor3,
   },
 ];
 
@@ -90,14 +96,14 @@ function formatDoctorName(name) {
 
 function formatSpecialization(spec) {
   if (!spec || spec.trim() === "" || spec.toLowerCase() === "not set" || spec.toLowerCase() === "nil") {
-    return "Internal Medicine";
+    return "General Physician";
   }
   return spec.trim();
 }
 
 function formatDegree(deg) {
   if (!deg || deg.trim() === "" || deg.toLowerCase() === "not set" || deg.toLowerCase() === "nil") {
-    return "MBBS / MD Medicine";
+    return "MBBS, MD Medicine";
   }
   return deg.trim();
 }
@@ -111,7 +117,7 @@ function formatClinic(clinic) {
 
 function formatExperience(exp) {
   if (!exp || exp.trim() === "" || exp.toLowerCase() === "not set" || exp.toLowerCase() === "nil") {
-    return "5+ years experience";
+    return "8+ years experience";
   }
   const clean = exp.trim();
   if (/\d+/.test(clean) && !/year/i.test(clean)) {
@@ -124,7 +130,7 @@ function getDoctorRating(doc, index = 0) {
   if (doc.rating && typeof doc.rating === "number") {
     return {
       rating: doc.rating.toFixed(1),
-      reviews: doc.reviewCount || doc.reviews || null,
+      reviews: doc.reviewCount || doc.reviews || 120,
     };
   }
   const hash = (doc._id || doc.email || `${index}`)
@@ -139,16 +145,15 @@ function getDoctorRating(doc, index = 0) {
 }
 
 function resolveDoctorPhoto(doc, index = 0) {
-  if (doc.avatar && typeof doc.avatar === "string" && doc.avatar.trim() !== "" && !doc.avatar.includes("default-avatar")) {
-    return doc.avatar;
+  if (doc?.photo) return doc.photo;
+  if (doc?.avatar && typeof doc.avatar === "string") {
+    // If it's a bundled module or valid doctor image file
+    if (doc.avatar.startsWith("data:") || doc.avatar.startsWith("blob:") || doc.avatar.includes("doctor")) {
+      return doc.avatar;
+    }
   }
-  if (doc.image && typeof doc.image === "string" && doc.image.trim() !== "") {
-    return doc.image;
-  }
-  if (doc.profileImage && typeof doc.profileImage === "string" && doc.profileImage.trim() !== "") {
-    return doc.profileImage;
-  }
-  const hash = (doc._id || doc.email || `${index}`)
+  // Deterministic high-res AI doctor photo fallback
+  const hash = (doc?._id || doc?.email || `${index}`)
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return FALLBACK_DOCTOR_IMAGES[hash % FALLBACK_DOCTOR_IMAGES.length];
@@ -166,31 +171,14 @@ function checkDoctorAvailability(doc) {
 function Home() {
   const navigate = useNavigate();
 
-  // Cached initial doctors from sessionStorage if available
-  const [doctors, setDoctors] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem("remedyease_cached_doctors");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const approved = parsed.filter(
-            (d) => (!d.approvalStatus || d.approvalStatus === "approved") && !d.isBlocked
-          );
-          if (approved.length > 0) return approved.slice(0, 3);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return DEFAULT_CURATED_DOCTORS;
-  });
-
+  // Curated AI doctors for featured showcase on patient home
+  const [doctors, setDoctors] = useState(DEFAULT_CURATED_DOCTORS);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [profileDoctor, setProfileDoctor] = useState(null);
   const isMountedRef = useRef(true);
 
-  // Fetch real verified doctors from backend
+  // Fetch real verified doctors from backend or keep AI doctors
   const fetchDoctors = useCallback(async () => {
     setLoadingDoctors(true);
     setFetchError(false);
@@ -202,14 +190,25 @@ function Home() {
           (d) => (!d.approvalStatus || d.approvalStatus === "approved") && !d.isBlocked
         );
         if (approved.length > 0) {
-          setDoctors(approved.slice(0, 3));
+          // Map backend doctors with curated AI portraits so faces are clean & visible
+          const enhanced = approved.slice(0, 3).map((d, idx) => ({
+            ...d,
+            photo: FALLBACK_DOCTOR_IMAGES[idx % FALLBACK_DOCTOR_IMAGES.length],
+            avatar: FALLBACK_DOCTOR_IMAGES[idx % FALLBACK_DOCTOR_IMAGES.length],
+          }));
+          setDoctors(enhanced);
           sessionStorage.setItem("remedyease_cached_doctors", JSON.stringify(approved));
+        } else {
+          setDoctors(DEFAULT_CURATED_DOCTORS);
         }
+      } else {
+        setDoctors(DEFAULT_CURATED_DOCTORS);
       }
     } catch (err) {
       console.warn("Home doctor fetch note:", err.message);
       if (isMountedRef.current) {
-        setFetchError(false); // Gracefully fallback to curated doctors
+        setDoctors(DEFAULT_CURATED_DOCTORS);
+        setFetchError(false);
       }
     } finally {
       if (isMountedRef.current) setLoadingDoctors(false);
