@@ -4,7 +4,6 @@ import nodemailer from "nodemailer";
  * Creates and returns a configured Nodemailer transporter
  */
 const createTransporter = () => {
-  const service = process.env.EMAIL_SERVICE || "gmail";
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, "") : "";
 
@@ -13,11 +12,19 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    service,
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
       user,
       pass,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000, // 10s timeout
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 };
 
