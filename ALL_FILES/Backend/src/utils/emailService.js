@@ -3,46 +3,52 @@ import fetch from "node-fetch";
 
 /**
  * Universal email dispatcher
- * Supports Brevo SMTP, Resend HTTP API, and Gmail SMTP
+ * Supports Brevo HTTP REST API (port 443 HTTPS - immune to Render SMTP block),
+ * Resend HTTP API, and fallback SMTP.
  */
 export const dispatchEmail = async ({ to, subject, html }) => {
   const service = (process.env.EMAIL_SERVICE || "").toLowerCase();
+  const brevoKey = process.env.BREVO_API_KEY || (service === "brevo" ? process.env.EMAIL_PASSWORD : null);
+  const fromEmail = process.env.EMAIL_FROM || "ramitgoyal1987@gmail.com";
 
-  // 1. Priority: Brevo SMTP Relay (Allows sending to ANY recipient email for free)
-  if (service === "brevo") {
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, "") : "";
-    const fromEmail = process.env.EMAIL_FROM || "ramitgoyal1987@gmail.com";
+  // 1. PRIORITY: Brevo HTTP REST API (Over HTTPS Port 443 - Bypasses Render's outbound SMTP block)
+  if (brevoKey && (service === "brevo" || brevoKey.startsWith("xkeysib-") || process.env.BREVO_API_KEY)) {
+    try {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": brevoKey.trim(),
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          sender: {
+            name: "RemedyEase",
+            email: fromEmail,
+          },
+          to: [
+            {
+              email: to,
+            },
+          ],
+          subject: subject,
+          htmlContent: html,
+        }),
+      });
 
-    if (!user || !pass) {
-      throw new Error("Brevo configuration missing: EMAIL_USER and EMAIL_PASSWORD are required in environment.");
+      const data = await response.json();
+      if (!response.ok) {
+        console.error("[EmailService] Brevo API Error:", data);
+        throw new Error(data.message || JSON.stringify(data));
+      }
+      return data;
+    } catch (err) {
+      console.error("[EmailService] Brevo API dispatch error:", err.message);
+      throw err;
     }
-
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false, // Port 587 uses STARTTLS
-      auth: {
-        user,
-        pass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-      family: 4, // Forces IPv4 to avoid cloud network drops
-      connectionTimeout: 10000,
-      socketTimeout: 15000,
-    });
-
-    return await transporter.sendMail({
-      from: `"RemedyEase" <${fromEmail}>`,
-      to,
-      subject,
-      html,
-    });
   }
 
-  // 2. Resend HTTP API (Used if RESEND_API_KEY is configured and EMAIL_SERVICE is not brevo)
+  // 2. Resend HTTP API (Over HTTPS Port 443)
   if (process.env.RESEND_API_KEY) {
     const fromAddress = process.env.RESEND_FROM || "RemedyEase <onboarding@resend.dev>";
     try {
@@ -55,8 +61,8 @@ export const dispatchEmail = async ({ to, subject, html }) => {
         body: JSON.stringify({
           from: fromAddress,
           to: [to],
-          subject,
-          html,
+          subject: subject,
+          html: html,
         }),
       });
 
@@ -72,24 +78,23 @@ export const dispatchEmail = async ({ to, subject, html }) => {
     }
   }
 
-  // 3. Gmail / Default SMTP Fallback
+  // 3. Fallback Nodemailer SMTP
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, "") : "";
-  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@remedyease.com";
 
   if (!user || !pass) {
-    throw new Error("Email configuration missing: Set EMAIL_USER & EMAIL_PASSWORD in environment.");
+    throw new Error("Email configuration missing: Set BREVO_API_KEY, RESEND_API_KEY, or EMAIL_USER & EMAIL_PASSWORD.");
   }
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: { user, pass },
     tls: { rejectUnauthorized: false },
     family: 4,
-    connectionTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 8000,
+    socketTimeout: 10000,
   });
 
   return await transporter.sendMail({
