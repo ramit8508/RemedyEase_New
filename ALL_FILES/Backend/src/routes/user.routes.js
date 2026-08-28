@@ -3,6 +3,10 @@ import {
     registerUser, 
     loginUser, 
     logoutUser,
+    sendSignupOtp,
+    verifySignupOtp,
+    sendLoginOtp,
+    verifyLoginOtp,
     getUserProfile, 
     updateUserProfile, 
     updateUserAvatar,
@@ -18,6 +22,12 @@ const router = new Router();
 router.route("/register").post(upload.single("avatar"), registerUser);
 router.route("/login").post(loginUser);
 router.route("/logout").post(verifyUser, logoutUser);
+
+// OTP Authentication routes
+router.route("/send-signup-otp").post(sendSignupOtp);
+router.route("/verify-signup-otp").post(verifySignupOtp);
+router.route("/send-login-otp").post(sendLoginOtp);
+router.route("/login-otp").post(verifyLoginOtp);
 
 // Protected Patient profile routes
 router.route("/profile").get(verifyUser, getUserProfile);

@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      required: true,
+      default: "https://api.dicebear.com/7.x/initials/svg?seed=Patient",
     },
     password: {
       type: String,
@@ -65,26 +65,28 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 userSchema.methods.generateAccessToken = function () {
+  const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "remedyease-secure-jwt-secret-fallback-key-2026";
   return jwt.sign(
     {
       _id: this.id,
       email: this.email,
       fullname: this.fullname,
     },
-    process.env.ACCESS_TOKEN_SECRET,
+    secret,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "7d",
     }
   );
 };
 userSchema.methods.generateRefreshToken = function () {
+  const secret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || "remedyease-secure-jwt-secret-fallback-key-2026";
   return jwt.sign(
     {
       _id: this.id,
     },
-    process.env.REFRESH_TOKEN_SECRET,
+    secret,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "30d",
     }
   );
 };
