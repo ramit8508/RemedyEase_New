@@ -17,6 +17,7 @@ import {
   FiChevronRight,
   FiActivity,
   FiFileText,
+  FiVideo,
 } from "react-icons/fi";
 import VideoCall from "../../components/VideoCall";
 import "../../Css_for_all/DoctorDashboard.css";

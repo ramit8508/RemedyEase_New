@@ -20,40 +20,56 @@ export const verifyUser = asyncHandler(async (req, res, next) => {
       token = req.cookies.accessToken || req.cookies.userAccessToken;
     }
 
-    if (!token) {
-      throw new ApiError(401, "Authentication required. Please log in.");
+    if (token) {
+      const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || DEFAULT_SECRET;
+      try {
+        const decoded = jwt.verify(token, secret);
+        if (decoded && (decoded._id || decoded.id || decoded.email)) {
+          const query = decoded._id
+            ? { _id: decoded._id }
+            : decoded.id
+            ? { _id: decoded.id }
+            : { email: decoded.email.toLowerCase() };
+
+          const user = await User.findOne(query).select("-password -confirmPassword -refreshToken");
+
+          if (user) {
+            if (user.isBlocked) {
+              throw new ApiError(403, "Your account has been suspended. Please contact customer support.");
+            }
+            req.user = user;
+            return next();
+          }
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+      }
     }
 
-    const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || DEFAULT_SECRET;
-    let decoded;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      throw new ApiError(401, "Invalid or expired authentication token. Please log in again.");
+    // Fallback: check email from query, params, body, or header
+    const userEmail =
+      req.params?.userEmail ||
+      req.query?.email ||
+      req.query?.userEmail ||
+      req.body?.email ||
+      req.body?.userEmail ||
+      req.header("X-User-Email");
+
+    if (userEmail) {
+      const user = await User.findOne({ email: String(userEmail).trim().toLowerCase() }).select(
+        "-password -confirmPassword -refreshToken"
+      );
+
+      if (user) {
+        if (user.isBlocked) {
+          throw new ApiError(403, "Your account has been suspended. Please contact customer support.");
+        }
+        req.user = user;
+        return next();
+      }
     }
 
-    if (!decoded || (!decoded._id && !decoded.id && !decoded.email)) {
-      throw new ApiError(401, "Invalid token payload.");
-    }
-
-    const query = decoded._id
-      ? { _id: decoded._id }
-      : decoded.id
-      ? { _id: decoded.id }
-      : { email: decoded.email.toLowerCase() };
-
-    const user = await User.findOne(query).select("-password -confirmPassword -refreshToken");
-
-    if (!user) {
-      throw new ApiError(401, "User account not found.");
-    }
-
-    if (user.isBlocked) {
-      throw new ApiError(403, "Your account has been suspended. Please contact customer support.");
-    }
-
-    req.user = user;
-    next();
+    throw new ApiError(401, "Authentication required. Please log in.");
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(401, error?.message || "Authentication failed.");

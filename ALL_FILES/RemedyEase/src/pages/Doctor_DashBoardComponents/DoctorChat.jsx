@@ -16,6 +16,7 @@ import {
   FiEye,
   FiActivity,
   FiInfo,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
 import VideoCall from "../../components/VideoCall";
