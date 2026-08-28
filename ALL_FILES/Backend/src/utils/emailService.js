@@ -2,10 +2,47 @@ import nodemailer from "nodemailer";
 import fetch from "node-fetch";
 
 /**
- * Universal email dispatcher supporting Resend HTTP API and Nodemailer SMTP (Gmail, Brevo, custom SMTP)
+ * Universal email dispatcher
+ * Supports Brevo SMTP, Resend HTTP API, and Gmail SMTP
  */
 export const dispatchEmail = async ({ to, subject, html }) => {
-  // 1. Priority: Resend API (Best for cloud hosts like Render — bypasses all SMTP port blocking)
+  const service = (process.env.EMAIL_SERVICE || "").toLowerCase();
+
+  // 1. Priority: Brevo SMTP Relay (Allows sending to ANY recipient email for free)
+  if (service === "brevo") {
+    const user = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, "") : "";
+    const fromEmail = process.env.EMAIL_FROM || "ramitgoyal1987@gmail.com";
+
+    if (!user || !pass) {
+      throw new Error("Brevo configuration missing: EMAIL_USER and EMAIL_PASSWORD are required in environment.");
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com",
+      port: 587,
+      secure: false, // Port 587 uses STARTTLS
+      auth: {
+        user,
+        pass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      family: 4, // Forces IPv4 to avoid cloud network drops
+      connectionTimeout: 10000,
+      socketTimeout: 15000,
+    });
+
+    return await transporter.sendMail({
+      from: `"RemedyEase" <${fromEmail}>`,
+      to,
+      subject,
+      html,
+    });
+  }
+
+  // 2. Resend HTTP API (Used if RESEND_API_KEY is configured and EMAIL_SERVICE is not brevo)
   if (process.env.RESEND_API_KEY) {
     const fromAddress = process.env.RESEND_FROM || "RemedyEase <onboarding@resend.dev>";
     try {
@@ -18,8 +55,8 @@ export const dispatchEmail = async ({ to, subject, html }) => {
         body: JSON.stringify({
           from: fromAddress,
           to: [to],
-          subject: subject,
-          html: html,
+          subject,
+          html,
         }),
       });
 
@@ -35,50 +72,25 @@ export const dispatchEmail = async ({ to, subject, html }) => {
     }
   }
 
-  // 2. Fallback: Nodemailer SMTP (Gmail, Brevo, custom SMTP)
-  const host = process.env.SMTP_HOST || (process.env.EMAIL_SERVICE === "brevo" ? "smtp-relay.brevo.com" : undefined);
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+  // 3. Gmail / Default SMTP Fallback
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, "") : "";
+  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@remedyease.com";
 
   if (!user || !pass) {
-    throw new Error("Email configuration missing: Set RESEND_API_KEY or EMAIL_USER & EMAIL_PASSWORD in environment.");
+    throw new Error("Email configuration missing: Set EMAIL_USER & EMAIL_PASSWORD in environment.");
   }
 
-  const service = (process.env.EMAIL_SERVICE || "gmail").toLowerCase();
-  let transportConfig;
-
-  if (host) {
-    transportConfig = {
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      family: 4,
-    };
-  } else if (service === "gmail") {
-    transportConfig = {
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      family: 4, // Critical for Render/cloud nodes to avoid IPv6 hang
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    };
-  } else {
-    transportConfig = {
-      service,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-    };
-  }
-
-  const transporter = nodemailer.createTransport(transportConfig);
-  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@remedyease.com";
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
+    family: 4,
+    connectionTimeout: 10000,
+    socketTimeout: 15000,
+  });
 
   return await transporter.sendMail({
     from: `"RemedyEase" <${fromEmail}>`,
