@@ -355,8 +355,11 @@ const sendSignupOtp = asyncHandler(async (req, res) => {
     await sendSignupOtpEmail(cleanEmail, otp, sanitizeInput(fullname, 50));
   } catch (emailError) {
     await Otp.deleteMany({ email: cleanEmail, purpose: "signup" });
-    console.error("[sendSignupOtp] Failed to deliver email:", emailError.message);
-    throw new ApiError(500, "Could not send verification email. Please verify your email configuration and try again.");
+    console.error("[sendSignupOtp] Failed to deliver email:", emailError);
+    throw new ApiError(
+      500,
+      `Email delivery failed: ${emailError.message || "Please check your email credentials."}`
+    );
   }
 
   return res

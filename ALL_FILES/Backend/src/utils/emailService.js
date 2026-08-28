@@ -45,17 +45,37 @@ export const dispatchEmail = async ({ to, subject, html }) => {
     throw new Error("Email configuration missing: Set RESEND_API_KEY or EMAIL_USER & EMAIL_PASSWORD in environment.");
   }
 
-  const transportConfig = host
-    ? {
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      }
-    : {
-        service: process.env.EMAIL_SERVICE || "gmail",
-        auth: { user, pass },
-      };
+  const service = (process.env.EMAIL_SERVICE || "gmail").toLowerCase();
+  let transportConfig;
+
+  if (host) {
+    transportConfig = {
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      family: 4,
+    };
+  } else if (service === "gmail") {
+    transportConfig = {
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      family: 4, // Critical for Render/cloud nodes to avoid IPv6 hang
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    };
+  } else {
+    transportConfig = {
+      service,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+    };
+  }
 
   const transporter = nodemailer.createTransport(transportConfig);
   const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@remedyease.com";
